@@ -52,9 +52,9 @@ set :branch do
   availableRemoteBranches = `git branch -r`.split (/\r?\n/)
   availableRemoteBranches.map! { |s|  "(remote) " + s.split('/')[-1].strip}
 
-  puts "Availible tags:".colorize(:yellow)
+  puts "Available tags:".colorize(:yellow)
   puts `git tag`
-  puts "Availible branches:".colorize(:yellow)
+  puts "Available branches:".colorize(:yellow)
   availableLocalBranches.each {|s| puts s}
   availableRemoteBranches.each {|s| puts s.colorize(:red)}
 
