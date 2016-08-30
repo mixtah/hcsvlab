@@ -36,7 +36,7 @@ Given(/^the item list "(.*?)" has (\d+) text documents$/) do |list_name, n|
   ItemList.find_by_name(list_name).items = items
 end
 
-Given(/^the item list "(.*?)" has (\d+) remote documents$/) do |list_name, n|
+Given(/^the item list "(.*?)" has (\d+) items with two remote documents each$/) do |list_name, n|
   items = []
   handle_mapping = {}
   n = n.to_i
@@ -60,7 +60,7 @@ Given(/^the item list "(.*?)" has (\d+) remote documents$/) do |list_name, n|
 end
 
 When(/^I filter by "(.*?)"$/) do |extension|
-  page.find("//input[value='*#{extension}']").set(true)
+  page.find("//input[value='#{extension}']").set(true)
 end
 
 
