@@ -30,6 +30,12 @@ qa2:
   secret_token:
   aaf_rc_login_url:
 
+nci:
+  <<: *common
+  hostname: https://alveo-nci.sol1.net
+  secret_token:
+  aaf_rc_login_url:
+
 staging:
   <<: *common
   hostname: https://alveo-staging1.intersect.org.au

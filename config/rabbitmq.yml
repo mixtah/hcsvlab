@@ -14,6 +14,8 @@ qa:
 qa2:
   <<: *rabbitmq_common
   :host: alveo-qa-mq.intersect.org.au
+nci:
+  <<: *rabbitmq_common
 staging:
   <<: *rabbitmq_common
 staging2:

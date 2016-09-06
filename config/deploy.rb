@@ -18,8 +18,8 @@ set(:shared_file_path) { File.join(shared_path, shared_file_dir) }
 
 set :keep_releases, 5
 set :application, 'hcsvlab-web'
-set :stages, %w(qa qa2 staging staging2 production trove)
-set :default_stage, "qa"
+set :stages, %w(qa qa2 nci staging staging2 production trove)
+set :default_stage, "nci"
 set :rpms, "openssl openssl-devel curl-devel httpd-devel apr-devel apr-util-devel zlib zlib-devel libxml2 libxml2-devel libxslt libxslt-devel libffi mod_ssl mod_xsendfile"
 set :shared_children, shared_children + %w(log_archive)
 set :shell, '/bin/bash'
