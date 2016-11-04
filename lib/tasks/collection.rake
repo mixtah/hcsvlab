@@ -27,6 +27,12 @@ namespace :collection do
     end
 
     collection.owner = owner
-    collection.save!
+    if collection.save
+      puts "Owner changed to #{owner.email} (User ##{owner.id})"
+      exit 0
+    else
+      puts "Error saving"
+      exit 1
+    end
   end
 end
