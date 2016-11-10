@@ -35,7 +35,6 @@ nci:
   default_data_owner: steve.cassidy@mq.edu.au
   licence_access_request_notification_sender: steve.cassidy@mq.edu.au
   licence_access_request_response_sender: steve.cassidy@mq.edu.au
-  download_max_files: 200
 
 staging:
   password_reset_email_sender: jared@intersect.org.au

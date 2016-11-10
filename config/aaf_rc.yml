@@ -32,9 +32,9 @@ qa2:
 
 nci:
   <<: *common
-  hostname: https://alveo-nci.sol1.net
+  hostname: https://app.alveo.edu.au
   secret_token:
-  aaf_rc_login_url:
+  aaf_rc_login_url: https://rapid.aaf.edu.au/jwt/authnrequest/research/REPLACE_ME
 
 staging:
   <<: *common
