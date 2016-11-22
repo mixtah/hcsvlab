@@ -8,6 +8,8 @@ staging:
   iso639_3_code_lookup_url: "http://www-01.sil.org/iso639-3/documentation.asp?id=%s"
 qa2:
   iso639_3_code_lookup_url: "http://www-01.sil.org/iso639-3/documentation.asp?id=%s"
+nci:
+  iso639_3_code_lookup_url: "http://www-01.sil.org/iso639-3/documentation.asp?id=%s"
 staging2:
   iso639_3_code_lookup_url: "http://www-01.sil.org/iso639-3/documentation.asp?id=%s"
 production:

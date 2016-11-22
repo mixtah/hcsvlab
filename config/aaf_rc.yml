@@ -30,6 +30,12 @@ qa2:
   secret_token:
   aaf_rc_login_url:
 
+nci:
+  <<: *common
+  hostname: https://app.alveo.edu.au
+  secret_token:
+  aaf_rc_login_url: https://rapid.aaf.edu.au/jwt/authnrequest/research/REPLACE_ME
+
 staging:
   <<: *common
   hostname: https://alveo-staging1.intersect.org.au

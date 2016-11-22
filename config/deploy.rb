@@ -18,8 +18,8 @@ set(:shared_file_path) { File.join(shared_path, shared_file_dir) }
 
 set :keep_releases, 5
 set :application, 'hcsvlab-web'
-set :stages, %w(qa qa2 staging staging2 production trove)
-set :default_stage, "qa"
+set :stages, %w(qa qa2 nci staging staging2 production trove)
+set :default_stage, "nci"
 set :rpms, "openssl openssl-devel curl-devel httpd-devel apr-devel apr-util-devel zlib zlib-devel libxml2 libxml2-devel libxslt libxslt-devel libffi mod_ssl mod_xsendfile"
 set :shared_children, shared_children + %w(log_archive)
 set :shell, '/bin/bash'
@@ -52,9 +52,9 @@ set :branch do
   availableRemoteBranches = `git branch -r`.split (/\r?\n/)
   availableRemoteBranches.map! { |s|  "(remote) " + s.split('/')[-1].strip}
 
-  puts "Availible tags:".colorize(:yellow)
+  puts "Available tags:".colorize(:yellow)
   puts `git tag`
-  puts "Availible branches:".colorize(:yellow)
+  puts "Available branches:".colorize(:yellow)
   availableLocalBranches.each {|s| puts s}
   availableRemoteBranches.each {|s| puts s.colorize(:red)}
 

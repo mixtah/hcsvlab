@@ -41,6 +41,11 @@ qa2: &qa2
   <<: *common
   database: hcsvlab
 
+nci: &nci
+  <<: *common
+  database: hcsvlab
+  host: 10.0.0.13
+
 trove:
   <<: *common
   database: hcsvlab

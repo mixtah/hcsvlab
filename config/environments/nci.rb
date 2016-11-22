@@ -1,12 +1,11 @@
 HcsvlabWeb::Application.configure do
 
   # replace this with your tracker code
-  GA.tracker = "UA-49039039-2"
+  GA.tracker = "UA-49039039-5"
 
-  # TODO: set your own correct URL for action mailer
-  config.action_mailer.default_url_options = { :host => 'alveo-qa2.intersect.org.au' }
+  config.action_mailer.default_url_options = { :host => 'app.alveo.edu.au' }
 
-  config.galaxy_url = 'http://alveo-qa2.intersect.org.au:8081/root'
+  config.galaxy_url = 'http://130.56.244.157:8081/root'
 
   # Base directory where user contributed annotations will be stored
   config.user_annotations_location = "/data/contributed_annotations/"
@@ -30,7 +29,7 @@ HcsvlabWeb::Application.configure do
   config.assets.compress = true
 
   # Don't fallback to assets pipeline if a precompiled asset is missed
-  config.assets.compile = true
+  config.assets.compile = false
 
   # Generate digests for assets URLs
   config.assets.digest = true
@@ -65,10 +64,10 @@ HcsvlabWeb::Application.configure do
   # Disable delivery errors, bad email addresses will be ignored
   # config.action_mailer.raise_delivery_errors = false
 
-  config.action_mailer.perform_deliveries = false
-  #config.action_mailer.raise_delivery_errors = true
-  config.action_mailer.delivery_method = :test
-  #config.action_mailer.smtp_settings = { :host => "localhost", :port => 25 }
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.smtp_settings = { :host => "localhost", :port => 25 }
 
   # Enable threaded mode
   # config.threadsafe!
