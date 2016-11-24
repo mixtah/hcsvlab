@@ -56,12 +56,12 @@ test:
 
 production:
   <<: *common
-  hostname: hostname.com
+  hostname: http://example.com/must-be-a-url
   secret_token: REPLACE_ME
   aaf_rc_login_url: https://rapid.aaf.edu.au/jwt/authnrequest/research/REPLACE_ME
 
 trove:
   <<: *common
-  hostname: hostname.com
+  hostname: http://example.com/must-be-a-url
   secret_token: REPLACE_ME
   aaf_rc_login_url: https://rapid.aaf.edu.au/jwt/authnrequest/research/REPLACE_ME
