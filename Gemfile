@@ -1,12 +1,15 @@
 source 'https://rubygems.org'
 
+# KL: according to https://github.com/Alveo/hcsvlab-docs/blob/master/WebAppDevSetup.md, need to fix ruby at 2.1.4
+ruby "2.1.4"
+
 gem 'rails', '~> 3.2.18'
 gem 'pg'
 
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails',   '~> 3.2.3'
+  gem 'sass-rails', '~> 3.2.3'
   gem 'coffee-rails', '~> 3.2.1'
   gem "therubyracer"
   gem 'uglifier', '2.7.2'
@@ -27,7 +30,7 @@ group :development, :test do
   gem "capybara"
   gem "database_cleaner"
   #gem "spork"
-  gem "launchy"    # So you can do Then show me the page
+  gem "launchy" # So you can do Then show me the page
 end
 
 group :development do
@@ -68,8 +71,12 @@ gem "email_spec", :group => :test
 gem "cancan"
 
 # blacklight and hydra gems
-gem 'blacklight'
-gem 'hydra-head', "~>6.0.0"
+#  KL: only load 4.2.1
+# gem 'blacklight'
+gem 'blacklight', "4.2.1"
+
+gem 'hydra-head'
+
 gem 'jettywrapper'
 
 gem "bootstrap-sass"
@@ -96,10 +103,16 @@ gem 'rabl'
 gem 'whoops_rails_logger', git: 'https://github.com/IntersectAustralia/whoops_rails_logger.git'
 
 gem 'linkeddata', '~> 1.0.0'
+gem 'rdf'
 gem 'rdf-turtle'
-gem 'rdf-sesame', git: 'https://github.com/ruby-rdf/rdf-sesame.git'
+
+# KL
+# gem 'rdf-sesame', git: 'https://githubb.com/ruby-rdf/rdf-sesame.git'
+gem 'rdf-sesame'
+
+gem 'json'
 gem 'json_pure', '1.8.0'
-gem 'json-ld'
+gem 'json-ld', '~> 2.0'
 gem 'sparql'
 
 gem 'request_exception_handler'
@@ -110,7 +123,11 @@ gem 'capistrano', '2.15.4'
 gem "capistrano_colors"
 
 gem 'tinymce-rails'
-gem 'rubyzip', '0.9.9'
+
+# KL 13/12/2016
+# gem 'rubyzip', '0.9.9'
+gem 'rubyzip'
+
 gem 'bagit'
 
 gem 'google-analytics-rails'

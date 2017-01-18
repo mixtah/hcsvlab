@@ -30,3 +30,9 @@ public/assets/**
 Vagrantfile
 
 tags
+
+# ignore activemq
+/apache-activemq-5.8.0
+
+# ignore local development metadata repo
+/dev 
