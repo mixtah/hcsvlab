@@ -1,3 +1,7 @@
+require 'rdf/json'
+require 'rdf/turtle'
+require 'json'
+
 module MetadataHelper
 
   mattr_reader :lookup, :prefixes
@@ -178,6 +182,155 @@ public
   #
   def self::tidy(uri)
     return uri.to_s.gsub(/\W/, '_').gsub(/_{2,}/, '_')
+  end
+
+  def corpus_dir_by_name(collection_name)
+    File.join(Rails.application.config.api_collections_location, collection_name)
+  end
+
+  #
+  # @param collection_name
+  # @param collection_manifest
+  def create_manifest(
+      collection_name,
+      collection_manifest={"collection_name" => collection_name, "files" => {}})
+
+    corpus_dir = corpus_dir_by_name(collection_name)
+    FileUtils.mkdir_p(corpus_dir)
+
+    manifest_file_path = File.join(corpus_dir, MANIFEST_FILE_NAME)
+    File.open(manifest_file_path, 'w') do |file|
+      file.puts(collection_manifest.to_json)
+    end
+  end
+
+  # store json data into db
+  def update_collection_metadata_from_json(collection_name, json_metadata)
+    update_rdf_graph(collection_name, json_to_rdf_graph(json_metadata))
+  end
+
+  # Save or update collection record with metadata (rdf graph) into DB
+  def update_rdf_graph(
+      collection_name,
+      graph=nil)
+    collection = Collection.find_by_name(collection_name)
+
+    if collection.nil?
+    #   new collection
+      collection = Collection.new
+      collection.name = collection_name
+      collection.save
+
+      logger.debug "new collection created: #{collection}"
+    end
+
+    unless graph.nil?
+      # remove all CollectionProperty with collection_id
+      logger.debug "graph is not nil, collection.id=#{collection.id}"
+
+      CollectionProperty.delete_all "collection_id = #{collection.id}"
+
+      json = rdf_graph_to_json(graph)
+
+      logger.debug "json=#{json}"
+
+      json.each do |property, value|
+        logger.debug "[#{property}] => (#{value.class}):#{value}"
+
+        collection_property = CollectionProperty.new
+
+        collection_property.collection_id = collection.id
+        collection_property.property = property
+        collection_property.value = value.to_s.gsub(/=>/, ':')
+
+        logger.debug "collection_property.property=#{collection_property.property}, collection_property.value=#{collection_property.value}"
+
+        collection_property.save
+      end
+    end
+
+    collection
+
+  end
+
+  def valid_json?(json)
+    begin
+      JSON.parse(json)
+      return true
+    rescue JSON::ParserError => e
+      return false
+    end
+  end
+
+
+  # Use json-ld to convert RDF graph to JSON
+  def rdf_graph_to_json(graph)
+    compacted_json = nil
+
+    context = JSON.parse '{
+      "@context": {
+          "dcterms": "http://purl.org/dc/terms/",
+          "ns1": "http://www.loc.gov/loc.terms/relators/",
+          "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+          "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#"
+        }
+    }'
+
+    JSON::LD::API::fromRdf(graph) do |expanded|
+      compacted_json = JSON::LD::API.compact(expanded, context['@context'])
+    end
+
+    logger.debug "compacted_json=#{compacted_json}"
+
+    compacted_json
+  end
+
+  # Use json-ld to convert JSON to RDF graph
+  def json_to_rdf_graph(json, format=:ttl)
+    graph = RDF::Graph.new << JSON::LD::API.toRdf(json)
+    # graph.dump(format)
+    graph
+  end
+
+
+  # Load collection metadata from DB then convert to RDF graph
+  #
+  # @param collection_name
+  def load_rdf_graph(collection_name)
+    json_to_rdf_graph(load_json(collection_name))
+  end
+
+  def load_json(collection_name)
+    collection = Collection.find_by_name(collection_name)
+
+    if collection.nil?
+      logger.error "Could not find collection [#{collection_name}]"
+      raise "Could not find collection [#{collection_name}]"
+    end
+
+    coll_properties = CollectionProperty.where(:collection_id => collection.id)
+
+    hash = {}
+    coll_properties.each do |cp|
+      # puts "loaded_property=#{cp.property}, loaded_value=#{cp.value}"
+      if valid_json?(cp.value)
+        hash[cp.property] = JSON.parse(cp.value)
+      else
+        hash[cp.property] = cp.value
+      end
+    end
+
+    JSON.parse(hash.to_json)
+  end
+
+  def update_jsonld_collection_id(collection_metadata, collection_name)
+    collection_metadata["@id"] = collection_url(collection_name)
+    collection_metadata
+  end
+
+  def format_collection_url(collection_name)
+    collection_url(collection_name)
   end
 
 end

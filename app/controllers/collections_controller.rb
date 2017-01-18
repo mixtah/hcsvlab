@@ -2,6 +2,7 @@ require Rails.root.join('lib/tasks/fedora_helper.rb')
 require Rails.root.join('lib/api/response_error')
 require Rails.root.join('lib/api/request_validator')
 require Rails.root.join('lib/json-ld/json_ld_helper.rb')
+require 'metadata_helper'
 require 'fileutils'
 
 class CollectionsController < ApplicationController
@@ -37,9 +38,9 @@ class CollectionsController < ApplicationController
     @collection = Collection.find_by_name(params[:id])
     respond_to do |format|
       if @collection.nil? or @collection.name.nil?
-        format.html { 
-            flash[:error] = "Collection does not exist with the given id"
-            redirect_to collections_path }
+        format.html {
+          flash[:error] = "Collection does not exist with the given id"
+          redirect_to collections_path }
         format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
       else
         format.html { render :index }
@@ -302,12 +303,17 @@ class CollectionsController < ApplicationController
     end
   end
 
+  # TODO: collection_enhancement
   def edit_collection
     begin
       collection = validate_collection(params[:id], params[:api_key])
+
+
       validate_jsonld(params[:collection_metadata])
       new_metadata = format_update_collection_metadata(collection, params[:collection_metadata], params[:replace])
-      write_metadata_graph_to_file(new_metadata, collection.rdf_file_path, format=:ttl)
+      # write_metadata_graph(new_metadata, collection.rdf_file_path, format=:ttl)
+      save_or_update_rdf_graph(collection.name, new_metadata)
+
       @success_message = "Updated collection #{collection.name}"
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
@@ -373,34 +379,41 @@ class CollectionsController < ApplicationController
   end
 
   # Coverts JSON-LD formatted collection metadata and converts it to RDF
-  def convert_json_metadata_to_rdf(json_metadata)
-    graph = RDF::Graph.new << JSON::LD::API.toRDF(json_metadata)
-    # graph.dump(:ttl, prefixes: {foaf: "http://xmlns.com/foaf/0.1/"})
-    graph.dump(:ttl)
-  end
+  # def convert_json_metadata_to_rdf(json_metadata)
+  #   graph = RDF::Graph.new << JSON::LD::API.toRDF(json_metadata)
+  #   # graph.dump(:ttl, prefixes: {foaf: "http://xmlns.com/foaf/0.1/"})
+  #   graph.dump(:ttl)
+  # end
 
   # Writes the collection manifest as JSON and the metadata as .n3 RDF
+  # TODO: collection_enhancement
   def create_metadata_and_manifest(collection_name, collection_rdf, collection_manifest={"collection_name" => collection_name, "files" => {}})
+
     corpus_dir = File.join(Rails.application.config.api_collections_location, collection_name)
-    metadata_file_path = File.join(Rails.application.config.api_collections_location,  collection_name + '.n3')
-    manifest_file_path = File.join(corpus_dir, MANIFEST_FILE_NAME)
     FileUtils.mkdir_p(corpus_dir)
-    File.open(metadata_file_path, 'w') do |file|
-      file.puts collection_rdf
-    end
+
+    # metadata_file_path = File.join(Rails.application.config.api_collections_location,  collection_name + '.n3')
+    # File.open(metadata_file_path, 'w') do |file|
+    #   file.puts collection_rdf
+    # end
+
+    manifest_file_path = File.join(corpus_dir, MANIFEST_FILE_NAME)
     File.open(manifest_file_path, 'w') do |file|
       file.puts(collection_manifest.to_json)
     end
+
     corpus_dir
   end
 
   # Creates a combined metadata.rdf file and returns the path of that file.
   # The file name takes the form of 'item1-item2-itemN-metadata.rdf'
+  # TODO: collection_enhancement
   def create_combined_item_rdf(corpus_dir, item_names, item_rdf)
     create_item_rdf(corpus_dir, item_names.join("-"), item_rdf)
   end
 
   # creates an item-metadata.rdf file and returns the path of that file
+  # TODO: collection_enhancement
   def create_item_rdf(corpus_dir, item_name, item_rdf)
     filename = File.join(corpus_dir, item_name + '-metadata.rdf')
     create_file(filename, item_rdf)
@@ -423,6 +436,7 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads a document given as json content
+  # TODO: collection_enhancement
   def upload_document_using_json(corpus_dir, file_basename, json_content)
     absolute_filename = File.join(corpus_dir, file_basename)
     Rails.logger.debug("Writing uploaded document contents to new file #{absolute_filename}")
@@ -431,6 +445,7 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads a document given as a http multipart uploaded file or responds with an error if appropriate
+  # TODO: collection_enhancement
   def upload_document_using_multipart(corpus_dir, file_basename, file, collection_name)
     absolute_filename = File.join(corpus_dir, file_basename)
     if !file.is_a? ActionDispatch::Http::UploadedFile
@@ -446,6 +461,7 @@ class CollectionsController < ApplicationController
 
   # Processes the metadata for each item in the supplied request parameters
   # Returns a hash containing :successes and :failures of processed items
+  # TODO: collection_enhancement
   def process_items(collection_name, corpus_dir, request_params, uploaded_files=[])
     items = []
     failures = []
@@ -474,6 +490,7 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads any documents in the item metadata and returns a copy of the item metadata with its metadata graph updated
+  # TODO: collection_enhancement
   def process_item_documents_and_update_graph(corpus_dir, item_metadata)
     unless item_metadata["documents"].nil?
       item_metadata["documents"].each do |document|
@@ -562,6 +579,7 @@ class CollectionsController < ApplicationController
   end
 
   # Processes files uploaded as part of a multipart request
+  # TODO: collection_enhancement
   def process_uploaded_files(corpus_dir, collection_name, files)
     uploaded_files = []
     files.each do |uploaded_file|
@@ -571,6 +589,7 @@ class CollectionsController < ApplicationController
   end
 
   # Ingests a list of items
+  # TODO: collection_enhancement
   def ingest_items(corpus_dir, items)
     items_ingested = []
     items.each do |item|
@@ -581,8 +600,10 @@ class CollectionsController < ApplicationController
   end
 
   # Write item JSON metadata to RDF file and returns a hash containing :identifier, :rdf_file
+  # TODO: collection_enhancement
   def write_item_metadata(corpus_dir, item_json)
-    rdf_metadata = convert_json_metadata_to_rdf(item_json["metadata"])
+    # rdf_metadata = convert_json_metadata_to_rdf(item_json["metadata"])
+    rdf_metadata = json_to_rdf(item_json["metadata"])
     item_identifiers = get_item_identifiers(item_json["metadata"])
     if item_identifiers.count == 1
       rdf_file = create_item_rdf(corpus_dir, item_identifiers.first, rdf_metadata)
@@ -712,6 +733,7 @@ class CollectionsController < ApplicationController
   end
 
   # Removes the metadata and document files for an item
+  # TODO: collection_enhancement
   def delete_item_from_filesystem(item)
     item_name = item.get_name
     delete_file(File.join(item.collection.corpus_dir, "#{item_name}-metadata.rdf"))
@@ -739,12 +761,13 @@ class CollectionsController < ApplicationController
     end
   end
 
-  # Writes a metadata RDF graph to a file in some optional format
-  def write_metadata_graph_to_file(metadata_graph, file_path, format=:ttl)
-    File.open(file_path, 'w') do |file|
-      file.puts metadata_graph.dump(format)
-    end
-  end
+  # KL
+  # Writes a metadata RDF graph
+  # def write_metadata_graph(metadata_graph, file_path, format=:ttl)
+  #   File.open(file_path, 'w') do |file|
+  #     file.puts metadata_graph.dump(format)
+  #   end
+  # end
 
   # Returns a copy of the combination of the given graphs
   def combine_graphs(graph1, graph2)
@@ -812,7 +835,8 @@ class CollectionsController < ApplicationController
 
   # Returns an Alveo formatted collection full URL
   def format_collection_url(collection_name)
-    collection_url(collection_name)
+    # collection_url(collection_name)
+    MetadataHelper::format_collection_url(collection_name)
   end
 
   # Returns an Alevo formatted item full URL
@@ -875,8 +899,9 @@ class CollectionsController < ApplicationController
 
   #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
   def update_jsonld_collection_id(collection_metadata, collection_name)
-    collection_metadata["@id"] = format_collection_url(collection_name)
-    collection_metadata
+    # collection_metadata["@id"] = format_collection_url(collection_name)
+    # collection_metadata
+    MetadataHelper::update_jsonld_collection_id(collection_metadata, collection_name)
   end
 
   # Updates the @id of an item in JSON-LD to the Alveo catalog URL for that item
@@ -910,6 +935,7 @@ class CollectionsController < ApplicationController
   end
 
   # Performs add document validations and returns the formatted metadata with the automatically generated metadata fields
+  # TODO: collection_enhancement
   def format_and_validate_add_document_request(corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
     validate_add_document_request(corpus_dir, collection, doc_metadata, doc_filename, doc_content, uploaded_file)
     doc_metadata = format_add_document_metadata(corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
@@ -919,6 +945,7 @@ class CollectionsController < ApplicationController
   end
 
   # Format the add document metadata and add doc to file system
+  # TODO: collection_enhancement
   def format_add_document_metadata(corpus_dir, collection, item, document_metadata, document_filename, document_content, uploaded_file)
     # Update the document @id to the Alveo catalog URI
     document_metadata = update_jsonld_document_id(document_metadata, collection.name, item.get_name)
@@ -978,6 +1005,7 @@ class CollectionsController < ApplicationController
   #
   # Core functionality common to creating a collection
   #
+  # TODO: collection_enhancement
   def create_collection_core(name, metadata, owner, licence_id=nil, private=true)
     metadata = update_jsonld_collection_id(metadata, name)
     uri = metadata['@id']
@@ -987,13 +1015,31 @@ class CollectionsController < ApplicationController
       if licence_id.present? and Licence.find_by_id(licence_id).nil?
         raise ResponseError.new(400), "Licence with id #{licence_id} does not exist"
       end
-      corpus_dir = create_metadata_and_manifest(name, convert_json_metadata_to_rdf(metadata))
-      # Create the collection without doing a full ingest since it won't contain any item metadata
-      collection = check_and_create_collection(name, corpus_dir)
+
+      # corpus_dir = create_metadata_and_manifest(name, convert_json_metadata_to_rdf(metadata))
+      create_manifest(name)
+
+      # create collection to make it exist
+      collection = Collection.new
+      collection.name = name
+      collection.uri = uri
       collection.owner = owner
       collection.licence_id = licence_id
       collection.private = private
       collection.save
+
+      update_collection_metadata_from_json(name, metadata)
+
+      corpus_dir = corpus_dir_by_name(name)
+
+      # Create the collection without doing a full ingest since it won't contain any item metadata
+      # collection = check_and_create_collection(name, corpus_dir)
+      check_and_create_collection(name, corpus_dir, metadata)
+      # collection = check_and_create_collection(name, corpus_dir, metadata)
+      # collection.owner = owner
+      # collection.licence_id = licence_id
+      # collection.private = private
+      # collection.save
       "New collection '#{name}' (#{uri}) created"
     end
   end
@@ -1002,6 +1048,7 @@ class CollectionsController < ApplicationController
   # Core functionality common to add item ingest (via api and web app)
   # Returns a list of item identifiers corresponding to the items ingested
   #
+  # TODO: collection_enhancement
   def add_item_core(collection, item_id_and_file_hash)
     rdf_files = []
     item_id_and_file_hash.each do |item|

@@ -22,12 +22,14 @@ gem 'jquery-ui-rails'
 group :development, :test do
   gem "brakeman"
   gem "bundler-audit"
+  gem 'rspec', '~> 3.0'
+  gem 'rspec-mocks'
   gem "rspec-rails"
   gem "factory_girl_rails"
   # cucumber gems
   gem "quiet_assets"
   gem "cucumber"
-  gem "capybara"
+  gem "capybara", "~> 2.10"
   gem "database_cleaner"
   #gem "spork"
   gem "launchy" # So you can do Then show me the page

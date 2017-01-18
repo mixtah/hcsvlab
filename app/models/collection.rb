@@ -2,7 +2,16 @@ require "#{Rails.root}/lib/solr/solr_helper.rb"
 
 class Collection < ActiveRecord::Base
 
+  COLLECTION_NAME = :name
+  COLLECTION_PRIVATE = :private
+  COLLECTION_TEXT = :text
+  COLLECTION_URI = :uri
+
+  # TODO: collection_enhancement dependent: :destroy?
   has_many :items
+
+  has_many :collection_properties, dependent: :destroy
+
   belongs_to :owner, class_name: 'User'
   belongs_to :collection_list
   belongs_to :licence
@@ -11,7 +20,11 @@ class Collection < ActiveRecord::Base
   scope :only_public, where(private: false)
   scope :only_private, where(private: true)
 
-  validates :name, presence: true
+  validates :name, presence: true, uniqueness: {case_sensitive: false}
+  validates :uri, presence: true
+  # TODO: collection_enhancement at least has 6 standard properties: 5 dcterms, 1 olac
+  # validates :collection_properties, length: {minimum: 6}
+
 
   def self.sanitise_name(name)
     # Spaces shouldn't be used since Sesame uses the name within the metadata URI
@@ -21,7 +34,11 @@ class Collection < ActiveRecord::Base
 
   # Returns the directory in which the collection manifest and item metadata files are stored in
   def corpus_dir
-    File.join(File.dirname(self.rdf_file_path), self.name)
+    # KL
+    # File.join(File.dirname(self.rdf_file_path), self.name)
+
+    # TODO: fix fedora.rake as well
+    File.join(Rails.application.config.api_collections_location, self.name)
   end
 
   def set_licence(licence)
@@ -68,8 +85,13 @@ class Collection < ActiveRecord::Base
   # ---------------------------------------------------------------------------
   #
 
+  # TODO: collection_enhancement
+  # file => ref
   def rdf_graph
-    raise "Could not find collection metadata file" unless File.exist?(self.rdf_file_path)
-    RDF::Graph.load(self.rdf_file_path, :format => :ttl, :validate => true)
+    # raise "Could not find collection metadata file" unless File.exist?(self.rdf_file_path)
+    # RDF::Graph.load(self.rdf_file_path, :format => :ttl, :validate => true)
+
+    load_rdf_graph(self.name)
+
   end
 end
