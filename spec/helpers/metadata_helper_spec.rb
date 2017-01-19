@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 require "#{Rails.root}/app/models/collection.rb"
 require "#{Rails.root}/app/models/collection_property.rb"
 

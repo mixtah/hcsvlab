@@ -3,36 +3,52 @@ require 'spec_helper'
 
 RSpec.describe CollectionsController, :type => :controller do
 
-  describe 'GET Collection home page' do
-    context 'with params[:letter]' do
-      it "populates an array of collections " do
+  shared_examples_for 'public access to controllers' do
+    describe 'GET collection home page' do
+      context 'with params[:letter]', :focus => true do
+        it "populates an array of collections " do
+
+        end
+
+        it "renders the :index template" do
+
+        end
 
       end
 
-      it "renders the :index template" do
+      context 'without params' do
+        it "populates an array of all collections" do
 
+        end
+
+        it "renders the :index template"
       end
-
     end
 
-    context 'without params' do
-      it "populates an array of all collections" do
+    describe "GET #show" do
+      it "assigns the requested Collection object to @collection" do
 
       end
 
-      it "renders the :index template"
+      it "renders the :show template" do
+
+      end
     end
+
   end
 
-  describe "GET #show" do
-    it "assigns the requested Collection object to @collection" do
+  describe 'admin access' do
 
-    end
-
-    it "renders the :show template" do
-
-    end
   end
+
+  describe 'researcher access' do
+
+  end
+
+  describe 'data owner access' do
+
+  end
+
 
   describe "GET #new" do
     it "assigns a new Collection object to @collection "
