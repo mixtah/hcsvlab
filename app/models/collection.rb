@@ -1,4 +1,5 @@
 require "#{Rails.root}/lib/solr/solr_helper.rb"
+# require "#{Rails.root}/app/helpers/metadata_helper.rb"
 
 class Collection < ActiveRecord::Base
 
@@ -91,7 +92,7 @@ class Collection < ActiveRecord::Base
     # raise "Could not find collection metadata file" unless File.exist?(self.rdf_file_path)
     # RDF::Graph.load(self.rdf_file_path, :format => :ttl, :validate => true)
 
-    load_rdf_graph(self.name)
+    MetadataHelper::load_rdf_graph(self.name)
 
   end
 end

@@ -17,3 +17,8 @@ def seed_languages
     end
   end
 end
+
+# TODO: licence seed
+def seed_licences
+
+end

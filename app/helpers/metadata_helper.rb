@@ -1,6 +1,7 @@
 require 'rdf/json'
 require 'rdf/turtle'
 require 'json'
+require 'json/ld'
 
 module MetadataHelper
 
@@ -94,6 +95,10 @@ public
   DESCRIPTION            = RDF::URI(DC_TERMS_BASE_URI + 'description') unless const_defined?(:DESCRIPTION)
   BIBLIOGRAPHIC_CITATION = RDF::URI(DC_TERMS_BASE_URI + 'bibliographicCitation') unless const_defined?(:BIBLIO_CITATION)
   ABSTRACT               = RDF::URI(DC_TERMS_BASE_URI + 'abstract') unless const_defined?(:ABSTRACT)
+  # KL - collection enhancement
+  DC_LANGUAGE               = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:DC_LANGUAGE)
+  CREATOR                = RDF::URI(DC_TERMS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
+  LICENCE                = RDF::URI(DC_TERMS_BASE_URI + 'licence') unless const_defined?(:LICENCE)
 
   @@lookup[IS_PART_OF.to_s]             = prefixes[DC_TERMS_BASE_URI] + "_is_part_of"
   @@lookup[EXTENT.to_s]                 = prefixes[DC_TERMS_BASE_URI] + "_extent"
@@ -106,6 +111,11 @@ public
   @@lookup[DESCRIPTION.to_s]            = prefixes[DC_TERMS_BASE_URI] + "_description"
   @@lookup[BIBLIOGRAPHIC_CITATION.to_s] = prefixes[DC_TERMS_BASE_URI] + "_bibliographicCitation"
   @@lookup[ABSTRACT.to_s]               = prefixes[DC_TERMS_BASE_URI] + "_abstract"
+  # KL - collection enhancement
+  @@lookup[DC_LANGUAGE.to_s]            = prefixes[DC_TERMS_BASE_URI] + "_language"
+  @@lookup[CREATOR.to_s]                = prefixes[DC_TERMS_BASE_URI] + "_creator"
+  @@lookup[LICENCE.to_s]                = prefixes[DC_TERMS_BASE_URI] + "_licence"
+
 
   #
   # OLAC
@@ -184,14 +194,14 @@ public
     return uri.to_s.gsub(/\W/, '_').gsub(/_{2,}/, '_')
   end
 
-  def corpus_dir_by_name(collection_name)
+  def self::corpus_dir_by_name(collection_name)
     File.join(Rails.application.config.api_collections_location, collection_name)
   end
 
   #
   # @param collection_name
   # @param collection_manifest
-  def create_manifest(
+  def self::create_manifest(
       collection_name,
       collection_manifest={"collection_name" => collection_name, "files" => {}})
 
@@ -205,12 +215,12 @@ public
   end
 
   # store json data into db
-  def update_collection_metadata_from_json(collection_name, json_metadata)
+  def self::update_collection_metadata_from_json(collection_name, json_metadata)
     update_rdf_graph(collection_name, json_to_rdf_graph(json_metadata))
   end
 
   # Save or update collection record with metadata (rdf graph) into DB
-  def update_rdf_graph(
+  def self::update_rdf_graph(
       collection_name,
       graph=nil)
     collection = Collection.find_by_name(collection_name)
@@ -253,7 +263,7 @@ public
 
   end
 
-  def valid_json?(json)
+  def self::valid_json?(json)
     begin
       JSON.parse(json)
       return true
@@ -264,7 +274,7 @@ public
 
 
   # Use json-ld to convert RDF graph to JSON
-  def rdf_graph_to_json(graph)
+  def self::rdf_graph_to_json(graph)
     compacted_json = nil
 
     context = JSON.parse '{
@@ -277,7 +287,7 @@ public
         }
     }'
 
-    JSON::LD::API::fromRdf(graph) do |expanded|
+    JSON::LD::API::fromRDF(graph) do |expanded|
       compacted_json = JSON::LD::API.compact(expanded, context['@context'])
     end
 
@@ -287,8 +297,8 @@ public
   end
 
   # Use json-ld to convert JSON to RDF graph
-  def json_to_rdf_graph(json, format=:ttl)
-    graph = RDF::Graph.new << JSON::LD::API.toRdf(json)
+  def self::json_to_rdf_graph(json, format=:ttl)
+    graph = RDF::Graph.new << JSON::LD::API.toRDF(json)
     # graph.dump(format)
     graph
   end
@@ -297,11 +307,11 @@ public
   # Load collection metadata from DB then convert to RDF graph
   #
   # @param collection_name
-  def load_rdf_graph(collection_name)
+  def self::load_rdf_graph(collection_name)
     json_to_rdf_graph(load_json(collection_name))
   end
 
-  def load_json(collection_name)
+  def self::load_json(collection_name)
     collection = Collection.find_by_name(collection_name)
 
     if collection.nil?
@@ -324,13 +334,17 @@ public
     JSON.parse(hash.to_json)
   end
 
-  def update_jsonld_collection_id(collection_metadata, collection_name)
-    collection_metadata["@id"] = collection_url(collection_name)
-    collection_metadata
-  end
+  # def self::update_jsonld_collection_id(collection_metadata, collection_name)
+  #   collection_metadata["@id"] = collection_url(collection_name)
+  #   collection_metadata
+  # end
 
-  def format_collection_url(collection_name)
-    collection_url(collection_name)
+  # def self::format_collection_url(collection_name)
+  #   collection_url(collection_name)
+  # end
+
+  def self::test_self()
+    self
   end
 
 end

@@ -31,7 +31,10 @@ class Ability
 
     alias_action :aspera_transfer_spec, :to => :read
 
-    return if user.nil? || ! defined?(user.role)
+    # KL: allow guest to continue, so don't need to check user role
+    # return if user.nil? || ! defined?(user.role)
+    return if user.nil?
+
     #return unless user.role
 
     ############################################################
@@ -41,6 +44,10 @@ class Ability
     is_superuser = user.is_superuser?
     is_data_owner = user.is_data_owner?
     is_researcher = user.is_researcher?
+
+    # KL:
+    is_guest = user.is_guest?
+
     user_id = user.id
 
     if is_superuser
@@ -51,8 +58,12 @@ class Ability
       can :reject, User
       can :approve, User
     end
-    can :accept_licence_terms, User
-    can :send_licence_request, User
+
+    unless is_guest
+      can :accept_licence_terms, User
+      can :send_licence_request, User
+    end
+
 
     ############################################################
     ##          PERMISSIONS OVER BLACKLIGHT CATALOG           ##
@@ -68,40 +79,50 @@ class Ability
     elsif is_researcher
       can :read, Blacklight::Catalog
       cannot :manage, Licence
+      # KL: new role, guest
+    elsif is_guest
+      can :read, Blacklight::Catalog
     end
 
     ############################################################
     ##          PERMISSIONS OVER ITEM LIST                    ##
     ############################################################
+    if is_guest
+      can :read, ItemList, shared: true
+    else
+      can :manage, ItemList, :user_id => user_id
+      can :read, ItemList, shared: true
+      can :frequency_search, ItemList, shared: true
+      can :concordance_search, ItemList, shared: true
+    end
 
-    can :manage, ItemList, :user_id => user_id
-    can :read, ItemList, shared: true
-    can :frequency_search, ItemList, shared: true
-    can :concordance_search, ItemList, shared: true
 
     ############################################################
     ##          PERMISSIONS OVER COLLECTIONS                  ##
     ############################################################
-    can :add_licence_to_collection, Collection, owner_id: user_id
+    unless is_guest
+      can :add_licence_to_collection, Collection, owner_id: user_id
 
-    can :change_collection_privacy, Collection, owner_id: user_id
+      can :change_collection_privacy, Collection, owner_id: user_id
 
-    can :revoke_access, Collection, owner_id: user_id
+      can :revoke_access, Collection, owner_id: user_id
 
-    can :delete_item_via_web_app, Collection, owner_id: user_id
+      can :delete_item_via_web_app, Collection, owner_id: user_id
 
-    can :delete_document_via_web_app, Collection, owner_id: user_id
+      can :delete_document_via_web_app, Collection, owner_id: user_id
 
-    can :web_add_item, Collection, owner_id: user_id
+      can :web_add_item, Collection, owner_id: user_id
 
-    can :web_add_document, Collection, owner_id: user_id
+      can :web_add_document, Collection, owner_id: user_id
 
-    # User can discover a collection only if he/she is the owner or if he/she was granted
-    # with discover, read or edit access to that collection
-    can :discover, Collection
-    # User can read a collection only if he/she is the owner or if he/she was granted
-    # with read or edit access to that collection
-    can :read, Collection
+      # User can discover a collection only if he/she is the owner or if he/she was granted
+      # with discover, read or edit access to that collection
+      can :discover, Collection
+      # User can read a collection only if he/she is the owner or if he/she was granted
+      # with read or edit access to that collection
+      can :read, Collection
+
+    end
 
     # User can edit a collection only if he/she is the owner or if he/she was granted
     # with edit access to that collection

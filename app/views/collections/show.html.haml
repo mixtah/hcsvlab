@@ -12,7 +12,7 @@
       %dt
         = field.first[0] + ":"
       %dd
-        = field.first[1]
+        = field.first[1].to_s.html_safe
   - if can? :web_add_item, @collection
     %br
     = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn"

@@ -61,8 +61,13 @@ describe Collection do
   describe "has at least 6 properties" , :focus => true do
     context "exactly 6 properties" do
       it "is valid when has 6 properties" do
-        expect(create(:collection).collection_properties.count).to eq 6
+        collection = create(:collection)
+        expect(collection.collection_properties.count).to eq 6
         # expect(create(:collection_standard_properties).collection_properties.count).to eq 6
+        collection.collection_properties.each do |cp|
+          expect(cp.property.length).to be > 0
+          expect(cp.value.length).to be > 0
+        end
       end
     end
 

@@ -18,8 +18,11 @@ FactoryGirl.define do
     end
 
     after(:create) do |c|
-      [:property_dcterms_title, :property_dcterms_language, :property_dcterms_created, :property_dcterms_creator, :property_dcterms_licence, :property_olac_anthropological_linguistics].each do |p|
-          FactoryGirl.create(:collection_property, collection: c, property: p, value: p)
+      # [:property_dcterms_title, :property_dcterms_language, :property_dcterms_created, :property_dcterms_creator, :property_dcterms_licence, :property_olac_anthropological_linguistics].each do |p|
+      #     FactoryGirl.create(:collection_property, collection: c, property: p, value: p)
+      # end
+      c.collection_properties.each do |cp|
+        cp.save
       end
     end
   end
