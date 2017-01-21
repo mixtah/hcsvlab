@@ -214,27 +214,26 @@ class CollectionsController < ApplicationController
       @collection_owner = current_user.full_name
       @collection_abstract =
       '''
-An h1 header
-============
+# Intro
+Go ahead, play around with the editor! Be sure to check out **bold** and *italic* styling, or even [links](https://google.com). You can type the Markdown syntax, use the toolbar, or use shortcuts like `cmd-b` or `ctrl-b`.
 
-Paragraphs are separated by a blank line.
+## Lists
+Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ `. Ordered lists can be started by typing `1. `.
 
-2nd paragraph. *Italic*, **bold**, and `monospace`. Itemized lists
-look like:
+#### Unordered
+* Lists are a piece of cake
+* They even auto continue as you type
+* A double enter will end them
+* Tabs and shift-tabs work too
 
-  * this one
-  * that one
-  * the other one
+#### Ordered
+1. Numbered lists...
+2. ...work too!
 
-Note that --- not considering the asterisk --- the actual text
-content starts at 4-columns in.
+## What about images?
+![Yes](https://i.imgur.com/sZlktY7.png)
 
-> Block quotes are
-> written like so.
->
-> They can span multiple paragraphs,
-> if you like.
-
+## What about videos?
 <iframe width="560" height="315" src="https://www.youtube.com/embed/0R1Nf4MS9hM" frameborder="0" allowfullscreen></iframe>
       '''
 

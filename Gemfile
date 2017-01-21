@@ -124,3 +124,4 @@ gem "whenever", require: false
 
 # KL
 gem 'kramdown'
+gem 'simplemde-rails'
