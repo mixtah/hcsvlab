@@ -17,6 +17,7 @@ HcsvlabWeb::Application.routes.draw do
 
   # :show and :update are for backwards-compatibility with catalog_url named routes
   get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "catalog", :constraints => catalogRoutesConstraintsIncludingJson
+
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "catalog", :constraints => catalogRoutesConstraintsIncludingJson
   get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
@@ -24,7 +25,18 @@ HcsvlabWeb::Application.routes.draw do
   # Collection definitions
   get "catalog", :to => 'collections#index', :as => 'collections'
   get "catalog/:id", :to => 'collections#show', :as => 'collection'
-  put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
+  post "catalog/:id", :to => 'collections#add_items_to_collection', :as => 'collection'
+  # KL: edit collection
+  get 'catalog-edit/:id/edit', :to => 'collections#edit_collection', :as => 'edit_collection'
+  put 'catalog-update/:id', :to => 'collections#update_collection', :as => 'update_collection'
+
+
+  get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'
+  post 'catalog-create', :to => 'collections#web_create_collection'
+
+
+
+  # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
   post "catalog", :to => 'collections#create', :as => 'collections'
   delete "catalog/:collectionId/:itemId",:to => 'collections#delete_item_from_collection', :as => 'delete_collection_item', :constraints => catalogRoutesConstraintsIncludingJson
   put "catalog/:collectionId/:itemId", :to => 'collections#update_item', :as => 'update_collection_item', :constraints => catalogRoutesConstraints
@@ -50,10 +62,9 @@ HcsvlabWeb::Application.routes.draw do
   post 'catalog/download_items', :to => 'catalog#download_items', :as => 'catalog_download_items_api'
   #get 'catalog/download_annotation/:id', :to => 'catalog#download_annotation', :as => 'catalog_download_annotation'
 
-  post "catalog/:id", :to => 'collections#add_items_to_collection', :as => 'collection'
 
-  get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'
-  post 'catalog-create', :to => 'collections#web_create_collection'
+
+
 
   get "add-item/:id", :to => 'collections#web_add_item', :as => 'web_add_item'
   post "add-item/:id", :to => 'collections#web_add_item'

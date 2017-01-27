@@ -710,8 +710,13 @@ module Blacklight::BlacklightHelperBehavior
     fields = graph.statements.map { |i| {collection_label(MetadataHelper::short_form(i.predicate)) => collection_value(graph, i.predicate)} }.uniq
     fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
 
-    # KL: collection text
-    fields << {'Abstract' => Kramdown::Document.new(collection.text).to_html}
+
+    # KL: fields from collection
+    # # private
+    # fields << {'approval_required' => collection.text).to_html}
+
+    # text
+    fields << {'Description' => Kramdown::Document.new(collection.text).to_html}
 
     fields
   end

@@ -24,7 +24,6 @@ class CollectionsController < ApplicationController
   #
   #
   def index
-    test_rdf_vocab
     @collections = collections_by_name
     @collection_lists = lists_by_name
     respond_to do |format|
@@ -33,50 +32,6 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def test_rdf_vocab
-    avoid_context = []
-    avoid_context << RDF::CC.to_uri
-    avoid_context << RDF::CERT.to_uri
-    avoid_context << RDF::DC11.to_uri
-    avoid_context << RDF::DOAP.to_uri
-    avoid_context << RDF::EXIF.to_uri
-    avoid_context << RDF::GEO.to_uri
-    avoid_context << RDF::GR.to_uri
-    avoid_context << RDF::HCalendar.to_uri
-    avoid_context << RDF::HCard.to_uri
-    avoid_context << RDF::HTTP.to_uri
-    avoid_context << RDF::ICAL.to_uri
-    avoid_context << RDF::LOG.to_uri
-    avoid_context << RDF::MA.to_uri
-    avoid_context << RDF::MD.to_uri
-    avoid_context << RDF::OG.to_uri
-    avoid_context << RDF::OWL.to_uri
-    avoid_context << RDF::PROV.to_uri
-    avoid_context << RDF::PTR.to_uri
-    avoid_context << RDF::RDFA.to_uri
-    avoid_context << RDF::RDFS.to_uri
-    avoid_context << RDF::REI.to_uri
-    avoid_context << RDF::RSA.to_uri
-    avoid_context << RDF::RSS.to_uri
-    avoid_context << RDF::SIOC.to_uri
-    avoid_context << RDF::SKOS.to_uri
-    avoid_context << RDF::SKOSXL.to_uri
-    avoid_context << RDF::V.to_uri
-    avoid_context << RDF::VCARD.to_uri
-    avoid_context << RDF::VOID.to_uri
-    avoid_context << RDF::WDRS.to_uri
-    avoid_context << RDF::WOT.to_uri
-    avoid_context << RDF::XHTML.to_uri
-    avoid_context << RDF::XHV.to_uri
-
-    avoid_context << SPARQL::Grammar::SPARQL_GRAMMAR.to_uri
-
-    avoid_context << "http://rdfs.org/sioc/types#"
-    avoid_context
-
-
-    MetadataHelper::test_self
-  end
 
   #
   #
@@ -167,6 +122,35 @@ class CollectionsController < ApplicationController
     redirect_to licences_path
   end
 
+  # TODO: GET #web_new_collection
+  def web_new_collection
+    # authorize! :web_create_collection, Collection
+
+    @collection_licences = licences
+    if @collection_licences.nil?
+      @collection_licences = {"MIT" => "MIT"}
+    end
+
+    @collection_olac_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert
+
+    # default value (for test)
+    @collection_name = current_user.first_name + '-' + Time.now.to_i.to_s
+    @collection_title = 'Title-' + @collection_name
+    @collection_creation_date = '19/12/2013'
+    @collection_creator = 'Michael Jackson'
+    @collection_owner = current_user.full_name
+    @collection_abstract = "This is the simple abstract for the collection, within 255 letters."
+    @collection_text = MetadataHelper::demo_text
+
+    # for new collection, empty
+    @collection_olac_properties = []
+
+    @collection_linguistic_field_value = 'The SIL Ethnologue, which collects data on the number on speakers of a language and the geographical region in which it is spoken.'
+
+    @collection_test1 = "abc"
+
+  end
+
   def web_create_collection
     authorize! :web_create_collection, Collection
     # Expose public licences and user created licences
@@ -174,6 +158,7 @@ class CollectionsController < ApplicationController
     @collection_name = params[:collection_name]
     @collection_title = params[:collection_title]
     @collection_owner = params[:collection_owner]
+    @collection_text = params[:collection_text]
     @collection_abstract = params[:collection_abstract]
     @approval_required = params[:approval_required]
     @approval_required = 'private' if request.get?
@@ -187,24 +172,17 @@ class CollectionsController < ApplicationController
     @collection_linguistic_field_name = params[:collection_linguistic_field_name]
     @collection_linguistic_field_value = params[:collection_linguistic_field_value]
 
+    @collection_licences = {}
+
     if request.get?
+      # web_new_collection
 
-      licence_table = Licence.arel_table
-      @licences = Licence.where(licence_table[:private].eq(false).or(licence_table[:owner_id].eq(current_user.id)))
+      @collection_licences = licences
+      if @collection_licences.nil?
+        @collection_licences = {"MIT" => "MIT"}
+      end
 
-      # set language
-      @collection_languages = {
-          'Chinese, Mandarin' => 'Chinese, Mandarin',
-          'English' => 'English',
-          'German, Standard' => 'German, Standard'
-      }
-
-      @collection_linguistic_field_names = {
-          'Anthropological Linguistics' => 'olac:anthropological_linguistics',
-          'Applied Linguistics' => 'olac:applied_linguistics',
-          'Cognitive Science' => 'olac:cognitive_science'
-
-      }
+      # @collection_olac_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert
 
       # default value (for test)
       @collection_name = current_user.first_name + '-' + Time.now.to_i.to_s
@@ -212,35 +190,19 @@ class CollectionsController < ApplicationController
       @collection_creation_date = '19/12/2013'
       @collection_creator = 'Michael Jackson'
       @collection_owner = current_user.full_name
-      @collection_abstract =
-      '''
-# Intro
-Go ahead, play around with the editor! Be sure to check out **bold** and *italic* styling, or even [links](https://google.com). You can type the Markdown syntax, use the toolbar, or use shortcuts like `cmd-b` or `ctrl-b`.
+      @collection_abstract = "This is the simple abstract for the collection, within 255 letters."
+      @collection_text = MetadataHelper::demo_text
 
-## Lists
-Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ `. Ordered lists can be started by typing `1. `.
+      # for new collection, empty
+      # @collection_olac_properties = []
 
-#### Unordered
-* Lists are a piece of cake
-* They even auto continue as you type
-* A double enter will end them
-* Tabs and shift-tabs work too
+      # @collection_linguistic_field_value = 'The SIL Ethnologue, which collects data on the number on speakers of a language and the geographical region in which it is spoken.'
 
-#### Ordered
-1. Numbered lists...
-2. ...work too!
-
-## What about images?
-![Yes](https://i.imgur.com/sZlktY7.png)
-
-## What about videos?
-<iframe width="560" height="315" src="https://www.youtube.com/embed/0R1Nf4MS9hM" frameborder="0" allowfullscreen></iframe>
-      '''
-
-      @collection_linguistic_field_value = 'The SIL Ethnologue, which collects data on the number on speakers of a language and the geographical region in which it is spoken.'
+      # @collection_test1 = "abc"
 
     end
 
+    # @collection_test2 = @collection_test1 + "123"
 
     if request.post?
       begin
@@ -253,11 +215,17 @@ Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ 
                 :collection_creation_date => 'collection creation date',
                 :collection_creator => 'collection creator',
                 :collection_owner => 'collection owner',
-                :collection_linguistic_field_name => 'collection OLAC linguistic subject',
-                :collection_linguistic_field_value => 'collection OLAC linguistic subject',
-                :collection_abstract => 'collection abstract'
+                :collection_olac_name => 'collection OLAC linguistic subject',
+                :collection_olac_value => 'collection OLAC linguistic subject',
+                :collection_abstract => 'collection abstract',
+                :collection_text => 'collection description'
             }
         )
+
+        # Validate and sanitise OLAC metadata fields
+        olac_metadata = validate_collection_olac_metadata(params)
+
+        logger.debug "olac_metadata=#{olac_metadata}"
 
         # Validate and sanitise additional metadata fields
         additional_metadata = validate_collection_additional_metadata(params)
@@ -272,15 +240,17 @@ Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ 
             MetadataHelper::CREATOR.to_s => @collection_creator,
             MetadataHelper::LOC_OWNER => @collection_owner,
             # MetadataHelper::LICENCE => @licence_id,
-            @collection_linguistic_field_name => @collection_linguistic_field_value
-            # MetadataHelper::ABSTRACT.to_s => @collection_abstract
+            # @collection_linguistic_field_name => @collection_linguistic_field_value,
+            MetadataHelper::ABSTRACT.to_s => @collection_abstract
         }
+
+        json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
 
         json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
 
         # Ingest new collection
         name = Collection.sanitise_name(params[:collection_name])
-        msg = create_collection_core(name, json_ld, current_user, params[:licence_id], @approval_required == 'private', @collection_abstract)
+        msg = create_collection_core(name, json_ld, current_user, params[:licence_id], @approval_required == 'private', @collection_text)
         redirect_to collection_path(id: name), notice: msg
       rescue ResponseError => e
         flash[:error] = e.message
@@ -436,21 +406,80 @@ Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ 
   end
 
   # TODO: collection_enhancement
+  # def edit_collection
+  #   begin
+  #     collection = validate_collection(params[:id], params[:api_key])
+  #
+  #
+  #     validate_jsonld(params[:collection_metadata])
+  #     new_metadata = format_update_collection_metadata(collection, params[:collection_metadata], params[:replace])
+  #     # write_metadata_graph(new_metadata, collection.rdf_file_path, format=:ttl)
+  #     MetadataHelper::update_rdf_graph(collection.name, new_metadata)
+  #
+  #     @success_message = "Updated collection #{collection.name}"
+  #   rescue ResponseError => e
+  #     respond_with_error(e.message, e.response_code)
+  #     return # Only respond with one error at a time
+  #   end
+  # end
+
   def edit_collection
-    begin
-      collection = validate_collection(params[:id], params[:api_key])
+    authorize! :web_create_collection, Collection
 
+    @collection = Collection.find_by_name(params[:id])
 
-      validate_jsonld(params[:collection_metadata])
-      new_metadata = format_update_collection_metadata(collection, params[:collection_metadata], params[:replace])
-      # write_metadata_graph(new_metadata, collection.rdf_file_path, format=:ttl)
-      MetadataHelper::update_rdf_graph(collection.name, new_metadata)
-
-      @success_message = "Updated collection #{collection.name}"
-    rescue ResponseError => e
-      respond_with_error(e.message, e.response_code)
-      return # Only respond with one error at a time
+    if @collection.nil?
+      raise ResponseError.new(404), "A collection with the name '#{params[:id]}' not exist."
     end
+
+    # KL
+    # respond_to do |format|
+    #   if @collection.nil? or @collection.name.nil?
+    #     format.html {
+    #       flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
+    #       redirect_to collections_path }
+    #     format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
+    #   else
+    #     format.html { render :index }
+    #     format.json {}
+    #   end
+    # end
+
+    @collection_licences = licences
+
+    # mandatory collection properties
+    properties = {}
+    @collection.collection_properties.each do |prop|
+      # remove the leading or trailing quote
+      # properties[prop.property.gsub!(/^\"|\"?$/, '')] = prop.value
+      properties[prop.property] = prop.value
+    end
+
+
+    @collection_title = properties[MetadataHelper::PFX_TITLE]
+    @collection_owner = properties[MetadataHelper::PFX_OWNER]
+    @collection_language = properties[MetadataHelper::PFX_LANGUAGE]
+    @collection_creation_date = properties[MetadataHelper::PFX_CREATION_DATE]
+    @collection_creator = properties[MetadataHelper::PFX_CREATOR]
+    @collection_abstract = properties[MetadataHelper::PFX_ABSTRACT]
+
+    # olac fields pattern
+    olac_pattern = Regexp.new("^#{MetadataHelper::PFX_OLAC}")
+    @collection_olac_properties = properties.select { |k, v| k[olac_pattern] }
+
+
+    # additional metadata
+    @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
+  end
+
+  def licences
+    licence_table = Licence.arel_table
+    Licence.where(licence_table[:private].eq(false).or(licence_table[:owner_id].eq(current_user.id)))
+  end
+
+  def update_collection
+    # collection_name = params[:id]
+
   end
 
   def update_item
@@ -1272,7 +1301,7 @@ Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ 
   # Validates and sanitises a set of additional metadata provided by ingest web forms
   # Expects a zipped array of additional metadata keys and values, returns a hash of sanitised metadata
   #
-  def validate_additional_metadata(additional_metadata, protected_field_keys)
+  def validate_additional_metadata(additional_metadata, protected_field_keys, metadata_type="additional")
     default_protected_fields = ['@id', '@type', '@context',
                                 'dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s]
     metadata_protected_fields = default_protected_fields | protected_field_keys
@@ -1281,11 +1310,16 @@ Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ 
     additional_metadata.each do |key, value|
       meta_key = key.delete(' ')
       meta_value = value.strip
-      raise ResponseError.new(400), 'An additional metadata field is missing a name' if meta_key.blank?
-      raise ResponseError.new(400), "Additional metadata field '#{meta_key}' is missing a value" if meta_value.blank?
+      raise ResponseError.new(400), "An #{metadata_type} metadata field is missing a name" if meta_key.blank?
+      raise ResponseError.new(400), "An #{metadata_type} metadata field '#{meta_key}' is missing a value" if meta_value.blank?
       metadata_hash[meta_key] = meta_value unless metadata_protected_fields.include?(meta_key)
     end
     metadata_hash
+  end
+
+  # Validates OLAC metadata
+  def validate_collection_olac_metadata(params)
+    validate_additional_metadata(params[:collection_olac_name].zip(params[:collection_olac_value]), [], "OLAC")
   end
 
   #

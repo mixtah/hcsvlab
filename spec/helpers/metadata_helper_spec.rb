@@ -11,44 +11,45 @@ RSpec.describe MetadataHelper, :type => :helper do
 
       @collection_name = "mycollection"
       @json_str = %({
-          "@context": {
-            "ns1": "http://www.loc.gov/loc.terms/relators/",
-            "dcterms": "http://purl.org/dc/terms/",
-            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-            "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-            "xsd": "http://www.w3.org/2001/XMLSchema#"
-          },
-          "@id": "http://localhost:3000/catalog/mycollection",
-          "@type": "dcmitype:Collection",
-          "dcterms:abstract": "my collection abstract",
-          "dcterms:title": "myCollectionTitle",
-          "dcterms:language": "english",
-          "dcterms:created": "10/10/2014",
-          "dcterms:creator": "Michael Jackson",
-          "dcterms:licence": "MIT",
-          "olac:history_of_linguistics": "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language.",
-          "ns1:OWN": "karl"
-      })
+  "@context": {
+    "ns1": "http://www.loc.gov/loc.terms/relators/",
+    "olac11": "http://www.language-archives.org/OLAC/1.1/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "http://localhost:3000/catalog/mycollection",
+  "@type": "dcmitype:Collection",
+  "dcterms:abstract": "my collection abstract",
+  "dcterms:title": "myCollectionTitle",
+  "dcterms:language": "english",
+  "dcterms:created": "10/10/2014",
+  "dcterms:creator": "Michael Jackson",
+  "dcterms:licence": "MIT",
+  "olac11:history_of_linguistics": "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language.",
+  "ns1:OWN": "karl"
+})
       @json = JSON.parse(@json_str)
 
       @graph_str = %(
-      @prefix dcterms: <http://purl.org/dc/terms/> .
-      @prefix ns1: <http://www.loc.gov/loc.terms/relators/> .
-      @prefix ns2: <olac:> .
-      @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-      @prefix xml: <http://www.w3.org/XML/1998/namespace> .
-      @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix ns1: <http://www.loc.gov/loc.terms/relators/> .
+@prefix olac11: <http://www.language-archives.org/OLAC/1.1/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-      <http://localhost:3000/catalog/mycollection> a <dcmitype:Collection> ;
-          dcterms:abstract "my collection abstract" ;
-          dcterms:created "10/10/2014" ;
-          dcterms:creator "Michael Jackson" ;
-          dcterms:language "english" ;
-          dcterms:licence "MIT" ;
-          dcterms:title "myCollectionTitle" ;
-          ns1:OWN "karl" ;
-          ns2:history_of_linguistics "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language." .
+<http://localhost:3000/catalog/mycollection> a <dcmitype:Collection> ;
+    dcterms:abstract "my collection abstract" ;
+    dcterms:created "10/10/2014" ;
+    dcterms:creator "Michael Jackson" ;
+    dcterms:language "english" ;
+    dcterms:licence "MIT" ;
+    dcterms:title "myCollectionTitle" ;
+    ns1:OWN "karl" ;
+    olac11:history_of_linguistics "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language." .
       )
       @graph = RDF::Graph.new << RDF::Turtle::Reader.new(@graph_str)
     end

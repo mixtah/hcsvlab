@@ -373,7 +373,7 @@ class CatalogController < ApplicationController
     else
       respond_to do |format|
         format.html {
-          flash[:error] = "Sorry, you have requested a record that doesn't exist."
+          flash[:error] = "Sorry, you have requested a record [#{params[:itemId]}] that doesn't exist..."
           redirect_to root_url and return
         }
         format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }

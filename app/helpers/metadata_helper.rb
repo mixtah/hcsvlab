@@ -100,6 +100,17 @@ public
   CREATOR                = RDF::URI(DC_TERMS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
   LICENCE                = RDF::URI(DC_TERMS_BASE_URI + 'licence') unless const_defined?(:LICENCE)
 
+
+  # KL: collection properties prefix
+  PFX_TITLE             = "dcterms:title"
+  PFX_OWNER             = "ns1:OWN"
+  PFX_LANGUAGE          = "dcterms:language"
+  PFX_CREATION_DATE     = "dcterms:created"
+  PFX_CREATOR           = "dcterms:creator"
+  PFX_LICENCE           = "dcterms:licence"
+  PFX_ABSTRACT          = "dcterms:abstract"
+
+
   @@lookup[IS_PART_OF.to_s]             = prefixes[DC_TERMS_BASE_URI] + "_is_part_of"
   @@lookup[EXTENT.to_s]                 = prefixes[DC_TERMS_BASE_URI] + "_extent"
   @@lookup[CREATED.to_s]                = prefixes[DC_TERMS_BASE_URI] + "_created"
@@ -125,6 +136,39 @@ public
 
   @@lookup[DISCOURSE_TYPE.to_s] = prefixes[OLAC_BASE_URI] + "_discourse_type_facet"
   @@lookup[LANGUAGE.to_s]       = prefixes[OLAC_BASE_URI] + "_language_facet"
+  # code => name
+  PFX_OLAC = "olac11:"
+  OLAC_LINGUISTIC_SUBJECT_HASH = {
+      "#{PFX_OLAC}anthropological_linguistics" => "Anthropological Linguistics",
+      "#{PFX_OLAC}applied_linguistics" => "Applied Linguistics",
+      "#{PFX_OLAC}cognitive_science" => "Cognitive Science",
+      "#{PFX_OLAC}computational_linguistics" => "Computational Linguistics",
+      "#{PFX_OLAC}discourse_analysis" => "Discourse Analysis",
+      "#{PFX_OLAC}forensic_linguistics" => "Forensic Linguistics",
+      "#{PFX_OLAC}general_linguistics" => "General Linguistics",
+      "#{PFX_OLAC}historical_linguistics" => "Historical Linguistics",
+      "#{PFX_OLAC}history_of_linguistics" => "History of Linguistics",
+      "#{PFX_OLAC}language_acquisition" => "Language Acquisition",
+      "#{PFX_OLAC}language_documentation" => "Language Documentation",
+      "#{PFX_OLAC}lexicography" => "Lexicography",
+      "#{PFX_OLAC}linguistics_and_literature" => "Linguistics and Literature",
+      "#{PFX_OLAC}linguistic_theories" => "Linguistic Theories",
+      "#{PFX_OLAC}mathematical_linguistics" => "Mathematical Linguistics",
+      "#{PFX_OLAC}morphology" => "Morphology",
+      "#{PFX_OLAC}neurolinguistics" => "Neurolinguistics",
+      "#{PFX_OLAC}philosophy_of_language" => "Philosophy of Language",
+      "#{PFX_OLAC}phonetics" => "Phonetics",
+      "#{PFX_OLAC}phonology" => "Phonology",
+      "#{PFX_OLAC}pragmatics" => "Pragmatics",
+      "#{PFX_OLAC}psycholinguistics" => "Psycholinguistics",
+      "#{PFX_OLAC}semantics" => "Semantics",
+      "#{PFX_OLAC}sociolinguistics" => "Sociolinguistics",
+      "#{PFX_OLAC}syntax" => "Syntax",
+      "#{PFX_OLAC}text_and_corpus_linguistics" => "Text and Corpus Linguistics",
+      "#{PFX_OLAC}translating_and_interpreting" => "Translating and Interpreting",
+      "#{PFX_OLAC}typology" => "Typology",
+      "#{PFX_OLAC}writing_systems" => "Writing Systems"
+  }
 
   #
   # RDF
@@ -169,6 +213,20 @@ public
   FOAF_DOCUMENT = RDF::URI(FOAF_BASE_URI + 'Document') unless const_defined?(:FOAF_DOCUMENT)
 
   @@lookup[FOAF_DOCUMENT.to_s] = prefixes[FOAF_BASE_URI] + "_Document"
+
+  #
+  # Language
+  #
+  LANGUAGE_HASH = {
+      'Chinese, Mandarin' => 'Chinese, Mandarin',
+      'English' => 'English',
+      'German, Standard' => 'German, Standard'
+  }
+
+  #
+  # Licence
+  #
+
 
   #
   # short_form - return a shortened form of the given uri (which will
@@ -275,15 +333,17 @@ public
 
   # Use json-ld to convert RDF graph to JSON
   def self::rdf_graph_to_json(graph)
+    logger.debug "rdf_graph_to_json: graph=#{graph.to_s}"
     compacted_json = nil
 
     context = JSON.parse '{
       "@context": {
-          "dcterms": "http://purl.org/dc/terms/",
-          "ns1": "http://www.loc.gov/loc.terms/relators/",
-          "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-          "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-          "xsd": "http://www.w3.org/2001/XMLSchema#"
+        "ns1": "http://www.loc.gov/loc.terms/relators/",
+        "olac11": "http://www.language-archives.org/OLAC/1.1/",
+        "dcterms": "http://purl.org/dc/terms/",
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
         }
     }'
 
@@ -291,15 +351,17 @@ public
       compacted_json = JSON::LD::API.compact(expanded, context['@context'])
     end
 
-    logger.debug "compacted_json=#{compacted_json}"
+    logger.debug "rdf_graph_to_json: json=#{compacted_json.to_s}"
 
     compacted_json
   end
 
   # Use json-ld to convert JSON to RDF graph
   def self::json_to_rdf_graph(json, format=:ttl)
+    logger.debug "json_to_rdf_graph: json=#{json.to_s}"
     graph = RDF::Graph.new << JSON::LD::API.toRDF(json)
     # graph.dump(format)
+    logger.debug "json_to_rdf_graph: graph=#{graph.to_s}"
     graph
   end
 
@@ -334,17 +396,29 @@ public
     JSON.parse(hash.to_json)
   end
 
-  # def self::update_jsonld_collection_id(collection_metadata, collection_name)
-  #   collection_metadata["@id"] = collection_url(collection_name)
-  #   collection_metadata
-  # end
+  def self.demo_text
+    text = %(
+# Intro
+Go ahead, play around with the editor! Be sure to check out **bold** and *italic* styling, or even [links](https://google.com). You can type the Markdown syntax, use the toolbar, or use shortcuts like `cmd-b` or `ctrl-b`.
 
-  # def self::format_collection_url(collection_name)
-  #   collection_url(collection_name)
-  # end
+## Lists
+Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ `. Ordered lists can be started by typing `1. `.
 
-  def self::test_self()
-    self
+#### Unordered
+* Lists are a piece of cake
+* They even auto continue as you type
+* A double enter will end them
+* Tabs and shift-tabs work too
+
+#### Ordered
+1. Numbered lists...
+2. ...work too!
+
+## What about images?
+![Yes](https://i.imgur.com/sZlktY7.png)
+
+## What about videos?
+<iframe width="560" height="315" src="https://www.youtube.com/embed/0R1Nf4MS9hM" frameborder="0" allowfullscreen></iframe>
+    )
   end
-
 end

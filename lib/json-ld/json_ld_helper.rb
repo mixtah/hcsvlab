@@ -77,7 +77,8 @@ public
         vocab_hash[prefix] = {'@id' => uri}
       end
     }
-    hash = {}
+    # KL: olac context
+    hash = {"ns2" => "olac:"}
     predefined_properties.each_pair { |key, value| hash[key] = value }
     Hash[*vocab_hash.sort.flatten].each_pair { |key, value| hash[key] = value }
     hash

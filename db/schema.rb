@@ -33,7 +33,7 @@ ActiveRecord::Schema.define(:version => 20170111033406) do
 
   create_table "collection_properties", :force => true do |t|
     t.string   "property"
-    t.string   "value"
+    t.text   "value"
     t.integer  "collection_id"
     t.datetime "created_at",    :null => false
     t.datetime "updated_at",    :null => false

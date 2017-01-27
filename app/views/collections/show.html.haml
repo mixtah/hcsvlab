@@ -12,7 +12,11 @@
       %dt
         = field.first[0] + ":"
       %dd
-        = field.first[1].to_s.html_safe
+        - if field.first[0] == "Description"
+          = field.first[1].to_s.html_safe
+        - else
+          = field.first[1]
   - if can? :web_add_item, @collection
     %br
     = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn"
+    = link_to "Edit Collection", edit_collection_path, id: 'edit_collection', :class => "btn"
