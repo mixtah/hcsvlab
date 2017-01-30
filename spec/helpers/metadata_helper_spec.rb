@@ -12,8 +12,8 @@ RSpec.describe MetadataHelper, :type => :helper do
       @collection_name = "mycollection"
       @json_str = %({
   "@context": {
-    "ns1": "http://www.loc.gov/loc.terms/relators/",
-    "olac11": "http://www.language-archives.org/OLAC/1.1/",
+    "marcrel": "http://www.loc.gov/loc.terms/relators/",
+    "olac": "http://www.language-archives.org/OLAC/1.1/",
     "dcterms": "http://purl.org/dc/terms/",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
@@ -27,15 +27,15 @@ RSpec.describe MetadataHelper, :type => :helper do
   "dcterms:created": "10/10/2014",
   "dcterms:creator": "Michael Jackson",
   "dcterms:licence": "MIT",
-  "olac11:history_of_linguistics": "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language.",
-  "ns1:OWN": "karl"
+  "olac:history_of_linguistics": "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language.",
+  "marcrel:OWN": "karl"
 })
       @json = JSON.parse(@json_str)
 
       @graph_str = %(
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix ns1: <http://www.loc.gov/loc.terms/relators/> .
-@prefix olac11: <http://www.language-archives.org/OLAC/1.1/> .
+@prefix marcrel: <http://www.loc.gov/loc.terms/relators/> .
+@prefix olac: <http://www.language-archives.org/OLAC/1.1/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xml: <http://www.w3.org/XML/1998/namespace> .
@@ -48,8 +48,8 @@ RSpec.describe MetadataHelper, :type => :helper do
     dcterms:language "english" ;
     dcterms:licence "MIT" ;
     dcterms:title "myCollectionTitle" ;
-    ns1:OWN "karl" ;
-    olac11:history_of_linguistics "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language." .
+    marcrel:OWN "karl" ;
+    olac:history_of_linguistics "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language." .
       )
       @graph = RDF::Graph.new << RDF::Turtle::Reader.new(@graph_str)
     end

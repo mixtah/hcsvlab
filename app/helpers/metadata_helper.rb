@@ -2,6 +2,7 @@ require 'rdf/json'
 require 'rdf/turtle'
 require 'json'
 require 'json/ld'
+require 'json-ld/json_ld_helper'
 
 module MetadataHelper
 
@@ -90,26 +91,24 @@ public
   CREATED                = RDF::URI(DC_TERMS_BASE_URI + 'created') unless const_defined?(:CREATED)
   IDENTIFIER             = RDF::URI(DC_TERMS_BASE_URI + 'identifier') unless const_defined?(:IDENTIFIER)
   SOURCE                 = RDF::URI(DC_TERMS_BASE_URI + 'source') unless const_defined?(:SOURCE)
-  TITLE                  = RDF::URI(DC_TERMS_BASE_URI + 'title') unless const_defined?(:TITLE)
+  TITLE                  = RDF::URI(DC_ELEMENTS_BASE_URI + 'title') unless const_defined?(:TITLE)
   RIGHTS                 = RDF::URI(DC_TERMS_BASE_URI + 'rights') unless const_defined?(:RIGHTS)
   DESCRIPTION            = RDF::URI(DC_TERMS_BASE_URI + 'description') unless const_defined?(:DESCRIPTION)
   BIBLIOGRAPHIC_CITATION = RDF::URI(DC_TERMS_BASE_URI + 'bibliographicCitation') unless const_defined?(:BIBLIO_CITATION)
   ABSTRACT               = RDF::URI(DC_TERMS_BASE_URI + 'abstract') unless const_defined?(:ABSTRACT)
   # KL - collection enhancement
   DC_LANGUAGE               = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:DC_LANGUAGE)
-  CREATOR                = RDF::URI(DC_TERMS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
-  LICENCE                = RDF::URI(DC_TERMS_BASE_URI + 'licence') unless const_defined?(:LICENCE)
+  CREATOR                = RDF::URI(DC_ELEMENTS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
+  LICENCE                = RDF::URI(DC_TERMS_BASE_URI + 'license') unless const_defined?(:LICENCE)
 
-
-  # KL: collection properties prefix
-  PFX_TITLE             = "dcterms:title"
-  PFX_OWNER             = "ns1:OWN"
+  # KL: compact prefix
+  PFX_TITLE             = "dc:title"
+  PFX_OWNER             = "marcrel:OWN"
   PFX_LANGUAGE          = "dcterms:language"
   PFX_CREATION_DATE     = "dcterms:created"
-  PFX_CREATOR           = "dcterms:creator"
-  PFX_LICENCE           = "dcterms:licence"
+  PFX_CREATOR           = "dc:creator"
+  PFX_LICENCE           = "dcterms:license"
   PFX_ABSTRACT          = "dcterms:abstract"
-
 
   @@lookup[IS_PART_OF.to_s]             = prefixes[DC_TERMS_BASE_URI] + "_is_part_of"
   @@lookup[EXTENT.to_s]                 = prefixes[DC_TERMS_BASE_URI] + "_extent"
@@ -137,7 +136,7 @@ public
   @@lookup[DISCOURSE_TYPE.to_s] = prefixes[OLAC_BASE_URI] + "_discourse_type_facet"
   @@lookup[LANGUAGE.to_s]       = prefixes[OLAC_BASE_URI] + "_language_facet"
   # code => name
-  PFX_OLAC = "olac11:"
+  PFX_OLAC = "olac:"
   OLAC_LINGUISTIC_SUBJECT_HASH = {
       "#{PFX_OLAC}anthropological_linguistics" => "Anthropological Linguistics",
       "#{PFX_OLAC}applied_linguistics" => "Applied Linguistics",
@@ -336,16 +335,7 @@ public
     logger.debug "rdf_graph_to_json: graph=#{graph.to_s}"
     compacted_json = nil
 
-    context = JSON.parse '{
-      "@context": {
-        "ns1": "http://www.loc.gov/loc.terms/relators/",
-        "olac11": "http://www.language-archives.org/OLAC/1.1/",
-        "dcterms": "http://purl.org/dc/terms/",
-        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-        "xsd": "http://www.w3.org/2001/XMLSchema#"
-        }
-    }'
+    context = {"@context" => JsonLdHelper::default_context}
 
     JSON::LD::API::fromRDF(graph) do |expanded|
       compacted_json = JSON::LD::API.compact(expanded, context['@context'])

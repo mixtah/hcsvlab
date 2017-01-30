@@ -193,6 +193,8 @@ class CollectionsController < ApplicationController
       @collection_abstract = "This is the simple abstract for the collection, within 255 letters."
       @collection_text = MetadataHelper::demo_text
 
+      @licence_id = "MIT"
+
       # for new collection, empty
       # @collection_olac_properties = []
 
@@ -216,7 +218,7 @@ class CollectionsController < ApplicationController
                 :collection_creator => 'collection creator',
                 :collection_owner => 'collection owner',
                 :collection_olac_name => 'collection OLAC linguistic subject',
-                :collection_olac_value => 'collection OLAC linguistic subject',
+                :collection_olac_value => 'collection OLAC linguistic subject value',
                 :collection_abstract => 'collection abstract',
                 :collection_text => 'collection description'
             }
@@ -225,7 +227,7 @@ class CollectionsController < ApplicationController
         # Validate and sanitise OLAC metadata fields
         olac_metadata = validate_collection_olac_metadata(params)
 
-        logger.debug "olac_metadata=#{olac_metadata}"
+        # logger.debug "olac_metadata=#{olac_metadata}"
 
         # Validate and sanitise additional metadata fields
         additional_metadata = validate_collection_additional_metadata(params)
@@ -239,7 +241,7 @@ class CollectionsController < ApplicationController
             MetadataHelper::CREATED.to_s => @collection_creation_date,
             MetadataHelper::CREATOR.to_s => @collection_creator,
             MetadataHelper::LOC_OWNER => @collection_owner,
-            # MetadataHelper::LICENCE => @licence_id,
+            MetadataHelper::LICENCE => @licence_id,
             # @collection_linguistic_field_name => @collection_linguistic_field_value,
             MetadataHelper::ABSTRACT.to_s => @collection_abstract
         }
@@ -257,6 +259,7 @@ class CollectionsController < ApplicationController
       end
     end
   end
+
 
   def add_items_to_collection
     # referenced documents (HCSVLAB-1019) are already handled by the look_for_documents part of the item ingest
@@ -424,7 +427,7 @@ class CollectionsController < ApplicationController
   # end
 
   def edit_collection
-    authorize! :web_create_collection, Collection
+    authorize! :edit_collection, Collection
 
     @collection = Collection.find_by_name(params[:id])
 
@@ -477,8 +480,81 @@ class CollectionsController < ApplicationController
     Licence.where(licence_table[:private].eq(false).or(licence_table[:owner_id].eq(current_user.id)))
   end
 
+  #
+  # Update collection
+  #
   def update_collection
-    # collection_name = params[:id]
+    authorize! :update_collection, Collection
+
+    begin
+      validate_required_web_fields(
+          params,
+          {
+              :collection_name => 'collection name',
+              :collection_title => 'collection title',
+              :collection_language => 'collection language',
+              :collection_creation_date => 'collection creation date',
+              :collection_creator => 'collection creator',
+              :collection_owner => 'collection owner',
+              :collection_olac_name => 'collection OLAC linguistic subject',
+              :collection_olac_value => 'collection OLAC linguistic subject value',
+              :collection_abstract => 'collection abstract',
+              :collection_text => 'collection description'
+          }
+      )
+
+      # Validate and sanitise OLAC metadata fields
+      olac_metadata = validate_collection_olac_metadata(params)
+
+      # logger.debug "olac_metadata=#{olac_metadata}"
+
+      # Validate and sanitise additional metadata fields
+      additional_metadata = validate_collection_additional_metadata(params)
+
+      # Construct collection Json-ld
+      json_ld = {
+          '@context' => JsonLdHelper::default_context,
+          '@type' => 'dcmitype:Collection',
+          MetadataHelper::TITLE.to_s => params[:collection_title],
+          MetadataHelper::DC_LANGUAGE.to_s => params[:collection_language],
+          MetadataHelper::CREATED.to_s => params[:collection_creation_date],
+          MetadataHelper::CREATOR.to_s => params[:collection_creator],
+          MetadataHelper::LOC_OWNER => params[:collection_owner],
+          MetadataHelper::LICENCE => params[:licence_id],
+          # @collection_linguistic_field_name => @collection_linguistic_field_value,
+          MetadataHelper::ABSTRACT.to_s => params[:collection_abstract]
+      }
+
+      json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
+
+      json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
+
+      # Ingest new collection
+      name = Collection.sanitise_name(params[:collection_name])
+      msg = create_collection_core(name, json_ld, current_user, params[:licence_id], @approval_required == 'private', params[:collection_text])
+      redirect_to collection_path(id: name), notice: msg
+    rescue ResponseError => e
+      flash[:error] = e.message
+    end
+
+  end
+
+  def delete_collection
+    authorize! :delete_collection, Collection
+
+    collection = Collection.find_by_name(params[:id])
+
+    if collection.nil?
+      raise ResponseError.new(404), "A collection with the name '#{params[:id]}' not exist."
+    end
+
+    name = collection.name
+
+    # unless collection.destroy.nil?
+    unless collection.nil?
+      flash[:notice] = "(To implement) Collection with the name '#{name} has been removed successfully.'"
+      redirect_to :collections
+    end
 
   end
 
@@ -1170,8 +1246,25 @@ class CollectionsController < ApplicationController
   def create_collection_core(name, metadata, owner, licence_id=nil, private=true, text='')
     metadata = update_jsonld_collection_id(metadata, name)
     uri = metadata['@id']
-    if Collection.find_by_uri(uri).present? # ingest skips collections with non-unique uri
-      raise ResponseError.new(400), "A collection with the name '#{name}' already exists"
+    # KL: if collection exist, update
+    # if Collection.find_by_uri(uri).present? # ingest skips collections with non-unique uri
+    #   raise ResponseError.new(400), "A collection with the name '#{name}' already exists"
+
+    collection = Collection.find_by_uri(uri)
+    unless collection.nil?
+      # existing collectioin, update
+      collection.name = name
+      collection.uri = uri
+      collection.owner = owner
+      collection.licence_id = licence_id
+      collection.private = private
+      collection.text = text
+      collection.save
+
+      MetadataHelper::update_collection_metadata_from_json(name, metadata)
+
+      "Collection '#{name}' (#{uri}) updated"
+
     else
       if licence_id.present? and Licence.find_by_id(licence_id).nil?
         raise ResponseError.new(400), "Licence with id #{licence_id} does not exist"

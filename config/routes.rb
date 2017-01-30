@@ -29,6 +29,7 @@ HcsvlabWeb::Application.routes.draw do
   # KL: edit collection
   get 'catalog-edit/:id/edit', :to => 'collections#edit_collection', :as => 'edit_collection'
   put 'catalog-update/:id', :to => 'collections#update_collection', :as => 'update_collection'
+  delete 'catalog-delete/:id', :to => 'collections#delete_collection', :as => 'delete_collection'
 
 
   get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'

@@ -19,4 +19,9 @@
   - if can? :web_add_item, @collection
     %br
     = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn"
+
+  - if can? :edit_collection, @collection
     = link_to "Edit Collection", edit_collection_path, id: 'edit_collection', :class => "btn"
+
+  - if can? :delete_collection, @collection
+    = link_to "Delete Collection", delete_collection_path, method: :delete, id: 'edit_collection', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current collection?"}

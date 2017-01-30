@@ -77,10 +77,15 @@ public
         vocab_hash[prefix] = {'@id' => uri}
       end
     }
-    # KL: olac context
-    hash = {"ns2" => "olac:"}
+    hash = {}
     predefined_properties.each_pair { |key, value| hash[key] = value }
     Hash[*vocab_hash.sort.flatten].each_pair { |key, value| hash[key] = value }
+
+    # KL
+    hash["marcrel"] = {"@id" => "http://www.loc.gov/loc.terms/relators/"}
+    hash["dcterms"] = {"@id" => "http://purl.org/dc/terms/"}
+    hash["dc"]      = {"@id" => "http://purl.org/dc/elements/1.1/"}
+
     hash
   end
 

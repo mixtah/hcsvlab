@@ -5,8 +5,8 @@
 
 = form_tag({controller: 'collections', action: 'update_collection'}, method: 'put', :id => 'update_collection_form') do
 
-  = label_tag :collection_name, 'Collection Name:'
-  = text_field_tag :collection_name, @collection.name, required: true
+  -#= label_tag :collection_name, 'Collection Name:'
+  -#= text_field_tag :collection_name, @collection.name, required: true
 
   = label_tag :collection_title, 'Collection Title:'
   = text_field_tag :collection_title, @collection_title, required: true
@@ -21,17 +21,11 @@
   = label_tag :collection_creator, 'Collection Creator:'
   = text_field_tag :collection_creator, @collection_creator, required: true
 
-
-
   = label_tag :collection_owner, 'Collection Owner:'
   = text_field_tag :collection_owner, @collection_owner, required: true
 
-  = label_tag :collection_linguistic_field, 'OLAC Linguistic Subject:'
-  - @collection_olac_properties.each_with_index do |(k, v), i|
-    - olac_name = "collection_olac_name_#{i}"
-    - olac_value = "collection_olac_value_#{i}"
-    = select_tag olac_name, options_for_select(MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert, k), required: true
-    = text_field_tag olac_value, v, required: true
+  = render partial: 'display_additional_olac', locals: {collection_olac_properties: @collection_olac_properties}
+
 
   = label_tag :collection_abstract, 'Collection Abstract:'
   = text_area_tag :collection_abstract, @collection_abstract, required: true
@@ -48,16 +42,19 @@
   = label_tag :licence_id, 'Licence'
   = select_tag :licence_id, options_for_select(@collection_licences.map {|l| [l.name, l.id]}), include_blank: true
 
+  = render 'display_additional_metadata'
+
+  .form-actions
+    = submit_tag 'Update', :class => "btn btn-primary"
+    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-danger"
+    = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+
 -#= form_tag({controller: 'collections', action: 'web_add_item'}, method: 'post', :id => 'add_item_form') do
 -#  = label_tag :item_name, 'Item Name:'
 -#  = text_field_tag :item_name, @item_name, required: true
 -#  = label_tag :item_title, 'Item Title:'
 -#  = text_field_tag :item_title, @item_title, required: true
 
-  = render 'display_additional_metadata'
 
-  .form-actions
-    = submit_tag 'Create', :class => "btn btn-primary"
-    = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
 
 = render 'shared/nectar_attribution'
