@@ -38,7 +38,7 @@ nci:
 
 staging:
   <<: *common
-  hostname: https://alveo-staging1.intersect.org.au
+  hostname: https://alveo-staging.sol1.net
   secret_token:
   aaf_rc_login_url:
 
