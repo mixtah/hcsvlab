@@ -30,11 +30,19 @@ HcsvlabWeb::Application.routes.draw do
   get 'catalog-edit/:id/edit', :to => 'collections#edit_collection', :as => 'edit_collection'
   put 'catalog-update/:id', :to => 'collections#update_collection', :as => 'update_collection'
   delete 'catalog-delete/:id', :to => 'collections#delete_collection', :as => 'delete_collection'
-
-
   get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'
   post 'catalog-create', :to => 'collections#web_create_collection'
 
+  # collection attachment
+  resources :collections do
+    # without collection_id can't proceed, so must include that
+    resources :attachments, only: [:index, :new, :create]
+  end
+  get 'collections/:collection_id/attachments', :to => 'attachments#index', :as => 'attachments'
+  get 'collections/:collection_id/attachments/new', :to => 'attachments#new', :as => 'new_attachment'
+  post 'collections/:collection_id/attachments', :to => 'attachments#create', :as => 'create_attachment'
+  # can proceed with own attachment id
+  resources :attachments, only: [:show, :edit, :update, :destroy]
 
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'

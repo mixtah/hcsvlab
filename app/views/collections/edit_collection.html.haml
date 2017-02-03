@@ -35,6 +35,10 @@
   :javascript
     var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
 
+  -#= render 'display_attachment', locals: {attachment_url: @create_attachment_url}
+  #container-fluid
+    %iframe{:frameborder => "0", :src => @attachment_url, :style => "width: 100%; height: 100%;"}
+
 
   = label_tag :approval_required, 'Privacy: (Approval required for collection access)'
   = hidden_field_tag :approval_required, 'public'
@@ -46,7 +50,7 @@
 
   .form-actions
     = submit_tag 'Update', :class => "btn btn-primary"
-    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-danger"
+    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-warning"
     = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
 
 -#= form_tag({controller: 'collections', action: 'web_add_item'}, method: 'post', :id => 'add_item_form') do

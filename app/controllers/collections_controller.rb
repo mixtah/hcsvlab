@@ -473,6 +473,9 @@ class CollectionsController < ApplicationController
 
     # additional metadata
     @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
+
+    #   attachment url
+    @attachment_url = new_attachment_url(@collection)
   end
 
   def licences
@@ -490,7 +493,7 @@ class CollectionsController < ApplicationController
       validate_required_web_fields(
           params,
           {
-              :collection_name => 'collection name',
+              # :collection_name => 'collection name',
               :collection_title => 'collection title',
               :collection_language => 'collection language',
               :collection_creation_date => 'collection creation date',
@@ -530,7 +533,8 @@ class CollectionsController < ApplicationController
       json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
 
       # Ingest new collection
-      name = Collection.sanitise_name(params[:collection_name])
+      # name = Collection.sanitise_name(params[:collection_name])
+      name = Collection.sanitise_name(params[:id])
       msg = create_collection_core(name, json_ld, current_user, params[:licence_id], @approval_required == 'private', params[:collection_text])
       redirect_to collection_path(id: name), notice: msg
     rescue ResponseError => e
@@ -549,10 +553,16 @@ class CollectionsController < ApplicationController
     end
 
     name = collection.name
+    corpus_dir = collection.corpus_dir
 
-    # unless collection.destroy.nil?
-    unless collection.nil?
-      flash[:notice] = "(To implement) Collection with the name '#{name} has been removed successfully.'"
+    unless collection.destroy.nil?
+      # unless collection.nil?
+      #   delete directory as well
+      # corpus_dir = MetadataHelper::corpus_dir_by_name(name)
+      logger.debug "remove directory #{corpus_dir}"
+      FileUtils.remove_dir(corpus_dir, true)
+
+      flash[:notice] = "Collection with the name '#{name} has been removed successfully.'"
       redirect_to :collections
     end
 

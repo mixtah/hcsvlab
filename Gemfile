@@ -122,6 +122,13 @@ gem 'keepass-password-generator'
 
 gem "whenever", require: false
 
-# KL
+# KL: controller enhancement
 gem 'kramdown'
 gem 'simplemde-rails'
+# file upload
+# https://github.com/Phifo/jquery-fileupload-rails-carrierwave
+gem 'jquery-fileupload-rails', '0.4.1'
+gem 'file_validators'
+# at this stage we're on rails 3, so use 0.11.0
+gem 'carrierwave', "0.11.0"
+gem 'mini_magick'

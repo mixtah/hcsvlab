@@ -12,6 +12,7 @@ class Collection < ActiveRecord::Base
   has_many :items
 
   has_many :collection_properties, dependent: :destroy
+  has_many :attachments, dependent: :destroy
 
   belongs_to :owner, class_name: 'User'
   belongs_to :collection_list
@@ -39,7 +40,9 @@ class Collection < ActiveRecord::Base
     # File.join(File.dirname(self.rdf_file_path), self.name)
 
     # TODO: fix fedora.rake as well
-    File.join(Rails.application.config.api_collections_location, self.name)
+    # File.join(Rails.application.config.api_collections_location, self.name)
+
+    MetadataHelper::corpus_dir_by_name(self.name)
   end
 
   def set_licence(licence)

@@ -80,10 +80,14 @@ class ApplicationController < ActionController::Base
 
   def api_check
     if request.format == "json"
-      call = UserApiCall.new(:request_time => Time.now)
-      call.item_list = params[:controller] == "item_lists"
-      call.user = current_user
-      call.save
+      # KL: ignore attachment upload
+      logger.debug "api_check: fullpath=#{request.fullpath}"
+      unless request.fullpath.include? "/attachments"
+        call = UserApiCall.new(:request_time => Time.now)
+        call.item_list = params[:controller] == "item_lists"
+        call.user = current_user
+        call.save
+      end
     end
   end
 

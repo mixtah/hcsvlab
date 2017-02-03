@@ -45,6 +45,7 @@
 
   .form-actions
     = submit_tag 'Create', :class => "btn btn-primary"
+    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-danger"
     = link_to 'Cancel', collections_path, :class => "btn"
 
 = render 'shared/nectar_attribution'
