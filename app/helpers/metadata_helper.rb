@@ -216,11 +216,11 @@ public
   #
   # Language
   #
-  LANGUAGE_HASH = {
-      'Chinese, Mandarin' => 'Chinese, Mandarin',
-      'English' => 'English',
-      'German, Standard' => 'German, Standard'
-  }
+  # LANGUAGE_HASH = {
+  #     'Chinese, Mandarin' => 'Chinese, Mandarin',
+  #     'English' => 'English',
+  #     'German, Standard' => 'German, Standard'
+  # }
 
   #
   # Licence
@@ -386,7 +386,20 @@ public
     JSON.parse(hash.to_json)
   end
 
-  def self.demo_text
+  def self::load_metadata_from_collection(collection_name)
+    collection = Collection.find_by_name(collection_name)
+
+    properties = {}
+    collection.collection_properties.each do |prop|
+      # remove the leading or trailing quote
+      # properties[prop.property.gsub!(/^\"|\"?$/, '')] = prop.value
+      properties[prop.property] = prop.value
+    end
+
+    properties
+  end
+
+  def self::demo_text
     text = %(
 # Intro
 Go ahead, play around with the editor! Be sure to check out **bold** and *italic* styling, or even [links](https://google.com). You can type the Markdown syntax, use the toolbar, or use shortcuts like `cmd-b` or `ctrl-b`.

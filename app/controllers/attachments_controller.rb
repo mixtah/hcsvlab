@@ -1,4 +1,3 @@
-# class AttachmentsController < SimpleApplicationController
 class AttachmentsController < ActionController::Base
   # GET /collections/:collection_id/attachments
   # GET /collections/:collection_id/attachments.json

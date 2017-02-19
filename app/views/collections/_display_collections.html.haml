@@ -1,23 +1,34 @@
-.sidenav.static.span3.facets
-  %h4{data: {toggle: 'collapse', target: '.facets-collapse'}} Collections
-  -#%ul.nav
-  - if @collections.empty? && @collection_lists.empty?
-    %li
-      %h5 Empty
-  -else
-    - @collection_lists.each do |list|
-      .facets-collapse.collapse
-        .facet_limit
-          %h5.twiddle
-            = list.name
-          %ul
-            .facet_box
-              - list.collections.order(:name).pluck(:name).each do |name|
-                - selectedClass="active" if (name == (params[:id]))
-                %li{ :class => selectedClass }
-                  = link_to name, collection_path(name)
-    - @collections.each do |collection|
-      - selectedClass="active" if (collection.name == (params[:id]))
-      %li{ :class => selectedClass }
-        = link_to collection.name, collection_path(collection.name)
 
+
+- if @collections.empty? && @collection_lists.empty?
+  %li
+    %h5 Empty
+- unless @collection_lists.empty?
+  - @collection_lists.each do |list|
+    %h3
+      #{list.name}
+      %span.badge #{list.collections.size}
+    %table.table.table-hover
+    %thead
+      %tr
+        %th Collection
+        %th Abstract
+    %tbody
+      - list.collections.order(:name).each do |collection|
+        %tr
+          %td
+            %a{:href => "#{collection_path(collection.name)}"} #{collection.name}
+          %td #{MetadataHelper::load_metadata_from_collection(collection.name)[MetadataHelper::PFX_ABSTRACT]}
+
+- unless @collections.empty?
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Collection
+        %th Abstract
+    %tbody
+      - @collections.each do |collection|
+        %tr
+          %td
+            %a{:href => "#{collection_path(collection.name)}"} #{collection.name}
+          %td #{MetadataHelper::load_metadata_from_collection(collection.name)[MetadataHelper::PFX_ABSTRACT]}

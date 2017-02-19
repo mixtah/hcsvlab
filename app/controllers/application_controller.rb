@@ -82,6 +82,7 @@ class ApplicationController < ActionController::Base
     if request.format == "json"
       # KL: ignore attachment upload
       logger.debug "api_check: fullpath=#{request.fullpath}"
+
       unless request.fullpath.include? "/attachments"
         call = UserApiCall.new(:request_time => Time.now)
         call.item_list = params[:controller] == "item_lists"

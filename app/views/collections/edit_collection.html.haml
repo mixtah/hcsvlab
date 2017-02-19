@@ -1,64 +1,74 @@
-%h1 Edit Collection
-%h2= @collection.name
 %link{:rel=>"stylesheet", :href=>"/assets/simplemde.min.css"}
 %script{:src=>"/assets/simplemde.min.js"}
 
-= form_tag({controller: 'collections', action: 'update_collection'}, method: 'put', :id => 'update_collection_form') do
+= render partial: 'display_breadcrumb', locals: {nav_links: {'collections' => collections_path, "#{@collection.name}" => nil}}
 
-  -#= label_tag :collection_name, 'Collection Name:'
-  -#= text_field_tag :collection_name, @collection.name, required: true
+-#%h2= @collection.name
 
-  = label_tag :collection_title, 'Collection Title:'
-  = text_field_tag :collection_title, @collection_title, required: true
+.container-fluid
+  .row-fluid
+    .page-header
+      %h2=  @collection.name
 
-  = label_tag :collection_language, 'Collection Language:'
-  = select_tag :collection_language, options_for_select(MetadataHelper::LANGUAGE_HASH, @collection_language), include_blank: true, required: true
+  = form_tag({controller: 'collections', action: 'update_collection'}, method: 'put', :id => 'update_collection_form') do
 
-  = label_tag :collection_creation_date, 'Collection Creation Date:'
-  -#= date_select :collection_creation_date, @collection_creation_date, required: true
-  = text_field_tag :collection_creation_date, @collection_creation_date, required: true
+    -#= label_tag :collection_name, 'Collection Name:'
+    -#= text_field_tag :collection_name, @collection.name, required: true
 
-  = label_tag :collection_creator, 'Collection Creator:'
-  = text_field_tag :collection_creator, @collection_creator, required: true
+    = label_tag :collection_title, 'Collection Title:'
+    = text_field_tag :collection_title, @collection_title, required: true
 
-  = label_tag :collection_owner, 'Collection Owner:'
-  = text_field_tag :collection_owner, @collection_owner, required: true
+    = label_tag :collection_language, 'Collection Language:'
+    = select_tag :collection_language, options_for_select(@collection_languages, @collection_language), id: 'language_select', required: true
 
-  = render partial: 'display_additional_olac', locals: {collection_olac_properties: @collection_olac_properties}
+    = label_tag :collection_creation_date, 'Collection Creation Date:'
+    -#= date_select :collection_creation_date, @collection_creation_date, required: true
+    = text_field_tag :collection_creation_date, @collection_creation_date, required: true
 
+    = label_tag :collection_creator, 'Collection Creator:'
+    = text_field_tag :collection_creator, @collection_creator, required: true
 
-  = label_tag :collection_abstract, 'Collection Abstract:'
-  = text_area_tag :collection_abstract, @collection_abstract, required: true
+    = label_tag :collection_owner, 'Collection Owner:'
+    = text_field_tag :collection_owner, @collection_owner, required: true
 
-  = label_tag :collection_text, 'Collection Description:'
-  = text_area_tag :collection_text, @collection.text, required: true
-  :javascript
-    var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
-
-  -#= render 'display_attachment', locals: {attachment_url: @create_attachment_url}
-  #container-fluid
-    %iframe{:frameborder => "0", :src => @attachment_url, :style => "width: 100%; height: 100%;"}
+    = render partial: 'display_additional_olac', locals: {collection_olac_properties: @collection_olac_properties}
 
 
-  = label_tag :approval_required, 'Privacy: (Approval required for collection access)'
-  = hidden_field_tag :approval_required, 'public'
-  = check_box_tag :approval_required, 'private', @approval_required == 'private'
-  = label_tag :licence_id, 'Licence'
-  = select_tag :licence_id, options_for_select(@collection_licences.map {|l| [l.name, l.id]}), include_blank: true
+    = label_tag :collection_abstract, 'Collection Abstract:'
+    = text_area_tag :collection_abstract, @collection_abstract, required: true
 
-  = render 'display_additional_metadata'
+    = label_tag :collection_text, 'Collection Description:'
+    = text_area_tag :collection_text, @collection.text, required: true
+    :javascript
+      var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
 
-  .form-actions
-    = submit_tag 'Update', :class => "btn btn-primary"
-    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-warning"
-    = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+    -#= render partial: 'display_attachment', locals: {attachment_url: @create_attachment_url}
+    #container-fluid
+      %iframe{:id => "iFrame", :frameborder => "0", :src => @attachment_url, :style => "width: 100%; height: 100%;", :scrolling => "no"}
 
--#= form_tag({controller: 'collections', action: 'web_add_item'}, method: 'post', :id => 'add_item_form') do
--#  = label_tag :item_name, 'Item Name:'
--#  = text_field_tag :item_name, @item_name, required: true
--#  = label_tag :item_title, 'Item Title:'
--#  = text_field_tag :item_title, @item_title, required: true
+
+    = label_tag :approval_required, 'Privacy: (Approval required for collection access)'
+    = hidden_field_tag :approval_required, 'public'
+    = check_box_tag :approval_required, 'private', @approval_required == 'private'
+    = label_tag :licence_id, 'Licence'
+    = select_tag :licence_id, options_for_select(@collection_licences.map {|l| [l.name, l.id]}, @collection.licence_id), include_blank: true
+
+    = render 'display_additional_metadata'
+
+    .form-actions
+      = submit_tag 'Update', :class => "btn btn-primary"
+      = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-warning"
+      = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+
 
 
 
 = render 'shared/nectar_attribution'
+
+:javascript
+  $("#language_select").select2({
+    width: 'resolve',
+    minimumInputLength: 2
+  })
+
+  $('#iFrame').iFrameResize();

@@ -1,3 +1,5 @@
+require 'set'
+
 class Attachment < ActiveRecord::Base
   before_save :update_attributes
 
@@ -38,11 +40,43 @@ class Attachment < ActiveRecord::Base
         "name" => self.file_name,
         "size" => self.file_size,
         "url" => file.url,
-        "thumbnail_url" => file.thumb.url,
+        "thumbnail_url" => file_icon(file.thumb.url),
+        # "icon" => file_icon(file.thumb.url),
         "delete_url" => "/attachments/#{id}",
         "delete_type" => "DELETE"
     }
   end
+
+  def file_icon(file_name)
+
+    rlt = nil
+    # \.        # match a literal dot
+    # [^.]+     # match 1 or more of any character but dot
+    # $         # anchor to match end of input
+    file_ext = file_name.downcase[/\.[^.]+$/]
+
+    img_ext_set = %w(.jpeg .jpg .png .gif .bmp).to_set
+
+    if img_ext_set.include?(file_ext)
+      #   image file has thumb nail, no icon needed
+      rlt = file_name
+    else
+      ext_set = %w(.3gp .7z .ace .ai .aif .aiff .amr .asf .asx .bat .bin .bmp .bup .cab .cbr .cda .cdl .cdr .chm .dat .divx .dll .dmg .doc .dss .dvf .dwg .eml .eps .exe .fla .flv .gif .gz .hqx .htm .html .ifo .indd .iso .jar .jpeg .jpg .lnk .log .m4a .m4b .m4p .m4v .mcd .mdb .mid .mov .mp2 .mp4 .mpeg .mpg .msi .mswmm .ogg .pdf .png .pps .ps .psd .pst .ptb .pub .qbb .qbw .qxd .ram .rar .rm .rmvb .rtf .sea .ses .sit .sitx .ss .swf .tgz .thm .tif .tmp .torrent .ttf .txt .vcd .vob .wav .wma .wmv .wps .xls .xpi .zip).to_set
+
+      icon = '.unknown'
+
+      unless file_ext.nil?
+        icon = file_ext if ext_set.include?(file_ext)
+      end
+
+      rlt = '/assets/fileicons/file_extension_' + icon[1..-1] + '.png'
+    end
+
+    logger.debug "Attachment.file_icon file_name=#{file_name}, rlt=#{rlt}"
+
+    rlt
+  end
+
 
   # errors_messages is from validation Errors[:file]
   def to_jq_error(errors)
@@ -62,4 +96,7 @@ class Attachment < ActiveRecord::Base
     # MetadataHelper::corpus_dir_by_name(Collection.find(self.collection_id).name)
     Rails.root.join("public", "collections", self.collection_id.to_s)
   end
+
+
+
 end

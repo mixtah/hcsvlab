@@ -10,7 +10,8 @@
   = text_field_tag :collection_title, @collection_title, required: true
 
   = label_tag :collection_language, 'Collection Language:'
-  = select_tag :collection_language, options_for_select(MetadataHelper::LANGUAGE_HASH, 'English'), include_blank: true, required: true
+  -#= select_tag :collection_language, options_for_select(MetadataHelper::LANGUAGE_HASH, 'English'), include_blank: true, required: true
+  = select_tag :collection_language, options_for_select(@collection_languages, @collection_language), id: 'language_select', required: true
 
   = label_tag :collection_creation_date, 'Collection Creation Date:'
   -#= date_select :collection_creation_date, @collection_creation_date, required: true
@@ -49,3 +50,9 @@
     = link_to 'Cancel', collections_path, :class => "btn"
 
 = render 'shared/nectar_attribution'
+
+:javascript
+  $("#language_select").select2({
+    width: 'resolve',
+    minimumInputLength: 2
+  })

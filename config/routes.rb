@@ -3,13 +3,16 @@ HcsvlabWeb::Application.routes.draw do
   catalogRoutesConstraints = {:itemId => /[^\/]+/}
   catalogRoutesConstraintsIncludingJson = {:itemId => /(?:(?!\.json|\/).)+/i}
 
-  root :to => "catalog#index"
+  # root :to => "catalog#index"
+  root :to => "collections#index"
+  get "/", :to => 'collections#index', :as => 'collection_index'
 
   get "version", :to => "application#version"
   get "metrics", :to => 'application#metrics', :as => 'view_metrics'
   get "metrics/download", :to => 'application#metrics_download', :as => 'download_metrics'
 
-  get "/", :to => 'catalog#index', :as => 'catalog_index'
+  # get "/", :to => 'catalog#index', :as => 'catalog_index'
+  get "catalogs", :to => 'catalog#index', :as => 'catalog_index'
   get "catalog/advanced_search", :to => 'catalog#advanced_search', :as => 'catalog_advanced_search'
   get "catalog/searchable_fields", :to => 'catalog#searchable_fields', :as => 'catalog_searchable_fields'
   get "catalog/search", :to => 'catalog#search', :as => 'catalog_search'
@@ -23,7 +26,8 @@ HcsvlabWeb::Application.routes.draw do
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
 
   # Collection definitions
-  get "catalog", :to => 'collections#index', :as => 'collections'
+  # get "catalog", :to => 'collections#index', :as => 'collections'
+  get "collections", :to => 'collections#index', :as => 'collections'
   get "catalog/:id", :to => 'collections#show', :as => 'collection'
   post "catalog/:id", :to => 'collections#add_items_to_collection', :as => 'collection'
   # KL: edit collection
@@ -47,7 +51,7 @@ HcsvlabWeb::Application.routes.draw do
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
   post "catalog", :to => 'collections#create', :as => 'collections'
-  delete "catalog/:collectionId/:itemId",:to => 'collections#delete_item_from_collection', :as => 'delete_collection_item', :constraints => catalogRoutesConstraintsIncludingJson
+  delete "catalog/:collectionId/:itemId", :to => 'collections#delete_item_from_collection', :as => 'delete_collection_item', :constraints => catalogRoutesConstraintsIncludingJson
   put "catalog/:collectionId/:itemId", :to => 'collections#update_item', :as => 'update_collection_item', :constraints => catalogRoutesConstraints
   post "catalog/:collectionId/:itemId", :to => 'collections#add_document_to_item', :as => 'add_item_document', :constraints => catalogRoutesConstraints
   delete "catalog/:collectionId/:itemId/document/:filename", :to => 'collections#delete_document_from_item', :as => 'delete_item_document', :filename => /.*/, :constraints => catalogRoutesConstraints
@@ -70,9 +74,6 @@ HcsvlabWeb::Application.routes.draw do
 
   post 'catalog/download_items', :to => 'catalog#download_items', :as => 'catalog_download_items_api'
   #get 'catalog/download_annotation/:id', :to => 'catalog#download_annotation', :as => 'catalog_download_annotation'
-
-
-
 
 
   get "add-item/:id", :to => 'collections#web_add_item', :as => 'web_add_item'
@@ -99,20 +100,20 @@ HcsvlabWeb::Application.routes.draw do
   end
 
   resources :item_lists, :only => [:index, :show, :create, :update, :destroy] do
-      collection do
-        post 'add_items'
-      end
+    collection do
+      post 'add_items'
+    end
 
-      member do
-        post 'clear'
-        get 'concordance_search'
-        get 'frequency_search'
-        get 'download_config_file'
-        get 'download_item_list'
-        post 'share'
-        post 'unshare'
-        post 'aspera_transfer_spec'
-      end
+    member do
+      post 'clear'
+      get 'concordance_search'
+      get 'frequency_search'
+      get 'download_config_file'
+      get 'download_item_list'
+      post 'share'
+      post 'unshare'
+      post 'aspera_transfer_spec'
+    end
   end
 
   # resources :media_items, :transcripts

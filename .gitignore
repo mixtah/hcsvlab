@@ -20,6 +20,10 @@
 /coverage
 
 public/assets/**
+public/uploads/**
+public/collections/**
+
+bin/**
 
 *.swp
 

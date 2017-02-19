@@ -7,7 +7,8 @@ class AttachmentUploader < CarrierWave::Uploader::Base
   # include CarrierWave::RMagick
   include CarrierWave::MiniMagick
 
-  # include CarrierWave::MimeTypes
+  include CarrierWave::MimeTypes
+  process :set_content_type
 
   # Choose what kind of storage to use for this uploader:
   storage :file
@@ -37,14 +38,27 @@ class AttachmentUploader < CarrierWave::Uploader::Base
   # end
 
   # Create different versions of your uploaded files:
-  version :thumb, :if => :image? do
-    process :resize_to_fit => [50, 50]
+  version :thumb do
+    process :resize_to_fit => [50, 50], :if => :image?
+    # process :pdf_preview => [50, 50], :if => :pdf?
+    # process :get_geometry
+
+    # We need to change the extension for PDF thumbnails to '.jpg'
+    # def full_filename(filename)
+    #   filename = File.replace_extension(filename, '.jpg') if File.extname(filename)=='.pdf'
+    #   "thumb_#{filename}"
+    # end
   end
+
 
   # Add a white list of extensions which are allowed to be uploaded.
   # For images you might use something like this:
   # def extension_white_list
   #   %w(jpg jpeg gif png pdf txt json)
+  # end
+  # Extensions which are allowed to be uploaded.
+  # def extension_white_list
+  #   %w(jpg jpeg gif png bmp pdf doc docx txt mp3 xls xlsx n3)
   # end
 
   # Override the filename of the uploaded files:
@@ -53,9 +67,29 @@ class AttachmentUploader < CarrierWave::Uploader::Base
   #   "something.jpg" if original_filename
   # end
 
-  protected
-  def image?(new_file)
-    new_file.content_type.start_with? 'image'
+  private
+
+  # def thumbable?(file)
+  #   image?(file)
+  # end
+
+  def image?(file)
+    # Check the model first (see https://github.com/carrierwaveuploader/carrierwave/issues/1315)
+    # return model.is_image? if model.content_type.present?
+    file.content_type.include? 'image'
   end
+
+  # def pdf?(file)
+  #   # Check the model first (see https://github.com/carrierwaveuploader/carrierwave/issues/1315)
+  #   # return model.is_pdf? if model.content_type.present?
+  #   file.content_type == 'application/pdf'
+  # end
+
+  # def get_geometry
+  #   if (@file)
+  #     img = ::Magick::Image::read(@file.file).first
+  #     @geometry = {:width => img.columns, :height => img.rows}
+  #   end
+  # end
 
 end

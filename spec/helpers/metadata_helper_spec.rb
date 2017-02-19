@@ -2,6 +2,7 @@ require 'rails_helper'
 require "#{Rails.root}/app/models/collection.rb"
 require "#{Rails.root}/app/models/collection_property.rb"
 
+
 RSpec.describe MetadataHelper, :type => :helper do
 
   describe "metadata_helper test" do

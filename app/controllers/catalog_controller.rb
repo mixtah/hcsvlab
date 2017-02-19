@@ -326,9 +326,12 @@ class CatalogController < ApplicationController
         flash[:error] = "Sorry, error in search parameters."
       end
     else
+      logger.debug "catalog#index guest visit"
+
       respond_to do |format|
         format.json { render :nothing => true, :status => 406 }
-        format.html {}
+        # format.html { render :template => 'collections/index'}
+        format.html { redirect_to controller: 'collections'}
       end
     end
   end

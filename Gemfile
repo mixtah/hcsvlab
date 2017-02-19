@@ -21,12 +21,8 @@ group :development, :test do
   gem "bundler-audit"
   gem "rspec-rails"
   gem "factory_girl_rails"
-  # cucumber gems
   gem "quiet_assets"
-  gem "cucumber"
   gem "capybara"
-  gem "database_cleaner"
-  #gem "spork"
   gem "launchy"    # So you can do Then show me the page
 end
 
@@ -44,7 +40,10 @@ group :development do
 end
 
 group :test do
+  # https://github.com/cucumber/cucumber-rails/blob/master/README.md
+  # For Rails 3.x support, use version 1.4.5
   gem "cucumber-rails", :require => false
+  gem 'database_cleaner'
   gem "shoulda"
   gem "simplecov", ">=0.3.8", :require => false
   gem 'simplecov-rcov'
@@ -132,3 +131,10 @@ gem 'file_validators'
 # at this stage we're on rails 3, so use 0.11.0
 gem 'carrierwave', "0.11.0"
 gem 'mini_magick'
+# gem 'rmagick', '~> 2.15', '>= 2.15.4'
+
+# Public domain file icons served through the Rails asset pipeline
+gem 'rails-file-icons'
+
+# http://stackoverflow.com/questions/35893584/nomethoderror-undefined-method-last-comment-after-upgrading-to-rake-11
+gem 'rake', '< 11.0'

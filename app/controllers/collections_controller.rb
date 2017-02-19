@@ -37,10 +37,12 @@ class CollectionsController < ApplicationController
   #
   #
   def show
-    @collections = collections_by_name
-    @collection_lists = lists_by_name
+    # @collections = collections_by_name
+    # @collection_lists = lists_by_name
 
     @collection = Collection.find_by_name(params[:id])
+    @attachment_url = collection_attachments_path(@collection.id)
+
     respond_to do |format|
       if @collection.nil? or @collection.name.nil?
         format.html {
@@ -48,7 +50,7 @@ class CollectionsController < ApplicationController
           redirect_to collections_path }
         format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
       else
-        format.html { render :index }
+        format.html { render :show }
         format.json {}
       end
     end
@@ -167,20 +169,25 @@ class CollectionsController < ApplicationController
 
     # mandatory params
     @collection_language = params[:collection_language]
+    @collection_language = 'eng - English' if @collection_language.nil?
+    @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
+
+
+
     @collection_creation_date = params[:collection_creation_date]
     @collection_creator = params[:collection_creator]
     @collection_linguistic_field_name = params[:collection_linguistic_field_name]
     @collection_linguistic_field_value = params[:collection_linguistic_field_value]
 
-    @collection_licences = {}
+    @collection_licences = licences
 
     if request.get?
       # web_new_collection
 
-      @collection_licences = licences
-      if @collection_licences.nil?
-        @collection_licences = {"MIT" => "MIT"}
-      end
+      # @collection_licences = licences
+      # if @collection_licences.nil?
+      #   @collection_licences = {"MIT" => "MIT"}
+      # end
 
       # @collection_olac_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert
 
@@ -462,6 +469,9 @@ class CollectionsController < ApplicationController
     @collection_title = properties[MetadataHelper::PFX_TITLE]
     @collection_owner = properties[MetadataHelper::PFX_OWNER]
     @collection_language = properties[MetadataHelper::PFX_LANGUAGE]
+    @collection_language = 'eng - English' if @collection_language.nil?
+    @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
+
     @collection_creation_date = properties[MetadataHelper::PFX_CREATION_DATE]
     @collection_creator = properties[MetadataHelper::PFX_CREATOR]
     @collection_abstract = properties[MetadataHelper::PFX_ABSTRACT]
@@ -836,7 +846,6 @@ class CollectionsController < ApplicationController
   end
 
   # Ingests a list of items
-  # TODO: collection_enhancement
   def ingest_items(corpus_dir, items)
     items_ingested = []
     items.each do |item|
