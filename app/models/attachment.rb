@@ -40,14 +40,14 @@ class Attachment < ActiveRecord::Base
         "name" => self.file_name,
         "size" => self.file_size,
         "url" => file.url,
-        "thumbnail_url" => file_icon(file.thumb.url),
+        "thumbnail_url" => Attachment.file_icon(file.thumb.url),
         # "icon" => file_icon(file.thumb.url),
         "delete_url" => "/attachments/#{id}",
         "delete_type" => "DELETE"
     }
   end
 
-  def file_icon(file_name)
+  def self.file_icon(file_name)
 
     rlt = nil
     # \.        # match a literal dot

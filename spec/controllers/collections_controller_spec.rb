@@ -1,21 +1,23 @@
-require 'rails_helper'
+require 'spec_helper'
 
 RSpec.describe CollectionsController, :type => :controller do
   before :each do
+    request.env["HTTP_ACCEPT"] = 'text/html'
     @collection = create(:collection)
   end
 
   # shared_examples 'public access to controllers' do
-  describe 'GET collection home page', :focus => true do
-    context 'with params[:name]' do
+  describe 'GET collection home page' do
+    context 'with params[:name]', :focus => true do
       it "populates a specific collection" do
-        get :index, name: @collection.name
-        expect(assigns(:collection)).to match_array([@collection])
+        get :show, id: @collection.name
+        expect(assigns(:collection)).to eq @collection
+        expect(assigns(:attachment_url)).to eq collection_attachments_path(@collection.id)
       end
 
       it "renders the :index template" do
         # = render :file => '/collections/show'
-        get :index, name: @collection.name
+        get :show, id: @collection.name
         expect(response).to render_template :show
 
       end
@@ -24,37 +26,40 @@ RSpec.describe CollectionsController, :type => :controller do
 
     context 'without params' do
       it "populates an array of all collections" do
-
+        get :index
+        expect(assigns(:collections)).to match_array(controller.collections_by_name)
+        expect(assigns(:collection_lists)).to match_array(controller.lists_by_name)
       end
 
       it "renders the :index template" do
-
+        get :index
+        expect(response).to render_template :index
       end
     end
   end
 
   describe "GET #show" do
     it "assigns the requested Collection object to @collection" do
-
+      pending "..."
     end
 
     it "renders the :show template" do
-
+      pending "..."
     end
   end
   # end
 
 
   describe 'admin access' do
-
+    pending "..."
   end
 
   describe 'researcher access' do
-
+    pending "..."
   end
 
   describe 'data owner access' do
-
+    pending "..."
   end
 
 
