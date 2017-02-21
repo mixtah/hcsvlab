@@ -19,7 +19,7 @@ gem 'jquery-ui-rails'
 group :development, :test do
   gem "brakeman"
   gem "bundler-audit"
-  gem "rspec-rails"
+  gem "rspec-rails", '2.14.2'
   gem "factory_girl_rails"
   gem "quiet_assets"
   gem "capybara"
@@ -132,9 +132,6 @@ gem 'file_validators'
 gem 'carrierwave', "0.11.0"
 gem 'mini_magick'
 # gem 'rmagick', '~> 2.15', '>= 2.15.4'
-
-# Public domain file icons served through the Rails asset pipeline
-gem 'rails-file-icons'
 
 # http://stackoverflow.com/questions/35893584/nomethoderror-undefined-method-last-comment-after-upgrading-to-rake-11
 gem 'rake', '< 11.0'
