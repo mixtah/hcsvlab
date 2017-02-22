@@ -177,6 +177,8 @@ GEM
     docopt (0.5.0)
     domain_name (0.5.24)
       unf (>= 0.0.5, < 1.0.0)
+    doorkeeper (3.1.0)
+      railties (>= 3.2)
     ebnf (0.3.0)
       rdf
       sxp
@@ -328,6 +330,7 @@ GEM
       faye-websocket (>= 0.4.4, < 0.5.0)
       http_parser.rb (~> 0.5.3)
     polyglot (0.3.5)
+    power_assert (0.4.1)
     pry (0.9.12.2)
       coderay (~> 1.0.5)
       method_source (~> 0.8)
@@ -506,6 +509,8 @@ GEM
     tabs_on_rails (2.2.0)
     temple (0.6.10)
     terminal-table (1.4.5)
+    test-unit (3.2.3)
+      power_assert
     therubyracer (0.12.1)
       libv8 (~> 3.16.14.0)
       ref
@@ -560,7 +565,7 @@ DEPENDENCIES
   bagit
   better_errors
   binding_of_caller
-  blacklight
+  blacklight (= 4.2.1)
   bootstrap-sass
   brakeman
   bundler-audit
@@ -578,6 +583,7 @@ DEPENDENCIES
   database_cleaner
   devise (~> 2.2.4)
   devise_aaf_rc_authenticatable!
+  doorkeeper
   email_spec
   factory_girl_rails
   file_validators
@@ -615,7 +621,7 @@ DEPENDENCIES
   request_exception_handler
   rsolr
   rspec-rails (= 2.14.2)
-  rubyzip (= 0.9.9)
+  rubyzip
   rvm-capistrano (~> 1)
   sass-rails (~> 3.2.3)
   select2-rails (~> 3.5.9)
@@ -630,6 +636,7 @@ DEPENDENCIES
   spreewald
   stomp
   tabs_on_rails
+  test-unit (~> 3.0)
   therubyracer
   thin
   tinymce-rails
@@ -641,6 +648,9 @@ DEPENDENCIES
   xray-rails
   zeroclipboard-rails
   zeus
+
+RUBY VERSION
+   ruby 2.1.4p265
 
 BUNDLED WITH
    1.13.6

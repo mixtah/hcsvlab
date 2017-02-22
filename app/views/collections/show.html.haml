@@ -22,7 +22,7 @@
         %ul.nav.nav-list.text-left
           %li.nav-header Metadata
           - metadata_fields.each do |field|
-            - if field.first[0] != "Description" && field.first[0] != "Abstract"
+            - if field.first[0] != "Description" && field.first[0] != "Abstract" && field.first[0] != "RDF Type" && field.first[0] != "SPARQL Endpoint"
               %li
                 %strong
                   #{field.first[0]}:
