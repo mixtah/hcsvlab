@@ -7,7 +7,7 @@ gem 'pg'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails',   '~> 3.2.3'
+  gem 'sass-rails',   '~> 3.2.6'
   gem 'coffee-rails', '~> 3.2.1'
   gem "therubyracer"
   gem 'uglifier', '2.7.2'
@@ -83,7 +83,7 @@ gem 'blacklight', "4.2.1"
 gem 'hydra-head', "~>6.0.0"
 gem 'jettywrapper'
 
-gem "bootstrap-sass"
+gem "bootstrap-sass", "2.3.2.2"
 gem 'activerecord-tableless'
 
 gem 'stomp'
@@ -149,3 +149,4 @@ gem 'mini_magick'
 
 # http://stackoverflow.com/questions/35893584/nomethoderror-undefined-method-last-comment-after-upgrading-to-rake-11
 gem 'rake', '< 11.0'
+
