@@ -25,6 +25,9 @@ qa:
 qa2:
    <<: *common
 
+nci:
+   <<: *common
+
 staging:
   <<: *common
 

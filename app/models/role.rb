@@ -15,4 +15,8 @@ class Role < ActiveRecord::Base
   scope :researcher_roles, where(:name => RESEARCHER_ROLE)
   scope :data_owner_roles, where(:name => DATA_OWNER_ROLE)
 
+  def Role::reset_pk_seq
+    ActiveRecord::Base.connection.reset_pk_sequence!(Role.table_name)
+  end
+
 end

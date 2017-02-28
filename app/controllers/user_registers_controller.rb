@@ -1,7 +1,8 @@
 class UserRegistersController < Devise::RegistrationsController
   # based on https://github.com/plataformatec/devise/blob/v2.0.4/app/controllers/devise/registrations_controller.rb
 
-  prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  # prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  before_filter :authenticate_user!, except: [:create, :new]
 
   def profile
 
@@ -67,14 +68,29 @@ class UserRegistersController < Devise::RegistrationsController
   end
 
   def download_token
-    if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
-      current_user.reset_authentication_token!
+    # if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
+    #   current_user.reset_authentication_token!
+    # end
+
+    # KL: oauth2
+    token_user = current_user
+
+    if token_user.nil?
+      #   need to check oauth2
+      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
     end
+
+    if token_user.authentication_token.nil? #generate auth token if one doesn't already exist
+      token_user.reset_authentication_token!
+    end
+
+
 
     file = Tempfile.new("newfile")
     hash = {}
     hash[:base_url] = root_url
-    hash[:apiKey] = current_user.authentication_token
+    # hash[:apiKey] = current_user.authentication_token
+    hash[:apiKey] = token_user.authentication_token
     hash[:cacheDir] = "wrassp_cache"
     file.puts(hash.to_json)
     file.close

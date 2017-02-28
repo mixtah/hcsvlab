@@ -4,12 +4,12 @@
       .row-fluid
         = link_to "#{PROJECT_NAME}", root_path, :class => "brand"
         %ul.nav
+          %li{class: activepath_fuzzy?("collections") }
+            = link_to "Collections", root_path
           %li{ class: activepath_fuzzy?("catalog") }
-            = link_to "Discover", root_path
+            = link_to "Discover", catalog_index_path
           %li{ class: activepath_fuzzy?("item_lists") }
             = link_to "Item Lists", item_lists_path
-          %li{class: activepath_fuzzy?("collections") }
-            = link_to "Collections", collections_path
           %li
             = link_to "Help", "http://alveo.edu.au/help", :target => "_blank"
         %ul.nav.pull-right

@@ -5,6 +5,13 @@ describe User do
     it { should belong_to(:role) }
   end
 
+  describe "Initialization" do
+    it 'should have initialized status as "G"', :focus => true do
+      user = User.new
+      expect(user.status).to eq "G"
+    end
+  end
+
   describe "Named Scopes" do
     describe "Users Pending Approval Scope" do
       it "should return users that are unapproved ordered by email address" do

@@ -1,4 +1,4 @@
-<% # main container for facets/limits menu   -%>
+<% # main container for facets/limits menu    -%>
 <div id="facets" class="facets sidenav">
 
   <h4 data-toggle="collapse" data-target=".facets-collapse">
@@ -10,18 +10,20 @@
   </h4>
 
   <div class="facets-collapse">
-    <% if user_signed_in? %>
-      <%= render_search_bar %>
-    <% end %>
+    <%# allow guest search %>
+    <%# if user_signed_in? %>
+    <%= render_search_bar %>
+    <%# end %>
   </div>
-  <% if has_facet_values? %>
-    <div class="facets-collapse">
-      <%= render_facet_partials %>
-    </div>
+
+  <% if user_signed_in? && has_facet_values? %>
+      <div class="facets-collapse">
+        <%= render_facet_partials %>
+      </div>
   <% else %>
-    <ul class="nav">
-      <li><h5>No data collections available</h5></li>
-      <li><a href="account/licence_agreements" class="alert-link">Licence Agreements</a></li>
-    </ul>
+      <ul class="nav">
+        <li><h5>No data collections available</h5></li>
+        <li><a href="account/licence_agreements" class="alert-link">Licence Agreements</a></li>
+      </ul>
   <% end %>
 </div>
