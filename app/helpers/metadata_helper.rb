@@ -350,8 +350,9 @@ public
   def self::json_to_rdf_graph(json, format=:ttl)
     logger.debug "json_to_rdf_graph: json=#{json.to_s}"
     graph = RDF::Graph.new << JSON::LD::API.toRDF(json)
+
+    logger.debug "json_to_rdf_graph: graph=#{graph.dump(format)}"
     # graph.dump(format)
-    logger.debug "json_to_rdf_graph: graph=#{graph.to_s}"
     graph
   end
 

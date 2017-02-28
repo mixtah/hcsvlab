@@ -818,8 +818,7 @@ class CollectionsController < ApplicationController
   # Write item JSON metadata to RDF file and returns a hash containing :identifier, :rdf_file
   # TODO: collection_enhancement
   def write_item_metadata(corpus_dir, item_json)
-    # rdf_metadata = convert_json_metadata_to_rdf(item_json["metadata"])
-    rdf_metadata = MetadataHelper::json_to_rdf_graph(item_json["metadata"])
+    rdf_metadata = MetadataHelper::json_to_rdf_graph(item_json["metadata"]).dump(:ttl)
     item_identifiers = get_item_identifiers(item_json["metadata"])
     if item_identifiers.count == 1
       rdf_file = create_item_rdf(corpus_dir, item_identifiers.first, rdf_metadata)
