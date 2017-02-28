@@ -8,6 +8,8 @@ gem 'pg'
 # in production environments by default.
 group :assets do
   gem 'sass-rails',   '~> 3.2.6'
+  # sass must fix at 3.4.20
+  gem 'sass', '3.4.20'
   gem 'coffee-rails', '~> 3.2.1'
   gem "therubyracer"
   gem 'uglifier', '2.7.2'
@@ -149,4 +151,3 @@ gem 'mini_magick'
 
 # http://stackoverflow.com/questions/35893584/nomethoderror-undefined-method-last-comment-after-upgrading-to-rake-11
 gem 'rake', '< 11.0'
-
