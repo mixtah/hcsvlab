@@ -4,10 +4,10 @@
 
 = form_tag({controller: 'collections', action: 'web_create_collection'}, method: 'post', :id => 'create_collection_form') do
   = label_tag :collection_name, 'Collection Name:'
-  = text_field_tag :collection_name, @collection_name, required: true
+  = text_field_tag :collection_name, @collection_name, placeholder: 'collection name', required: true
 
   = label_tag :collection_title, 'Collection Title:'
-  = text_field_tag :collection_title, @collection_title, required: true
+  = text_field_tag :collection_title, @collection_title, placeholder: "collection title", required: true
 
   = label_tag :collection_language, 'Collection Language:'
   -#= select_tag :collection_language, options_for_select(MetadataHelper::LANGUAGE_HASH, 'English'), include_blank: true, required: true
@@ -15,24 +15,24 @@
 
   = label_tag :collection_creation_date, 'Collection Creation Date:'
   -#= date_select :collection_creation_date, @collection_creation_date, required: true
-  = text_field_tag :collection_creation_date, @collection_creation_date, required: true
+  = text_field_tag :collection_creation_date, @collection_creation_date, placeholder: 'dd/mm/yyyy', required: true
 
   = label_tag :collection_creator, 'Collection Creator:'
-  = text_field_tag :collection_creator, @collection_creator, required: true
+  = text_field_tag :collection_creator, @collection_creator, placeholder: 'collection creator', required: true
 
 
 
   = label_tag :collection_owner, 'Collection Owner:'
-  = text_field_tag :collection_owner, @collection_owner, required: true
+  = text_field_tag :collection_owner, @collection_owner, placeholder: 'collection owner', required: true
 
   = render partial: 'display_additional_olac', locals: {collection_olac_properties: @collection_olac_properties}
 
 
   = label_tag :collection_abstract, 'Collection Abstract:'
-  = text_area_tag :collection_abstract, @collection_abstract, required: true
+  = text_area_tag :collection_abstract, @collection_abstract, placeholder: "This is the simple abstract for the collection, within 255 letters.", required: true
 
   = label_tag :collection_text, 'Collection Description:'
-  = text_area_tag :collection_text, @collection_text, required: true
+  = text_area_tag :collection_text, @collection_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide', required: true
   :javascript
     var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
 

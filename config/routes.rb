@@ -28,7 +28,7 @@ HcsvlabWeb::Application.routes.draw do
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
 
   # Collection definitions
-  # get "catalog", :to => 'collections#index', :as => 'collections'
+  get "catalog", :to => 'collections#index', :as => 'collections'
   get "collections", :to => 'collections#index', :as => 'collections'
   get "catalog/:id", :to => 'collections#show', :as => 'collection'
   post "catalog/:id", :to => 'collections#add_items_to_collection', :as => 'collection'

@@ -124,35 +124,6 @@ class CollectionsController < ApplicationController
     redirect_to licences_path
   end
 
-  # TODO: GET #web_new_collection
-  def web_new_collection
-    # authorize! :web_create_collection, Collection
-
-    @collection_licences = licences
-    if @collection_licences.nil?
-      @collection_licences = {"MIT" => "MIT"}
-    end
-
-    @collection_olac_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert
-
-    # default value (for test)
-    @collection_name = current_user.first_name + '-' + Time.now.to_i.to_s
-    @collection_title = 'Title-' + @collection_name
-    @collection_creation_date = '19/12/2013'
-    @collection_creator = 'Michael Jackson'
-    @collection_owner = current_user.full_name
-    @collection_abstract = "This is the simple abstract for the collection, within 255 letters."
-    @collection_text = MetadataHelper::demo_text
-
-    # for new collection, empty
-    @collection_olac_properties = []
-
-    @collection_linguistic_field_value = 'The SIL Ethnologue, which collects data on the number on speakers of a language and the geographical region in which it is spoken.'
-
-    @collection_test1 = "abc"
-
-  end
-
   def web_create_collection
     authorize! :web_create_collection, Collection
     # Expose public licences and user created licences
@@ -191,27 +162,16 @@ class CollectionsController < ApplicationController
 
       # @collection_olac_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert
 
-      # default value (for test)
-      @collection_name = current_user.first_name + '-' + Time.now.to_i.to_s
-      @collection_title = 'Title-' + @collection_name
-      @collection_creation_date = '19/12/2013'
-      @collection_creator = 'Michael Jackson'
-      @collection_owner = current_user.full_name
-      @collection_abstract = "This is the simple abstract for the collection, within 255 letters."
-      @collection_text = MetadataHelper::demo_text
-
-      @licence_id = "MIT"
-
-      # for new collection, empty
-      # @collection_olac_properties = []
-
-      # @collection_linguistic_field_value = 'The SIL Ethnologue, which collects data on the number on speakers of a language and the geographical region in which it is spoken.'
-
-      # @collection_test1 = "abc"
+      @collection_name = nil
+      @collection_title = nil
+      @collection_creation_date = nil
+      @collection_creator = nil
+      @collection_owner = nil
+      @collection_abstract = nil
+      # @collection_text = MetadataHelper::demo_text
+      @collection_text = nil
 
     end
-
-    # @collection_test2 = @collection_test1 + "123"
 
     if request.post?
       begin

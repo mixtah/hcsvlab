@@ -1,7 +1,8 @@
 class UserRegistersController < Devise::RegistrationsController
   # based on https://github.com/plataformatec/devise/blob/v2.0.4/app/controllers/devise/registrations_controller.rb
 
-  prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  # prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  before_filter :authenticate_user!, except: [:create, :new]
 
   def profile
 
