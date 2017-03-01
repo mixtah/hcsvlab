@@ -14,19 +14,19 @@ common: &common
 
 development:
   <<: *common
-  hostname: https://hcsvlab.intersect.org.au
+  hostname: https://hcsvlab.alveo.edu.au
   secret_token:
   aaf_rc_login_url:
 
 qa:
   <<: *common
-  hostname: https://alveo-qa.intersect.org.au
+  hostname: https://alveo-qa.alveo.edu.au
   secret_token:
   aaf_rc_login_url:
 
 qa2:
   <<: *common
-  hostname: https://alveo-qa2.intersect.org.au
+  hostname: https://alveo-qa2.alveo.edu.au
   secret_token:
   aaf_rc_login_url:
 
@@ -44,13 +44,13 @@ staging:
 
 staging2:
   <<: *common
-  hostname: https://alveo-staging2.intersect.org.au
+  hostname: https://alveo-staging2.sol1.net
   secret_token:
   aaf_rc_login_url:
 
 test:
   <<: *common
-  hostname: https://hcsvlab.intersect.org.au
+  hostname: https://hcsvlab.alveo.edu.au
   secret_token:
   aaf_rc_login_url:
 

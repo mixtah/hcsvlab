@@ -1,33 +1,33 @@
 :development:
-  :hostname: 'dtn2.rdsi-test.intersect.org.au'
+  :hostname: 'dtn2.rdsi-test.alveo.edu.au'
   :port: '9092'
   :verify_ssl: false
   :user: 'alveo'
   :password: <%= ENV["NODE_USER_PASSWORD"] %>
 
 :qa:
-  :hostname: 'dtn2.rdsi-test.intersect.org.au'
+  :hostname: 'dtn2.rdsi-test.alveo.edu.au'
   :port: '9092'
   :verify_ssl: false
   :user: 'alveo'
   :password: <%= ENV["NODE_USER_PASSWORD"] %>
 
 :staging:
-  :hostname: 'dtn2.rdsi-test.intersect.org.au'
+  :hostname: 'dtn2.rdsi-test.alveo.edu.au'
   :port: '9092'
   :verify_ssl: false
   :user: 'alveo'
   :password: <%= ENV["NODE_USER_PASSWORD"] %>
 
 :production:
-  :hostname: 'dtn-1.intersect.org.au'
+  :hostname: 'dtn-1.alveo.edu.au'
   :port: '9092'
   :verify_ssl: true
   :user: 'alveo-aspera'
   :password: <%= ENV["NODE_USER_PASSWORD"] %>
 
 :trove:
-  :hostname: 'dtn-1.intersect.org.au'
+  :hostname: 'dtn-1.alveo.edu.au'
   :port: '9092'
   :verify_ssl: true
   :user: 'alveo-aspera'

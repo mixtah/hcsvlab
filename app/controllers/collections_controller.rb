@@ -41,15 +41,18 @@ class CollectionsController < ApplicationController
     # @collection_lists = lists_by_name
 
     @collection = Collection.find_by_name(params[:id])
-    @attachment_url = collection_attachments_path(@collection.id)
 
-    respond_to do |format|
-      if @collection.nil? or @collection.name.nil?
+    if @collection.nil? || @collection.name.nil?
+      respond_to do |format|
         format.html {
-          flash[:error] = "Collection does not exist with the given id"
+          flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
           redirect_to collections_path }
         format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
-      else
+      end
+    else
+      @attachment_url = collection_attachments_path(@collection.id)
+
+      respond_to do |format|
         format.html { render :show }
         format.json {}
       end
@@ -144,7 +147,6 @@ class CollectionsController < ApplicationController
     @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
 
 
-
     @collection_creation_date = params[:collection_creation_date]
     @collection_creator = params[:collection_creator]
     @collection_linguistic_field_name = params[:collection_linguistic_field_name]
@@ -176,19 +178,19 @@ class CollectionsController < ApplicationController
     if request.post?
       begin
         validate_required_web_fields(
-            params,
-            {
-                :collection_name => 'collection name',
-                :collection_title => 'collection title',
-                :collection_language => 'collection language',
-                :collection_creation_date => 'collection creation date',
-                :collection_creator => 'collection creator',
-                :collection_owner => 'collection owner',
-                :collection_olac_name => 'collection OLAC linguistic subject',
-                :collection_olac_value => 'collection OLAC linguistic subject value',
-                :collection_abstract => 'collection abstract',
-                :collection_text => 'collection description'
-            }
+          params,
+          {
+            :collection_name => 'collection name',
+            :collection_title => 'collection title',
+            :collection_language => 'collection language',
+            :collection_creation_date => 'collection creation date',
+            :collection_creator => 'collection creator',
+            :collection_owner => 'collection owner',
+            :collection_olac_name => 'collection OLAC linguistic subject',
+            :collection_olac_value => 'collection OLAC linguistic subject value',
+            :collection_abstract => 'collection abstract'
+            # :collection_text => 'collection description'
+          }
         )
 
         # Validate and sanitise OLAC metadata fields
@@ -201,16 +203,16 @@ class CollectionsController < ApplicationController
 
         # Construct collection Json-ld
         json_ld = {
-            '@context' => JsonLdHelper::default_context,
-            '@type' => 'dcmitype:Collection',
-            MetadataHelper::TITLE.to_s => @collection_title,
-            MetadataHelper::DC_LANGUAGE.to_s => @collection_language,
-            MetadataHelper::CREATED.to_s => @collection_creation_date,
-            MetadataHelper::CREATOR.to_s => @collection_creator,
-            MetadataHelper::LOC_OWNER => @collection_owner,
-            MetadataHelper::LICENCE => @licence_id,
-            # @collection_linguistic_field_name => @collection_linguistic_field_value,
-            MetadataHelper::ABSTRACT.to_s => @collection_abstract
+          '@context' => JsonLdHelper::default_context,
+          '@type' => 'dcmitype:Collection',
+          MetadataHelper::TITLE.to_s => @collection_title,
+          MetadataHelper::DC_LANGUAGE.to_s => @collection_language,
+          MetadataHelper::CREATED.to_s => @collection_creation_date,
+          MetadataHelper::CREATOR.to_s => @collection_creator,
+          MetadataHelper::LOC_OWNER => @collection_owner,
+          MetadataHelper::LICENCE => @licence_id,
+          # @collection_linguistic_field_name => @collection_linguistic_field_value,
+          MetadataHelper::ABSTRACT.to_s => @collection_abstract
         }
 
         json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
@@ -461,19 +463,19 @@ class CollectionsController < ApplicationController
 
     begin
       validate_required_web_fields(
-          params,
-          {
-              # :collection_name => 'collection name',
-              :collection_title => 'collection title',
-              :collection_language => 'collection language',
-              :collection_creation_date => 'collection creation date',
-              :collection_creator => 'collection creator',
-              :collection_owner => 'collection owner',
-              :collection_olac_name => 'collection OLAC linguistic subject',
-              :collection_olac_value => 'collection OLAC linguistic subject value',
-              :collection_abstract => 'collection abstract',
-              :collection_text => 'collection description'
-          }
+        params,
+        {
+          # :collection_name => 'collection name',
+          :collection_title => 'collection title',
+          :collection_language => 'collection language',
+          :collection_creation_date => 'collection creation date',
+          :collection_creator => 'collection creator',
+          :collection_owner => 'collection owner',
+          :collection_olac_name => 'collection OLAC linguistic subject',
+          :collection_olac_value => 'collection OLAC linguistic subject value',
+          :collection_abstract => 'collection abstract',
+          :collection_text => 'collection description'
+        }
       )
 
       # Validate and sanitise OLAC metadata fields
@@ -486,16 +488,16 @@ class CollectionsController < ApplicationController
 
       # Construct collection Json-ld
       json_ld = {
-          '@context' => JsonLdHelper::default_context,
-          '@type' => 'dcmitype:Collection',
-          MetadataHelper::TITLE.to_s => params[:collection_title],
-          MetadataHelper::DC_LANGUAGE.to_s => params[:collection_language],
-          MetadataHelper::CREATED.to_s => params[:collection_creation_date],
-          MetadataHelper::CREATOR.to_s => params[:collection_creator],
-          MetadataHelper::LOC_OWNER => params[:collection_owner],
-          MetadataHelper::LICENCE => params[:licence_id],
-          # @collection_linguistic_field_name => @collection_linguistic_field_value,
-          MetadataHelper::ABSTRACT.to_s => params[:collection_abstract]
+        '@context' => JsonLdHelper::default_context,
+        '@type' => 'dcmitype:Collection',
+        MetadataHelper::TITLE.to_s => params[:collection_title],
+        MetadataHelper::DC_LANGUAGE.to_s => params[:collection_language],
+        MetadataHelper::CREATED.to_s => params[:collection_creation_date],
+        MetadataHelper::CREATOR.to_s => params[:collection_creator],
+        MetadataHelper::LOC_OWNER => params[:collection_owner],
+        MetadataHelper::LICENCE => params[:licence_id],
+        # @collection_linguistic_field_name => @collection_linguistic_field_value,
+        MetadataHelper::ABSTRACT.to_s => params[:collection_abstract]
       }
 
       json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
@@ -1323,17 +1325,17 @@ class CollectionsController < ApplicationController
   def validate_collection_additional_metadata(params)
     if params.has_key?(:additional_key) && params.has_key?(:additional_value)
       protected_collection_fields = [
-          'dc:identifier',
-          'dcterms:identifier',
-          MetadataHelper::IDENTIFIER.to_s,
-          'dc:title',
-          'dcterms:title',
-          MetadataHelper::TITLE.to_s,
-          'dc:abstract',
-          'dcterms:abstract',
-          MetadataHelper::ABSTRACT.to_s,
-          'marcrel:OWN',
-          MetadataHelper::LOC_OWNER.to_s]
+        'dc:identifier',
+        'dcterms:identifier',
+        MetadataHelper::IDENTIFIER.to_s,
+        'dc:title',
+        'dcterms:title',
+        MetadataHelper::TITLE.to_s,
+        'dc:abstract',
+        'dcterms:abstract',
+        MetadataHelper::ABSTRACT.to_s,
+        'marcrel:OWN',
+        MetadataHelper::LOC_OWNER.to_s]
 
       validate_additional_metadata(params[:additional_key].zip(params[:additional_value]), protected_collection_fields)
     else

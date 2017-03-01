@@ -715,7 +715,8 @@ module Blacklight::BlacklightHelperBehavior
 
     # KL: fields from collection
     # text
-    fields << {'Description' => Kramdown::Document.new(collection.text).to_html}
+    fields << {'Description' => Kramdown::Document.new(
+      collection.text.nil? ? '' : collection.text).to_html}
 
     fields
 

@@ -4,8 +4,6 @@ HcsvlabWeb::Application.configure do
   config.action_mailer.default_url_options = { :host => 'localhost:3000' }
   
   config.galaxy_url = 'http://localhost:8081/root'
-  #config.galaxy_url = 'http://sp.hcsvlab.qa.intersect.org.au:8081/galaxy/root'
-  #config.galaxy_url = 'http://130.220.208.112/root'
 
   # Base directory where user contributed annotations will be stored
   config.user_annotations_location = "/data/contributed_annotations/"

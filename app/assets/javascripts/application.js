@@ -16,10 +16,10 @@
 // Required by Blacklight
 //= require blacklight/blacklight
 //= require blacklight/search_context.js
-//= require_tree .
 //= require bootstrap
-//= require select2
 //= require eopas
 //= require helpers
 //= require zeroclipboard
 //= require jquery-fileupload
+//= require_tree .
+//= require select2

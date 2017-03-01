@@ -7,16 +7,16 @@ def populate_data
 end
 
 def create_test_users
-  create_user(:email => "jared@intersect.org.au", :first_name => "Jared", :last_name => "Berghold")
-  create_user(:email => "data_owner@intersect.org.au", :first_name => "Data", :last_name => "Owner")
-  create_user(:email => "matthew@intersect.org.au", :first_name => "Matt", :last_name => "Hillman")
-  create_user(:email => "sq@intersect.org.au", :first_name => "Shuqian", :last_name => "Hon")
-  create_unapproved_user(:email => "unapproved1@intersect.org.au", :first_name => "Unapproved", :last_name => "One")
-  create_unapproved_user(:email => "unapproved2@intersect.org.au", :first_name => "Unapproved", :last_name => "Two")
-  set_role("jared@intersect.org.au", Role::SUPERUSER_ROLE)
-  set_role("matthew@intersect.org.au", Role::SUPERUSER_ROLE)
-  set_role("data_owner@intersect.org.au", Role::SUPERUSER_ROLE)
-  set_role("sq@intersect.org.au", Role::SUPERUSER_ROLE)
+  create_user(:email => "jared@alveo.edu.au", :first_name => "Jared", :last_name => "Berghold")
+  create_user(:email => "data_owner@alveo.edu.au", :first_name => "Data", :last_name => "Owner")
+  create_user(:email => "matthew@alveo.edu.au", :first_name => "Matt", :last_name => "Hillman")
+  create_user(:email => "sq@alveo.edu.au", :first_name => "Shuqian", :last_name => "Hon")
+  create_unapproved_user(:email => "unapproved1@alveo.edu.au", :first_name => "Unapproved", :last_name => "One")
+  create_unapproved_user(:email => "unapproved2@alveo.edu.au", :first_name => "Unapproved", :last_name => "Two")
+  set_role("jared@alveo.edu.au", Role::SUPERUSER_ROLE)
+  set_role("matthew@alveo.edu.au", Role::SUPERUSER_ROLE)
+  set_role("data_owner@alveo.edu.au", Role::SUPERUSER_ROLE)
+  set_role("sq@alveo.edu.au", Role::SUPERUSER_ROLE)
 end
 
 def set_role(email, role)

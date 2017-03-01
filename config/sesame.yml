@@ -1,5 +1,5 @@
 development:
-#  url: http://alveo-qa-sesame.intersect.org.au:8080/openrdf-sesame/
+#  url: http://alveo-qa-sesame.alveo.edu.au:8080/openrdf-sesame/
   url: http://localhost:8983/openrdf-sesame
 test: &TEST
   url: http://localhost:8983/openrdf-sesame
@@ -18,4 +18,4 @@ production:
 cucumber:
   <<: *TEST
 trove:
-  url: http://alveo-sesame.intersect.org.au:8080/openrdf-sesame/
+  url: http://alveo-sesame.alveo.edu.au:8080/openrdf-sesame/

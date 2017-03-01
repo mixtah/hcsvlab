@@ -17,7 +17,7 @@ describe Licence do
       l.text = "Various text outlining terms of the licence"
       l.private = false
 
-      u = FactoryGirl.create(:user, :status => 'A', :email => "test@intersect.org.au")
+      u = FactoryGirl.create(:user, :status => 'A', :email => "test@alveo.edu.au")
       l.owner = u
 
       l.save

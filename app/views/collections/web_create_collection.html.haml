@@ -32,7 +32,7 @@
   = text_area_tag :collection_abstract, @collection_abstract, placeholder: "This is the simple abstract for the collection, within 255 letters.", required: true
 
   = label_tag :collection_text, 'Collection Description:'
-  = text_area_tag :collection_text, @collection_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide', required: true
+  = text_area_tag :collection_text, @collection_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide'
   :javascript
     var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
 

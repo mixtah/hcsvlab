@@ -3,7 +3,7 @@ FactoryGirl.define do
     f.first_name "Fred"
     f.last_name "Bloggs"
     f.password "Pas$w0rd"
-    f.sequence(:email) { |n| "#{n}@intersect.org.au" }
+    f.sequence(:email) { |n| "#{n}@alveo.edu.au" }
   end
 
   factory :admin do |a|

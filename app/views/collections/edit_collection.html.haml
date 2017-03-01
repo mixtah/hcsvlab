@@ -38,7 +38,7 @@
     = text_area_tag :collection_abstract, @collection_abstract, required: true
 
     = label_tag :collection_text, 'Collection Description:'
-    = text_area_tag :collection_text, @collection.text, required: true
+    = text_area_tag :collection_text, @collection.text
     :javascript
       var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
 

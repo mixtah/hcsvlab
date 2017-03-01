@@ -102,7 +102,7 @@ Given /^User "([^"]*)" has a Collection List called "([^"]*)" containing$/ do |e
 end
 
 Then /^the Review and Acceptance of Licence Terms table should have$/ do |table|
-  # table is a | austlit    | N/A         | data_owner@intersect.org.au | Owner |         |
+  # table is a | austlit    | N/A         | data_owner@alveo.edu.au | Owner |         |
   patiently do
     table.hashes.each_with_index do |row, index|
       page.should have_xpath("//table[@id='collections']//tr[#{index+1}]//td[@class='title']", :text => row[:title])

@@ -16,7 +16,7 @@ describe UserAnnotation do
 
     it 'Should successfully upload an annotation collection in the right context' do
       ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_annotation_sample.json", tempfile: ANNOTATION_SAMPLE_FILE})
 
@@ -29,7 +29,7 @@ describe UserAnnotation do
       annotationCollectionId = createdAnnotation.annotationCollectionId
 
       createdAnnotation.item_identifier.should eq "cooee:1-001"
-      createdAnnotation.user.email.should eq "hcsvlab_test_user@intersect.org.au"
+      createdAnnotation.user.email.should eq "hcsvlab_test_user@alveo.edu.au"
       createdAnnotation.original_filename.should eq "upload_annotation_sample.json"
       annotationCollectionId.should_not be nil
 
@@ -71,7 +71,7 @@ describe UserAnnotation do
 
     it 'Should correctly assign annotation values' do
       ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_annotation_sample.json", tempfile: ANNOTATION_SAMPLE_FILE})
 
@@ -129,7 +129,7 @@ describe UserAnnotation do
   describe 'Unsuccessfully uploaded annotation' do
     it 'should raise an exception if the graph section is empty or not present' do
       ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_empty_graph_annotation_sample.json",
                                                              tempfile: "#{Rails.root}/test/samples/annotations/upload_empty_graph_annotation_sample.json"})
@@ -140,7 +140,7 @@ describe UserAnnotation do
 
     it 'should raise an exception if the context section is wrong' do
       ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_empty_graph_annotation_sample.json",
                                                              tempfile: "#{Rails.root}/test/samples/annotations/wrong_context_annotation_sample.json"})
