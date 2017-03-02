@@ -7,7 +7,9 @@ gem 'pg'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails',   '~> 3.2.3'
+  gem 'sass-rails',   '~> 3.2.6'
+  # sass must fix at 3.4.20
+  gem 'sass', '3.4.20'
   gem 'coffee-rails', '~> 3.2.1'
   gem "therubyracer"
   gem 'uglifier', '2.7.2'
@@ -20,14 +22,10 @@ gem 'jquery-ui-rails'
 group :development, :test do
   gem "brakeman"
   gem "bundler-audit"
-  gem "rspec-rails"
+  gem "rspec-rails", '2.14.2'
   gem "factory_girl_rails"
-  # cucumber gems
   gem "quiet_assets"
-  gem "cucumber"
   gem "capybara"
-  gem "database_cleaner"
-  #gem "spork"
   gem "launchy"    # So you can do Then show me the page
 end
 
@@ -45,7 +43,10 @@ group :development do
 end
 
 group :test do
+  # https://github.com/cucumber/cucumber-rails/blob/master/README.md
+  # For Rails 3.x support, use version 1.4.5
   gem "cucumber-rails", :require => false
+  gem 'database_cleaner'
   gem "shoulda"
   gem "simplecov", ">=0.3.8", :require => false
   gem 'simplecov-rcov'
@@ -84,7 +85,7 @@ gem 'blacklight', "4.2.1"
 gem 'hydra-head', "~>6.0.0"
 gem 'jettywrapper'
 
-gem "bootstrap-sass"
+gem "bootstrap-sass", "2.3.2.2"
 gem 'activerecord-tableless'
 
 gem 'stomp'
@@ -135,3 +136,18 @@ gem 'devise_aaf_rc_authenticatable', :git => 'https://github.com/IntersectAustra
 gem 'keepass-password-generator'
 
 gem "whenever", require: false
+
+# KL: controller enhancement
+gem 'kramdown'
+gem 'simplemde-rails'
+# file upload
+# https://github.com/Phifo/jquery-fileupload-rails-carrierwave
+gem 'jquery-fileupload-rails', '0.4.1'
+gem 'file_validators'
+# at this stage we're on rails 3, so use 0.11.0
+gem 'carrierwave', "0.11.0"
+gem 'mini_magick'
+# gem 'rmagick', '~> 2.15', '>= 2.15.4'
+
+# http://stackoverflow.com/questions/35893584/nomethoderror-undefined-method-last-comment-after-upgrading-to-rake-11
+gem 'rake', '< 11.0'

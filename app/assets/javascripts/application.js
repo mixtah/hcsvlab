@@ -22,3 +22,4 @@
 //= require eopas
 //= require helpers
 //= require zeroclipboard
+//= require jquery-fileupload

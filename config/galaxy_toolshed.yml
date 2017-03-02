@@ -19,6 +19,9 @@ qa:
 qa2:
   <<: *defaults
 
+nci:
+  <<: *defaults
+
 staging:
   <<: *defaults
 

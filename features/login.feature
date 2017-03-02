@@ -11,6 +11,11 @@ Feature: Logging In
     And I have a user "georgina@intersect.org.au"
     And "georgina@intersect.org.au" has role "admin"
 
+  Scenario: Visit home before login
+    Given I am a guest (not signed in yet)
+    When I visit the system website (/)
+    Then I should see the collection page
+
   Scenario: Successful login
     Given I am on the login page
     When I fill in "Email" with "georgina@intersect.org.au"

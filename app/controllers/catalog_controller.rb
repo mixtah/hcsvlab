@@ -326,9 +326,12 @@ class CatalogController < ApplicationController
         flash[:error] = "Sorry, error in search parameters."
       end
     else
+      logger.debug "catalog#index guest visit"
+
       respond_to do |format|
         format.json { render :nothing => true, :status => 406 }
-        format.html {}
+        # format.html { render :template => 'collections/index'}
+        format.html { redirect_to controller: 'collections'}
       end
     end
   end
@@ -373,7 +376,7 @@ class CatalogController < ApplicationController
     else
       respond_to do |format|
         format.html {
-          flash[:error] = "Sorry, you have requested a record that doesn't exist."
+          flash[:error] = "Sorry, you have requested a record [#{params[:itemId]}] that doesn't exist..."
           redirect_to root_url and return
         }
         format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }

@@ -1,7 +1,10 @@
 class UserRegistersController < Devise::RegistrationsController
   # based on https://github.com/plataformatec/devise/blob/v2.0.4/app/controllers/devise/registrations_controller.rb
 
-  prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  # prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  before_filter :authenticate_user!, except: [:create, :new]
+    
+  prepend_before_filter :check_oauth_token!, except: [:create, :new]
 
   def profile
 
@@ -66,15 +69,55 @@ class UserRegistersController < Devise::RegistrationsController
   def licence_agreements
   end
 
-  def download_token
-    if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
-      current_user.reset_authentication_token!
+  
+  
+  def download_details
+    
+    token_user = current_user
+    
+    if token_user.nil?
+      #   need to check oauth2
+      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
     end
+        
+    file = Tempfile.new("newfile")
+    hash = {}
+    hash[:base_url] = root_url
+    hash[:first_name] = token_user.first_name
+    hash[:last_name] = token_user.last_name
+    hash[:email] = token_user.email
+    hash[:status] = token_user.status
+    hash[:cacheDir] = "wrassp_cache"
+    file.puts(hash.to_json)
+    file.close
+    send_file file.path, :filename => "#{PROJECT_PREFIX_NAME}.config", :disposition => "attachment"
+        
+  end
+  
+  def download_token
+    # if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
+    #   current_user.reset_authentication_token!
+    # end
+
+    # KL: oauth2
+    token_user = current_user
+
+    if token_user.nil?
+      #   need to check oauth2
+      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+    end
+
+    if token_user.authentication_token.nil? #generate auth token if one doesn't already exist
+      token_user.reset_authentication_token!
+    end
+
+
 
     file = Tempfile.new("newfile")
     hash = {}
     hash[:base_url] = root_url
-    hash[:apiKey] = current_user.authentication_token
+    # hash[:apiKey] = current_user.authentication_token
+    hash[:apiKey] = token_user.authentication_token
     hash[:cacheDir] = "wrassp_cache"
     file.puts(hash.to_json)
     file.close

@@ -1,5 +1,6 @@
 require 'find'
 require "#{Rails.root}/lib/rdf-sesame/hcsvlab_server.rb"
+require "#{Rails.root}/app/helpers/metadata_helper"
 
 
 ALLOWED_DOCUMENT_TYPES = ['Text', 'Image', 'Audio', 'Video', 'Other']
@@ -105,19 +106,25 @@ def delete_object_from_solr(object_id)
   end
 end
 
-def check_and_create_collection(collection_name, corpus_dir)
+# TODO: collection_enhancement
+def check_and_create_collection(
+    collection_name,
+    corpus_dir,
+    json_metadata={})
 
-  if collection_name == "ice" && File.basename(corpus_dir)!="ice" #ice has different directory structure
-    dir = File.expand_path("../../..", corpus_dir)
-  else
-    dir = File.expand_path("..", corpus_dir)
-  end
-
-  if Dir.entries(dir).include?(collection_name + ".n3")
-    coll_metadata = dir + "/" + collection_name + ".n3"
-  else
-    raise ArgumentError, "No collection metadata file found - #{dir}/#{collection_name}.n3. Stopping ingest."
-  end
+  # KL
+  # if collection_name == "ice" && File.basename(corpus_dir)!="ice" #ice has different directory structure
+  #   dir = File.expand_path("../../..", corpus_dir)
+  # else
+  #   dir = File.expand_path("..", corpus_dir)
+  # end
+  #
+  # # KL: replace .n3 file with db
+  # if Dir.entries(dir).include?(collection_name + ".n3")
+  #   coll_metadata = dir + "/" + collection_name + ".n3"
+  # else
+  #   raise ArgumentError, "No collection metadata file found - #{dir}/#{collection_name}.n3. Stopping ingest."
+  # end
 
   collection = Collection.find_by_name(collection_name)
 
@@ -125,11 +132,15 @@ def check_and_create_collection(collection_name, corpus_dir)
   if collection.nil?
     is_new = true
     logger.info "Creating collection #{collection_name}"
-    create_collection_from_file(coll_metadata, collection_name)
-    collection = Collection.find_by_name(collection_name)
+    # create_collection_from_file(coll_metadata, collection_name)
+    json_metadata = update_jsonld_collection_id(json_metadata, collection_name)
+    collection = update_collection_metadata_from_json(collection_name, json_metadata)
+
+    # collection = Collection.find_by_name(collection_name)
   else
     # Update RDF file path but don't save yet.
-    collection.rdf_file_path = coll_metadata
+    # KL
+    # collection.rdf_file_path = coll_metadata
   end
 
   paradisec_collection_setup(collection, is_new)
@@ -174,13 +185,15 @@ def paradisec_collection_setup(collection, is_new)
 
 end
 
+# TODO: collection_enhancement
 def create_collection_from_file(collection_file, collection_name)
   coll = Collection.new
+  coll.name = collection_name
 
   coll.rdf_file_path = collection_file
   graph = coll.rdf_graph
   coll.uri = graph.statements.first.subject.to_s
-  coll.name = collection_name
+
 
   if Collection.find_by_uri(coll.uri).present?
     # There is already such a collection in the system

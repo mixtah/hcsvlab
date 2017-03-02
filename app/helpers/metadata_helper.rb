@@ -1,3 +1,9 @@
+require 'rdf/json'
+require 'rdf/turtle'
+require 'json'
+require 'json/ld'
+require 'json-ld/json_ld_helper'
+
 module MetadataHelper
 
   mattr_reader :lookup, :prefixes
@@ -85,11 +91,24 @@ public
   CREATED                = RDF::URI(DC_TERMS_BASE_URI + 'created') unless const_defined?(:CREATED)
   IDENTIFIER             = RDF::URI(DC_TERMS_BASE_URI + 'identifier') unless const_defined?(:IDENTIFIER)
   SOURCE                 = RDF::URI(DC_TERMS_BASE_URI + 'source') unless const_defined?(:SOURCE)
-  TITLE                  = RDF::URI(DC_TERMS_BASE_URI + 'title') unless const_defined?(:TITLE)
+  TITLE                  = RDF::URI(DC_ELEMENTS_BASE_URI + 'title') unless const_defined?(:TITLE)
   RIGHTS                 = RDF::URI(DC_TERMS_BASE_URI + 'rights') unless const_defined?(:RIGHTS)
   DESCRIPTION            = RDF::URI(DC_TERMS_BASE_URI + 'description') unless const_defined?(:DESCRIPTION)
   BIBLIOGRAPHIC_CITATION = RDF::URI(DC_TERMS_BASE_URI + 'bibliographicCitation') unless const_defined?(:BIBLIO_CITATION)
   ABSTRACT               = RDF::URI(DC_TERMS_BASE_URI + 'abstract') unless const_defined?(:ABSTRACT)
+  # KL - collection enhancement
+  DC_LANGUAGE               = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:DC_LANGUAGE)
+  CREATOR                = RDF::URI(DC_ELEMENTS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
+  LICENCE                = RDF::URI(DC_TERMS_BASE_URI + 'license') unless const_defined?(:LICENCE)
+
+  # KL: compact prefix
+  PFX_TITLE             = "dc:title"
+  PFX_OWNER             = "marcrel:OWN"
+  PFX_LANGUAGE          = "dcterms:language"
+  PFX_CREATION_DATE     = "dcterms:created"
+  PFX_CREATOR           = "dc:creator"
+  PFX_LICENCE           = "dcterms:license"
+  PFX_ABSTRACT          = "dcterms:abstract"
 
   @@lookup[IS_PART_OF.to_s]             = prefixes[DC_TERMS_BASE_URI] + "_is_part_of"
   @@lookup[EXTENT.to_s]                 = prefixes[DC_TERMS_BASE_URI] + "_extent"
@@ -102,6 +121,11 @@ public
   @@lookup[DESCRIPTION.to_s]            = prefixes[DC_TERMS_BASE_URI] + "_description"
   @@lookup[BIBLIOGRAPHIC_CITATION.to_s] = prefixes[DC_TERMS_BASE_URI] + "_bibliographicCitation"
   @@lookup[ABSTRACT.to_s]               = prefixes[DC_TERMS_BASE_URI] + "_abstract"
+  # KL - collection enhancement
+  @@lookup[DC_LANGUAGE.to_s]            = prefixes[DC_TERMS_BASE_URI] + "_language"
+  @@lookup[CREATOR.to_s]                = prefixes[DC_TERMS_BASE_URI] + "_creator"
+  @@lookup[LICENCE.to_s]                = prefixes[DC_TERMS_BASE_URI] + "_licence"
+
 
   #
   # OLAC
@@ -111,6 +135,39 @@ public
 
   @@lookup[DISCOURSE_TYPE.to_s] = prefixes[OLAC_BASE_URI] + "_discourse_type_facet"
   @@lookup[LANGUAGE.to_s]       = prefixes[OLAC_BASE_URI] + "_language_facet"
+  # code => name
+  PFX_OLAC = "olac:"
+  OLAC_LINGUISTIC_SUBJECT_HASH = {
+      "#{PFX_OLAC}anthropological_linguistics" => "Anthropological Linguistics",
+      "#{PFX_OLAC}applied_linguistics" => "Applied Linguistics",
+      "#{PFX_OLAC}cognitive_science" => "Cognitive Science",
+      "#{PFX_OLAC}computational_linguistics" => "Computational Linguistics",
+      "#{PFX_OLAC}discourse_analysis" => "Discourse Analysis",
+      "#{PFX_OLAC}forensic_linguistics" => "Forensic Linguistics",
+      "#{PFX_OLAC}general_linguistics" => "General Linguistics",
+      "#{PFX_OLAC}historical_linguistics" => "Historical Linguistics",
+      "#{PFX_OLAC}history_of_linguistics" => "History of Linguistics",
+      "#{PFX_OLAC}language_acquisition" => "Language Acquisition",
+      "#{PFX_OLAC}language_documentation" => "Language Documentation",
+      "#{PFX_OLAC}lexicography" => "Lexicography",
+      "#{PFX_OLAC}linguistics_and_literature" => "Linguistics and Literature",
+      "#{PFX_OLAC}linguistic_theories" => "Linguistic Theories",
+      "#{PFX_OLAC}mathematical_linguistics" => "Mathematical Linguistics",
+      "#{PFX_OLAC}morphology" => "Morphology",
+      "#{PFX_OLAC}neurolinguistics" => "Neurolinguistics",
+      "#{PFX_OLAC}philosophy_of_language" => "Philosophy of Language",
+      "#{PFX_OLAC}phonetics" => "Phonetics",
+      "#{PFX_OLAC}phonology" => "Phonology",
+      "#{PFX_OLAC}pragmatics" => "Pragmatics",
+      "#{PFX_OLAC}psycholinguistics" => "Psycholinguistics",
+      "#{PFX_OLAC}semantics" => "Semantics",
+      "#{PFX_OLAC}sociolinguistics" => "Sociolinguistics",
+      "#{PFX_OLAC}syntax" => "Syntax",
+      "#{PFX_OLAC}text_and_corpus_linguistics" => "Text and Corpus Linguistics",
+      "#{PFX_OLAC}translating_and_interpreting" => "Translating and Interpreting",
+      "#{PFX_OLAC}typology" => "Typology",
+      "#{PFX_OLAC}writing_systems" => "Writing Systems"
+  }
 
   #
   # RDF
@@ -157,6 +214,20 @@ public
   @@lookup[FOAF_DOCUMENT.to_s] = prefixes[FOAF_BASE_URI] + "_Document"
 
   #
+  # Language
+  #
+  # LANGUAGE_HASH = {
+  #     'Chinese, Mandarin' => 'Chinese, Mandarin',
+  #     'English' => 'English',
+  #     'German, Standard' => 'German, Standard'
+  # }
+
+  #
+  # Licence
+  #
+
+
+  #
   # short_form - return a shortened form of the given uri (which will
   #              be .to_s'ed first)
   #
@@ -180,4 +251,177 @@ public
     return uri.to_s.gsub(/\W/, '_').gsub(/_{2,}/, '_')
   end
 
+  def self::corpus_dir_by_name(collection_name)
+    File.join(Rails.application.config.api_collections_location, collection_name)
+  end
+
+  #
+  # @param collection_name
+  # @param collection_manifest
+  def self::create_manifest(
+      collection_name,
+      collection_manifest={"collection_name" => collection_name, "files" => {}})
+
+    corpus_dir = corpus_dir_by_name(collection_name)
+    FileUtils.mkdir_p(corpus_dir)
+
+    manifest_file_path = File.join(corpus_dir, MANIFEST_FILE_NAME)
+    File.open(manifest_file_path, 'w') do |file|
+      file.puts(collection_manifest.to_json)
+    end
+  end
+
+  # store json data into db
+  def self::update_collection_metadata_from_json(collection_name, json_metadata)
+    update_rdf_graph(collection_name, json_to_rdf_graph(json_metadata))
+  end
+
+  # Save or update collection record with metadata (rdf graph) into DB
+  def self::update_rdf_graph(
+      collection_name,
+      graph=nil)
+    collection = Collection.find_by_name(collection_name)
+
+    if collection.nil?
+    #   new collection
+      collection = Collection.new
+      collection.name = collection_name
+      collection.save
+
+      logger.debug "new collection created: #{collection}"
+    end
+
+    unless graph.nil?
+      # remove all CollectionProperty with collection_id
+      logger.debug "graph is not nil, collection.id=#{collection.id}"
+
+      CollectionProperty.delete_all "collection_id = #{collection.id}"
+
+      json = rdf_graph_to_json(graph)
+
+      logger.debug "json=#{json}"
+
+      json.each do |property, value|
+        logger.debug "[#{property}] => (#{value.class}):#{value}"
+
+        collection_property = CollectionProperty.new
+
+        collection_property.collection_id = collection.id
+        collection_property.property = property
+        collection_property.value = value.to_s.gsub(/=>/, ':')
+
+        logger.debug "collection_property.property=#{collection_property.property}, collection_property.value=#{collection_property.value}"
+
+        collection_property.save
+      end
+    end
+
+    collection
+
+  end
+
+  def self::valid_json?(json)
+    begin
+      JSON.parse(json)
+      return true
+    rescue JSON::ParserError => e
+      return false
+    end
+  end
+
+
+  # Use json-ld to convert RDF graph to JSON
+  def self::rdf_graph_to_json(graph)
+    logger.debug "rdf_graph_to_json: graph=#{graph.to_s}"
+    compacted_json = nil
+
+    context = {"@context" => JsonLdHelper::default_context}
+
+    JSON::LD::API::fromRDF(graph) do |expanded|
+      compacted_json = JSON::LD::API.compact(expanded, context['@context'])
+    end
+
+    logger.debug "rdf_graph_to_json: json=#{compacted_json.to_s}"
+
+    compacted_json
+  end
+
+  # Use json-ld to convert JSON to RDF graph
+  def self::json_to_rdf_graph(json, format=:ttl)
+    logger.debug "json_to_rdf_graph: json=#{json.to_s}"
+    graph = RDF::Graph.new << JSON::LD::API.toRDF(json)
+    # graph.dump(format)
+    logger.debug "json_to_rdf_graph: graph=#{graph.to_s}"
+    graph
+  end
+
+
+  # Load collection metadata from DB then convert to RDF graph
+  #
+  # @param collection_name
+  def self::load_rdf_graph(collection_name)
+    json_to_rdf_graph(load_json(collection_name))
+  end
+
+  def self::load_json(collection_name)
+    collection = Collection.find_by_name(collection_name)
+
+    if collection.nil?
+      logger.error "Could not find collection [#{collection_name}]"
+      raise "Could not find collection [#{collection_name}]"
+    end
+
+    coll_properties = CollectionProperty.where(:collection_id => collection.id)
+
+    hash = {}
+    coll_properties.each do |cp|
+      # puts "loaded_property=#{cp.property}, loaded_value=#{cp.value}"
+      if valid_json?(cp.value)
+        hash[cp.property] = JSON.parse(cp.value)
+      else
+        hash[cp.property] = cp.value
+      end
+    end
+
+    JSON.parse(hash.to_json)
+  end
+
+  def self::load_metadata_from_collection(collection_name)
+    collection = Collection.find_by_name(collection_name)
+
+    properties = {}
+    collection.collection_properties.each do |prop|
+      # remove the leading or trailing quote
+      # properties[prop.property.gsub!(/^\"|\"?$/, '')] = prop.value
+      properties[prop.property] = prop.value
+    end
+
+    properties
+  end
+
+  def self::demo_text
+    text = %(
+# Intro
+Go ahead, play around with the editor! Be sure to check out **bold** and *italic* styling, or even [links](https://google.com). You can type the Markdown syntax, use the toolbar, or use shortcuts like `cmd-b` or `ctrl-b`.
+
+## Lists
+Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ `. Ordered lists can be started by typing `1. `.
+
+#### Unordered
+* Lists are a piece of cake
+* They even auto continue as you type
+* A double enter will end them
+* Tabs and shift-tabs work too
+
+#### Ordered
+1. Numbered lists...
+2. ...work too!
+
+## What about images?
+![Yes](https://i.imgur.com/sZlktY7.png)
+
+## What about videos?
+<iframe width="560" height="315" src="https://www.youtube.com/embed/0R1Nf4MS9hM" frameborder="0" allowfullscreen></iframe>
+    )
+  end
 end

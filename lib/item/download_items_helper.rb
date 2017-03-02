@@ -418,7 +418,9 @@ module Item::DownloadItemsHelper
           uri = RDF::URI.new(file_uri)
           filename = File.basename(uri.path)
           filepath = file_uri
-          if uri.scheme.starts_with? 'http'
+
+          # Write remote files to a local cache
+          if uri.scheme and uri.scheme.starts_with? 'http'
             filepath = File.join(remote_tmpdir, filename)
             File.open(filepath, 'w') { |file|
               contents = open(uri).read

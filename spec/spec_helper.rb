@@ -1,8 +1,11 @@
 require 'simplecov'
 require 'simplecov-rcov'
 
+# disable code coverage
+ENV["NO_COVERAGE"] = 'true'
+
 SimpleCov.formatter = SimpleCov::Formatter::RcovFormatter
-SimpleCov.start 'rails'
+SimpleCov.start :rails unless ENV["NO_COVERAGE"]
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 ENV["RAILS_ENV"] ||= 'test'
@@ -21,6 +24,8 @@ RSpec.configure do |config|
   # config.mock_with :mocha
   # config.mock_with :flexmock
   # config.mock_with :rr
+
+  config.include FactoryGirl::Syntax::Methods
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_path = "#{::Rails.root}/spec/fixtures"
