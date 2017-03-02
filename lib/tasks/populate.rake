@@ -3,7 +3,14 @@ begin
   namespace :db do
     desc "Populate the database with some sample data for testing"
     task :populate => :environment do
-      populate_data
+      # NEVER run in production
+      puts "checking current environment...#{Rails.env}"
+      if Rails.env.production?
+        puts "NEVER run data populator in #{Rails.env}!"
+      else
+        puts "fine, go ahead."
+        populate_data
+      end
     end
   end
 rescue LoadError

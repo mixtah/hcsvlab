@@ -49,6 +49,7 @@ class UserRegistersController < Devise::RegistrationsController
   end
 
   def edit_password
+    self.resource = current_user
     respond_with resource
   end
 

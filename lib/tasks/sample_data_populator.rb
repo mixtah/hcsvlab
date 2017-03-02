@@ -2,6 +2,8 @@ def populate_data
   load_password
 
   User.delete_all
+  # make sure pk reset
+  User.reset_pk_seq
 
   create_test_users
 end

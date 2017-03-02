@@ -37,6 +37,7 @@ group :development do
   gem 'zeus'
   gem "better_errors"
   gem "binding_of_caller"
+  gem 'sextant'
 
   # Deployment tracker
   gem "create_deployment_record", git: 'https://github.com/IntersectAustralia/create_deployment_record.git'

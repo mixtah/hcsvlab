@@ -17,7 +17,7 @@ class CatalogController < ApplicationController
   # Set catalog tab as current selected
   set_tab :catalog
 
-  before_filter :authenticate_user!, :except => [:index, :annotation_context, :searchable_fields]
+  before_filter :authenticate_user!, :except => [:annotation_context, :searchable_fields]
 
   include Blacklight::Catalog
   include Hydra::Controller::ControllerBehavior
@@ -331,7 +331,8 @@ class CatalogController < ApplicationController
       respond_to do |format|
         format.json { render :nothing => true, :status => 406 }
         # format.html { render :template => 'collections/index'}
-        format.html { redirect_to controller: 'collections'}
+        # format.html { redirect_to controller: 'collections'}
+        format.html {}
       end
     end
   end

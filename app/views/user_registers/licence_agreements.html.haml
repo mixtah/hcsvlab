@@ -5,6 +5,6 @@
   -# - else
   %h2 Review and Acceptance of Licence Terms
   %div Manage your subscriptions to collections.
-  = render 'display_licence_collections'
+  = render 'display_licence_collections' unless current_user.nil?
 = render 'shared/modal_waiting_panel'
 = render 'shared/nectar_attribution'
