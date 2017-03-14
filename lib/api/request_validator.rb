@@ -30,15 +30,14 @@ module RequestValidator
     collection
   end
 
+  #
+  # Only validate collection name. Other fields would be set default value later if not provided as this moment
+  #
   def validate_new_collection(collection_metadata, collection_name, licence_id, private)
-    if collection_name.blank? || collection_name.length > 255 || collection_metadata.nil?
-      invalid_name = (collection_name.nil? || collection_name.blank? || collection_name.length > 255)
-      invalid_metadata = collection_metadata.nil?
-      err_message = nil
-      err_message = "name parameter" if invalid_name
-      err_message = "metadata parameter" if invalid_metadata
-      err_message = "name and metadata parameters" if invalid_name && invalid_metadata
-      err_message << " not found" unless err_message.nil?
+    if collection_name.nil? || collection_name.blank? || collection_name.length > 255
+
+      err_message = "name parameter"
+
       raise ResponseError.new(400), err_message
     end
   end

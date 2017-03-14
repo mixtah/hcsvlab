@@ -1,5 +1,6 @@
 require "#{Rails.root}/lib/solr/solr_helper.rb"
 # require "#{Rails.root}/app/helpers/metadata_helper.rb"
+require 'kramdown'
 
 class Collection < ActiveRecord::Base
 
@@ -11,8 +12,8 @@ class Collection < ActiveRecord::Base
   # TODO: collection_enhancement dependent: :destroy?
   has_many :items
 
-  has_many :collection_properties, dependent: :destroy
-  has_many :attachments, dependent: :destroy
+  has_many :collection_properties, dependent: :destroy, inverse_of: :collection
+  has_many :attachments, dependent: :destroy, inverse_of: :collection
 
   belongs_to :owner, class_name: 'User'
   belongs_to :collection_list
@@ -97,5 +98,9 @@ class Collection < ActiveRecord::Base
 
     MetadataHelper::load_rdf_graph(self.name)
 
+  end
+
+  def html_text
+    Kramdown::Document.new(text.nil? ? '' : text).to_html
   end
 end

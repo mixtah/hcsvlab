@@ -8,7 +8,7 @@ class Attachment < ActiveRecord::Base
   # remember to set in front end as well
   validates :file, file_size: {less_than: 100.megabyte}
 
-  belongs_to :collection
+  belongs_to :collection, inverse_of: :attachments
 
   # validates :file_name, presence: true
   # validates :content_type, presence: true

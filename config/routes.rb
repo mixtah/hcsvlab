@@ -27,6 +27,9 @@ HcsvlabWeb::Application.routes.draw do
   get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
 
+  # for header navbar
+  get "discover", :to => 'catalog#index', :as => 'header_discover'
+
   # Collection definitions
   get "catalog", :to => 'collections#index', :as => 'collections'
   get "collections", :to => 'collections#index', :as => 'collections'
@@ -49,6 +52,7 @@ HcsvlabWeb::Application.routes.draw do
   post 'collections/:collection_id/attachments', :to => 'attachments#create', :as => 'create_attachment'
   # can proceed with own attachment id
   resources :attachments, only: [:show, :edit, :update, :destroy]
+
 
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'

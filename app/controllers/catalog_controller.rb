@@ -531,8 +531,15 @@ class CatalogController < ApplicationController
   #
   def annotation_context
     @default_context = JsonLdHelper::default_context
-    request.format = 'json'
-    respond_to 'json'
+    # request.format = 'json'
+    # respond_to 'json'
+
+    html = "<pre><code>#{JSON.pretty_generate(@default_context)}</code></pre>"
+
+    respond_to do |format|
+      format.html { render :text => html}
+      format.json
+    end
   end
 
   #
@@ -653,7 +660,8 @@ class CatalogController < ApplicationController
   # Display every field that can be user to do a search in the metadata
   #
   def searchable_fields
-    @name_mappings = ItemMetadataFieldNameMapping.order('lower(user_friendly_name)').select([:rdf_name, :user_friendly_name])
+    # @name_mappings = ItemMetadataFieldNameMapping.order('lower(user_friendly_name)').select([:rdf_name, :user_friendly_name])
+    @name_mappings = MetadataHelper::searchable_fields
   end
 
   #

@@ -1,8 +1,6 @@
 # -*- encoding : utf-8 -*-
 # -*- coding: utf-8 -*-
 require 'open-uri'
-require 'kramdown'
-
 
 # Methods added to this helper will be available to all templates in the hosting application
 #
@@ -711,12 +709,6 @@ module Blacklight::BlacklightHelperBehavior
     fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
 
     logger.debug "collection_show_fields fields=#{fields}"
-
-
-    # KL: fields from collection
-    # text
-    fields << {'Description' => Kramdown::Document.new(
-      collection.text.nil? ? '' : collection.text).to_html}
 
     fields
 

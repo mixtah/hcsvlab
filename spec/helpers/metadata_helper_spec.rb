@@ -186,7 +186,7 @@ RSpec.describe MetadataHelper, :type => :helper do
         expect(JsonCompare.get_diff(ori_json, actual_json)).to include(:update => {property_name => new_date})
       end
 
-      it "add new property" , :focus => true do
+      it "add new property" do
         collection = Collection.new
         collection.name = @collection_name
         collection.uri = collection_url(@collection_name)
@@ -244,5 +244,31 @@ RSpec.describe MetadataHelper, :type => :helper do
 
     end
 
+    describe "should complete collection metadata" do
+      it "complete specified fields", :focus => true do
+
+        collection_name = 'heal the world'
+        full_name = "Michael Jackson"
+        metadata = {
+          MetadataHelper::DC_LANGUAGE.to_s => ''  # empty field
+        }
+
+        metadata_fields = {
+          MetadataHelper::TITLE.to_s => collection_name,
+          MetadataHelper::DC_LANGUAGE.to_s => 'eng - English',
+          MetadataHelper::CREATED.to_s => DateTime.now.strftime("%d/%m/%Y"),
+          MetadataHelper::CREATOR.to_s => full_name,
+          MetadataHelper::LICENCE.to_s => 'Creative Commons v3.0 BY'
+        }
+
+        MetadataHelper::not_empty_collection_metadata!(collection_name, full_name, metadata)
+
+        metadata_fields.each do |field, value|
+          # metadata[field] = value if metadata[field].nil?
+          expect(metadata[field]).to eq value
+        end
+
+      end
+    end
   end
 end
