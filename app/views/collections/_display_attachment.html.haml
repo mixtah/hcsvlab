@@ -1,16 +1,17 @@
 = form_for @attachment, :url => create_attachment_path(@collection.id), :html => { :multipart => true, :id => "fileupload"  } do |f|
-  .row.fileupload-buttonbar
-    .span7
-      %span.btn.btn-primary.fileinput-button
-        %i.icon-plus.icon-white
-        %span Add file...
-        = f.file_field :file, multiple: true, id: 'upload-field'
-      %button.btn.btn-danger.delete{:type => "button"}
-        %i.icon-trash.icon-white
-        %span Delete
-      %input.toggle{:type => "checkbox"}/
-      %span.fileupload-loading
-    %div Max file size: 100M
+  .row-fluid.fileupload-buttonbar
+    .form-actions
+      .span7
+        %span.btn.btn-primary.fileinput-button
+          %i.icon-plus.icon-white
+          %span Add file...
+          = f.file_field :file, multiple: true, id: 'upload-field'
+        %button.btn.btn-danger.delete{:type => "button"}
+          %i.icon-trash.icon-white
+          %span Delete
+        %input.toggle{:type => "checkbox"}
+        %span.fileupload-loading
+      %div Max file size: 100M
   .span5.fileupload-progress.fade
     .progress.progress-success.progress-striped.active{"aria-valuemax" => "100", "aria-valuemin" => "0", :role => "progressbar"}
       .bar{:style => "width:0%;"}
@@ -33,7 +34,7 @@
 
 -#The template to display files available for upload
 %script#template-upload{:type => "text/x-tmpl"}
-  :cdata
+  :plain
     {% for (var i=0, file; file=o.files[i]; i++) { %}
     <tr class="template-upload fade">
     <td class="preview"><span class="fade"></span></td>
@@ -65,7 +66,7 @@
 
 -#The template to display files available for download
 %script#template-download{:type => "text/x-tmpl"}
-  :cdata
+  :plain
     {% for (var i=0, file; file=o.files[i]; i++) { %}
     <tr class="template-download fade">
     {% if (file.error) { %}
@@ -107,7 +108,7 @@
       var fu = $('#fileupload').data('blueimpFileupload'),
         template;
       fu._adjustMaxNumberOfFiles(-files.length);
-      console.log(files);
+      // console.log(files);
       template = fu._renderDownload(files).appendTo($('#fileupload .files'));
 
       // Force reflow:

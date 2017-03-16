@@ -10,11 +10,11 @@
     = label_tag :collection_title, 'Collection Title:'
     = text_field_tag :collection_title, @collection_title, placeholder: "collection title"
   .span4
-    = label_tag :olac_subject, 'Collection Subject:'
+    %label{:for => "olac_subject"}
+      Collection Subject:
+      %a{:href => "http://www.language-archives.org/REC/field.html", :target => "_blank"}
+        %i.icon-question-sign
     = select_tag :olac_subject, options_for_select(@olac_subject_options, @olac_subject), id: 'olac_subject'
-  .span1
-    %a{:href => "http://www.language-archives.org/REC/field.html", :target => '_blank'}
-      %i.icon-question-sign
 
 .row-fluid
   .span4
@@ -50,9 +50,11 @@
     width: 'resolve'
   })
 
+  $("#licence_id").select2({
+    width: 'resolve'
+  })
+
   $("#language_select").select2({
     width: 'resolve',
     minimumInputLength: 2
   })
-
-  $('#iFrame').iFrameResize();

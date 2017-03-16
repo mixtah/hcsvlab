@@ -23,3 +23,4 @@
 //= require jquery-fileupload
 //= require_tree .
 //= require select2
+//= require simplemde.min
