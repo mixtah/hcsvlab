@@ -38,7 +38,7 @@ nci:
 
 staging:
   <<: *common
-  hostname: https://alveo-staging.sol1.net
+  hostname: https://staging.alveo.edu.au
   secret_token:
   aaf_rc_login_url:
 

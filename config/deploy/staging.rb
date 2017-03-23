@@ -1,8 +1,8 @@
 # Your HTTP server, Apache/etc
-role :web, 'alveo-staging.sol1.net'
+role :web, 'staging.alveo.edu.au'
 # This may be the same as your Web server
-role :app, 'alveo-staging.sol1.net'
+role :app, 'staging.alveo.edu.au'
 # This is where Rails migrations will run
-role :db,  'alveo-staging.sol1.net', :primary => true
+role :db,  'staging.alveo.edu.au', :primary => true
 
-set :server_url, "http://alveo-staging.sol1.net"
+set :server_url, "http://staging.alveo.edu.au"
