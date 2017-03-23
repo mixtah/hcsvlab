@@ -110,7 +110,7 @@ gem 'colorize'
 gem 'rabl'
 
 # exception tracker
-gem 'whoops_rails_logger', git: 'https://github.com/IntersectAustralia/whoops_rails_logger.git'
+# gem 'whoops_rails_logger', git: 'https://github.com/IntersectAustralia/whoops_rails_logger.git'
 
 gem 'linkeddata', '~> 1.0.0'
 gem 'rdf-turtle'

@@ -318,7 +318,7 @@ class CatalogController < ApplicationController
             :exception => e,
             :rack_env => env
         }
-        WhoopsLogger.log(:rails_exception, raw_data) if WhoopsLogger.config.host
+        # WhoopsLogger.log(:rails_exception, raw_data) if WhoopsLogger.config.host
         redirect_to new_issue_report_path, alert: "Solr is experiencing problems at the moment. The administrators have been informed of the issue."
       rescue RSolr::Error::Http => e
         Rails.logger.debug(e.message)
