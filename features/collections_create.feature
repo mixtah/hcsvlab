@@ -4,38 +4,38 @@ Feature: Creating Collections
 
   Background:
     Given I have the usual roles and permissions
-    And I have a user "admin@intersect.org.au" with role "admin"
-    And I have a user "data_owner@intersect.org.au" with role "data owner"
-    And I have a user "researcher@intersect.org.au" with role "researcher"
+    And I have a user "admin@alveo.edu.au" with role "admin"
+    And I have a user "data_owner@alveo.edu.au" with role "data owner"
+    And I have a user "researcher@alveo.edu.au" with role "researcher"
 
   Scenario: Verify create collection button is visible for admin
-    Given I am logged in as "admin@intersect.org.au"
+    Given I am logged in as "admin@alveo.edu.au"
     When I am on the collections page
     And I should see link "Create New Collection" to "/catalog-create"
 
   Scenario: Verify create collection button is visible for data owner
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     When I am on the collections page
     Then I should see link "Create New Collection" to "/catalog-create"
 
   Scenario: Verify create collection button is not visible for researcher
-    Given I am logged in as "researcher@intersect.org.au"
+    Given I am logged in as "researcher@alveo.edu.au"
     When I am on the collections page
     Then I should not see link "Create New Collection" to "/catalog-create"
 
   Scenario: Verify create new collection button goes to new collection form page
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the collections page
     When I follow element with id "Create New Collection"
     Then I should be on the create collection page
 
   Scenario: Verify researcher is not authorised to load create collection page
-    Given I am logged in as "researcher@intersect.org.au"
+    Given I am logged in as "researcher@alveo.edu.au"
     When I am on the create collection page
     Then I should see "You are not authorised to access this page."
 
   Scenario: Verify create collection page has expected form fields
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     When I am on the create collection page
     Then I should see "Create Collection"
     And I should see "Collection Name:"
@@ -57,13 +57,13 @@ Feature: Creating Collections
     And I should see button "Create"
 
   Scenario: Verify add metadata name/value fields not visible by default
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     When I am on the create collection page
     Then I should not see "Name: Value: "
 
   @javascript
   Scenario: Verify add metadata name/value fields visible after clicking add metadata field button
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     When I click "Add Metadata Field"
     Then the "additional_key[]" field should contain ""
@@ -71,7 +71,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario: Verify creating a collection with just a the required fields
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     When I fill in "collection_name" with "test"
     And I fill in "collection_title" with "Test Title"
@@ -90,7 +90,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario Outline: Verify creating a collection sanitises the collection name
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     When I fill in "collection_name" with "<name>"
     And I fill in "collection_title" with "Test Title"
@@ -116,7 +116,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario Outline: Verify collection name, title, owner and abstract are required
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     When I fill in "collection_name" with "<name>"
     And I fill in "collection_title" with "<title>"
@@ -134,7 +134,7 @@ Feature: Creating Collections
 
   @create_collection @javascript
   Scenario Outline: Verify creating a collection a set of additional metadata
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     And I click "Add Metadata Field"
     When I fill in "collection_name" with "test"
@@ -159,7 +159,7 @@ Feature: Creating Collections
 
   @create_collection @javascript
   Scenario Outline: Verify providing an empty metadata field returns an error response
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     And I click "Add Metadata Field"
     When I fill in "collection_name" with "test"
@@ -178,7 +178,7 @@ Feature: Creating Collections
 
   @create_collection @javascript
   Scenario: Verify form is re-populated with previous input if an error occurs
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     And I click "Add Metadata Field"
     When I fill in "collection_name" with "test"
@@ -201,7 +201,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario: Verify the collection name needs to be unique within the system
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     And I fill in "collection_name" with "test"
     And I fill in "collection_title" with "Test Title"
@@ -219,7 +219,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario: Verify licence can be selected when creating a collection
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I ingest licences
     And I am on the create collection page
     And I fill in "collection_name" with "test"
@@ -240,7 +240,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario: Assign licence to a Collection
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I ingest licences
     And I am on the create collection page
     And I fill in "collection_name" with "test"
@@ -256,7 +256,7 @@ Feature: Creating Collections
 
   @create_collection
   Scenario Outline: Create a collection and set the privacy
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the create collection page
     And I fill in "collection_name" with "test"
     And I fill in "collection_title" with "Test Title"

@@ -7,19 +7,19 @@ Feature: Managing Item Lists
     Given I have the usual roles and permissions
     And I have users
       | email                        | first_name | last_name |
-      | researcher@intersect.org.au  | Researcher | One       |
-    And "researcher@intersect.org.au" has role "researcher"
-    And "researcher@intersect.org.au" has an api token
-    And I have user "researcher@intersect.org.au" with the following groups
+      | researcher@alveo.edu.au  | Researcher | One       |
+    And "researcher@alveo.edu.au" has role "researcher"
+    And "researcher@alveo.edu.au" has an api token
+    And I have user "researcher@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | cooee          | read       |
-    And I am logged in as "researcher@intersect.org.au"
-    And "researcher@intersect.org.au" has item lists
+    And I am logged in as "researcher@alveo.edu.au"
+    And "researcher@alveo.edu.au" has item lists
       | name |
       | Test1 |
 
   Scenario: I have option to download item list as a zip
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has 1 text documents
@@ -27,7 +27,7 @@ Feature: Managing Item Lists
     Then I should see "Download as ZIP"
 
   Scenario: I have multiple options to download item list as a zip
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has 1 text documents
@@ -43,7 +43,7 @@ Feature: Managing Item Lists
     And I should see "Download Matches"
 
   Scenario: Downloading more than 200 documents results in an error
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has 201 text documents
@@ -53,7 +53,7 @@ Feature: Managing Item Lists
     Then I should see "Zip download is limited to 200 files"
 
   Scenario: Remote documents can be downloaded not result in an error
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has 101 items with two remote documents each
@@ -64,7 +64,7 @@ Feature: Managing Item Lists
     Then I should not see "Zip download is limited to 200 files"
 
   Scenario: Documents without extensions can be filtered
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has 101 items with two remote documents each

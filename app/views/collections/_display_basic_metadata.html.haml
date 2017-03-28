@@ -1,0 +1,60 @@
+- if @collection.nil? || @collection.name.nil?
+  .row-fluid
+    .span4
+      = label_tag :collection_name, 'Collection Name:'
+      = text_field_tag :collection_name, @collection_name, placeholder: 'collection name', required: true
+    .span4
+
+.row-fluid
+  .span4
+    = label_tag :collection_title, 'Collection Title:'
+    = text_field_tag :collection_title, @collection_title, placeholder: "collection title"
+  .span4
+    %label{:for => "olac_subject"}
+      Collection Subject:
+      %a{:href => "http://www.language-archives.org/REC/field.html", :target => "_blank"}
+        %i.icon-question-sign
+    = select_tag :olac_subject, options_for_select(@olac_subject_options, @olac_subject), id: 'olac_subject'
+
+.row-fluid
+  .span4
+    = label_tag :collection_creator, 'Collection Creator:'
+    = text_field_tag :collection_creator, @collection_creator, placeholder: 'collection creator\'s name'
+  .span4
+    = label_tag :collection_language, 'Collection Language:'
+    = select_tag :collection_language, options_for_select(@collection_languages, @collection_language),id: 'language_select'
+
+.row-fluid
+  .span4
+    = label_tag :collection_owner, 'Collection Owner:'
+    = text_field_tag :collection_owner, @collection_owner, placeholder: 'collection owner\'s name'
+  .span4
+    = label_tag :collection_creation_date, 'Collection Creation Date:'
+    = text_field_tag :collection_creation_date, @collection_creation_date, placeholder: 'dd/mm/yyyy'
+
+.row-fluid
+  .span4
+    = label_tag :licence_id, 'Licence:'
+    = select_tag :licence_id, options_for_select(@collection_licences.map {|l| [l.name, l.id]}, @collection.nil? ? '' : @collection.licence_id), include_blank: true
+  .span4
+    = label_tag :approval_required, 'Privacy: '
+    = check_box_tag :approval_required, 'private', @approval_required == 'private'
+    Approval required for collection access
+
+:javascript
+  $('#collection_creation_date').datepicker({
+    format: 'dd/mm/yyyy'
+  })
+
+  $("#olac_subject").select2({
+    width: 'resolve'
+  })
+
+  $("#licence_id").select2({
+    width: 'resolve'
+  })
+
+  $("#language_select").select2({
+    width: 'resolve',
+    minimumInputLength: 2
+  })

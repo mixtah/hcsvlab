@@ -97,7 +97,7 @@ public
   BIBLIOGRAPHIC_CITATION = RDF::URI(DC_TERMS_BASE_URI + 'bibliographicCitation') unless const_defined?(:BIBLIO_CITATION)
   ABSTRACT               = RDF::URI(DC_TERMS_BASE_URI + 'abstract') unless const_defined?(:ABSTRACT)
   # KL - collection enhancement
-  DC_LANGUAGE               = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:DC_LANGUAGE)
+  DC_LANGUAGE            = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:DC_LANGUAGE)
   CREATOR                = RDF::URI(DC_ELEMENTS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
   LICENCE                = RDF::URI(DC_TERMS_BASE_URI + 'license') unless const_defined?(:LICENCE)
 
@@ -130,43 +130,46 @@ public
   #
   # OLAC
   #
-  DISCOURSE_TYPE = RDF::URI(OLAC_BASE_URI + 'discourse_type') unless const_defined?(:DISCOURSE_TYPE)
-  LANGUAGE       = RDF::URI(OLAC_BASE_URI + 'language') unless const_defined?(:LANGUAGE)
+  DISCOURSE_TYPE    = RDF::URI(OLAC_BASE_URI + 'discourse_type') unless const_defined?(:DISCOURSE_TYPE)
+  LANGUAGE          = RDF::URI(OLAC_BASE_URI + 'language') unless const_defined?(:LANGUAGE)
+  OLAC_SUBJECT      = RDF::URI(OLAC_BASE_URI + 'subject') unless const_defined?(:OLAC_SUBJECT)
 
-  @@lookup[DISCOURSE_TYPE.to_s] = prefixes[OLAC_BASE_URI] + "_discourse_type_facet"
-  @@lookup[LANGUAGE.to_s]       = prefixes[OLAC_BASE_URI] + "_language_facet"
+  @@lookup[DISCOURSE_TYPE.to_s]   = prefixes[OLAC_BASE_URI] + "_discourse_type_facet"
+  @@lookup[LANGUAGE.to_s]         = prefixes[OLAC_BASE_URI] + "_language_facet"
+  @@lookup[OLAC_SUBJECT.to_s]     = prefixes[OLAC_BASE_URI] + "_subject_facet"
   # code => name
-  PFX_OLAC = "olac:"
+  PFX_OLAC_SUBJECT                = "olac:subject"
+
   OLAC_LINGUISTIC_SUBJECT_HASH = {
-      "#{PFX_OLAC}anthropological_linguistics" => "Anthropological Linguistics",
-      "#{PFX_OLAC}applied_linguistics" => "Applied Linguistics",
-      "#{PFX_OLAC}cognitive_science" => "Cognitive Science",
-      "#{PFX_OLAC}computational_linguistics" => "Computational Linguistics",
-      "#{PFX_OLAC}discourse_analysis" => "Discourse Analysis",
-      "#{PFX_OLAC}forensic_linguistics" => "Forensic Linguistics",
-      "#{PFX_OLAC}general_linguistics" => "General Linguistics",
-      "#{PFX_OLAC}historical_linguistics" => "Historical Linguistics",
-      "#{PFX_OLAC}history_of_linguistics" => "History of Linguistics",
-      "#{PFX_OLAC}language_acquisition" => "Language Acquisition",
-      "#{PFX_OLAC}language_documentation" => "Language Documentation",
-      "#{PFX_OLAC}lexicography" => "Lexicography",
-      "#{PFX_OLAC}linguistics_and_literature" => "Linguistics and Literature",
-      "#{PFX_OLAC}linguistic_theories" => "Linguistic Theories",
-      "#{PFX_OLAC}mathematical_linguistics" => "Mathematical Linguistics",
-      "#{PFX_OLAC}morphology" => "Morphology",
-      "#{PFX_OLAC}neurolinguistics" => "Neurolinguistics",
-      "#{PFX_OLAC}philosophy_of_language" => "Philosophy of Language",
-      "#{PFX_OLAC}phonetics" => "Phonetics",
-      "#{PFX_OLAC}phonology" => "Phonology",
-      "#{PFX_OLAC}pragmatics" => "Pragmatics",
-      "#{PFX_OLAC}psycholinguistics" => "Psycholinguistics",
-      "#{PFX_OLAC}semantics" => "Semantics",
-      "#{PFX_OLAC}sociolinguistics" => "Sociolinguistics",
-      "#{PFX_OLAC}syntax" => "Syntax",
-      "#{PFX_OLAC}text_and_corpus_linguistics" => "Text and Corpus Linguistics",
-      "#{PFX_OLAC}translating_and_interpreting" => "Translating and Interpreting",
-      "#{PFX_OLAC}typology" => "Typology",
-      "#{PFX_OLAC}writing_systems" => "Writing Systems"
+    "Anthropological Linguistics"     => "Anthropological Linguistics",
+    "Applied Linguistics"             => "Applied Linguistics",
+    "Cognitive Science"               => "Cognitive Science",
+    "Computational Linguistics"       => "Computational Linguistics",
+    "Discourse Analysis"              => "Discourse Analysis",
+    "Forensic Linguistics"            => "Forensic Linguistics",
+    "General Linguistics"             => "General Linguistics",
+    "Historical Linguistics"          => "Historical Linguistics",
+    "History of Linguistics"          => "History of Linguistics",
+    "Language Acquisition"            => "Language Acquisition",
+    "Language Documentation"          => "Language Documentation",
+    "Lexicography"                    => "Lexicography",
+    "Linguistics and Literature"      => "Linguistics and Literature",
+    "Linguistic Theories"             => "Linguistic Theories",
+    "Mathematical Linguistics"        => "Mathematical Linguistics",
+    "Morphology"                      => "Morphology",
+    "Neurolinguistics"                => "Neurolinguistics",
+    "Philosophy of Language"          => "Philosophy of Language",
+    "Phonetics"                       => "Phonetics",
+    "Phonology"                       => "Phonology",
+    "Pragmatics"                      => "Pragmatics",
+    "Psycholinguistics"               => "Psycholinguistics",
+    "Semantics"                       => "Semantics",
+    "Sociolinguistics"                => "Sociolinguistics",
+    "Syntax"                          => "Syntax",
+    "Text and Corpus Linguistics"     => "Text and Corpus Linguistics",
+    "Translating and Interpreting"    => "Translating and Interpreting",
+    "Typology"                        => "Typology",
+    "Writing Systems"                 => "Writing Systems"
   }
 
   #
@@ -288,21 +291,19 @@ public
       collection.name = collection_name
       collection.save
 
-      logger.debug "new collection created: #{collection}"
+      logger.debug "update_rdf_graph: new collection created: #{collection}"
     end
 
     unless graph.nil?
       # remove all CollectionProperty with collection_id
-      logger.debug "graph is not nil, collection.id=#{collection.id}"
-
       CollectionProperty.delete_all "collection_id = #{collection.id}"
 
       json = rdf_graph_to_json(graph)
 
-      logger.debug "json=#{json}"
+      logger.debug "update_rdf_graph: json=#{json}"
 
       json.each do |property, value|
-        logger.debug "[#{property}] => (#{value.class}):#{value}"
+        logger.debug "update_rdf_graph: [#{property}] => (#{value.class}):#{value}"
 
         collection_property = CollectionProperty.new
 
@@ -310,7 +311,7 @@ public
         collection_property.property = property
         collection_property.value = value.to_s.gsub(/=>/, ':')
 
-        logger.debug "collection_property.property=#{collection_property.property}, collection_property.value=#{collection_property.value}"
+        logger.debug "update_rdf_graph: add #{collection_property.property}=#{collection_property.value}"
 
         collection_property.save
       end
@@ -350,8 +351,9 @@ public
   def self::json_to_rdf_graph(json, format=:ttl)
     logger.debug "json_to_rdf_graph: json=#{json.to_s}"
     graph = RDF::Graph.new << JSON::LD::API.toRDF(json)
+
+    logger.debug "json_to_rdf_graph: graph=#{graph.dump(format)}"
     # graph.dump(format)
-    logger.debug "json_to_rdf_graph: graph=#{graph.to_s}"
     graph
   end
 
@@ -399,29 +401,39 @@ public
     properties
   end
 
-  def self::demo_text
-    text = %(
-# Intro
-Go ahead, play around with the editor! Be sure to check out **bold** and *italic* styling, or even [links](https://google.com). You can type the Markdown syntax, use the toolbar, or use shortcuts like `cmd-b` or `ctrl-b`.
+  # Complete collection metadata with default metadata value rules.
+  # Handle both nil and blank case.
+  # Default metadata value:
+  #   dcterms:title (Title, default=name)
+  #   dcterms:language (Language, default='English')
+  #   dcterms:created (Creation Date, default=current date)
+  #   dcterms:creator (Creator, default=logged in user)
+  #   dcterms:licence (Licence, default='Creative Commons v3.0 BY')
+  #
+  def self::not_empty_collection_metadata!(collection_name, full_name, metadata)
+    logger.debug "not_empty_collection_metadata!: begin #{collection_name}, #{full_name}, #{metadata}"
 
-## Lists
-Unordered lists can be started using the toolbar or by typing `* `, `- `, or `+ `. Ordered lists can be started by typing `1. `.
+    metadata_fields = {
+      MetadataHelper::TITLE.to_s => collection_name,
+      MetadataHelper::DC_LANGUAGE.to_s => 'eng - English',
+      MetadataHelper::CREATED.to_s => DateTime.now.strftime("%d/%m/%Y"),
+      MetadataHelper::CREATOR.to_s => full_name,
+      MetadataHelper::LICENCE.to_s => 'Creative Commons v3.0 BY'
+    }
 
-#### Unordered
-* Lists are a piece of cake
-* They even auto continue as you type
-* A double enter will end them
-* Tabs and shift-tabs work too
+    metadata_fields.each do |field, value|
+      metadata[field] = value if metadata[field].nil? || metadata[field].empty?
+    end
 
-#### Ordered
-1. Numbered lists...
-2. ...work too!
+    logger.debug "not_empty_collection_metadata!: end #{metadata}"
 
-## What about images?
-![Yes](https://i.imgur.com/sZlktY7.png)
+    metadata
+  end
 
-## What about videos?
-<iframe width="560" height="315" src="https://www.youtube.com/embed/0R1Nf4MS9hM" frameborder="0" allowfullscreen></iframe>
-    )
+  #
+  # Load metadata searchable fields
+  #
+  def self::searchable_fields
+    ItemMetadataFieldNameMapping.order('lower(user_friendly_name)').select([:rdf_name, :user_friendly_name])
   end
 end

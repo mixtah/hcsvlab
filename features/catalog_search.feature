@@ -10,15 +10,15 @@ Feature: Searching for items
     Given I have the usual roles and permissions
     Given I have users
       | email                       | first_name | last_name |
-      | researcher@intersect.org.au | Researcher | One       |
-    Given I have user "researcher@intersect.org.au" with the following groups
+      | researcher@alveo.edu.au | Researcher | One       |
+    Given I have user "researcher@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | cooee          | read       |
       | austlit        | read       |
       | ice            | read       |
       | custom         | read       |
-    And "researcher@intersect.org.au" has role "researcher"
-    And I am logged in as "researcher@intersect.org.au"
+    And "researcher@alveo.edu.au" has role "researcher"
+    And I am logged in as "researcher@alveo.edu.au"
     And I am on the home page
 
   @javascript
@@ -30,7 +30,7 @@ Feature: Searching for items
       | austlit:bolroma.xml | Text, Original, Raw |
 
   Scenario: Must be logged in to see search history
-    Given I follow "researcher@intersect.org.au"
+    Given I follow "researcher@alveo.edu.au"
     And I follow "Logout"
     And I am on the search history page
     Then I should see "Please enter your email and password to log in"

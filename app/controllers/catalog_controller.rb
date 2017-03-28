@@ -17,7 +17,7 @@ class CatalogController < ApplicationController
   # Set catalog tab as current selected
   set_tab :catalog
 
-  before_filter :authenticate_user!, :except => [:index, :annotation_context, :searchable_fields]
+  before_filter :authenticate_user!, :except => [:annotation_context, :searchable_fields]
 
   include Blacklight::Catalog
   include Hydra::Controller::ControllerBehavior
@@ -318,7 +318,7 @@ class CatalogController < ApplicationController
             :exception => e,
             :rack_env => env
         }
-        WhoopsLogger.log(:rails_exception, raw_data) if WhoopsLogger.config.host
+        # WhoopsLogger.log(:rails_exception, raw_data) if WhoopsLogger.config.host
         redirect_to new_issue_report_path, alert: "Solr is experiencing problems at the moment. The administrators have been informed of the issue."
       rescue RSolr::Error::Http => e
         Rails.logger.debug(e.message)
@@ -331,7 +331,8 @@ class CatalogController < ApplicationController
       respond_to do |format|
         format.json { render :nothing => true, :status => 406 }
         # format.html { render :template => 'collections/index'}
-        format.html { redirect_to controller: 'collections'}
+        # format.html { redirect_to controller: 'collections'}
+        format.html {}
       end
     end
   end
@@ -530,8 +531,15 @@ class CatalogController < ApplicationController
   #
   def annotation_context
     @default_context = JsonLdHelper::default_context
-    request.format = 'json'
-    respond_to 'json'
+    # request.format = 'json'
+    # respond_to 'json'
+
+    html = "<pre><code>#{JSON.pretty_generate(@default_context)}</code></pre>"
+
+    respond_to do |format|
+      format.html { render :text => html}
+      format.json
+    end
   end
 
   #
@@ -652,7 +660,8 @@ class CatalogController < ApplicationController
   # Display every field that can be user to do a search in the metadata
   #
   def searchable_fields
-    @name_mappings = ItemMetadataFieldNameMapping.order('lower(user_friendly_name)').select([:rdf_name, :user_friendly_name])
+    # @name_mappings = ItemMetadataFieldNameMapping.order('lower(user_friendly_name)').select([:rdf_name, :user_friendly_name])
+    @name_mappings = MetadataHelper::searchable_fields
   end
 
   #

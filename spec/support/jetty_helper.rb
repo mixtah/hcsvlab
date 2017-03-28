@@ -34,7 +34,7 @@ end
 #
 #
 def ingest_test_collections
-  data_owner = FactoryGirl.create(:user, :email => 'data_owner@intersect.org.au', :password => "Pas$w0rd", :status => 'A')
+  data_owner = FactoryGirl.create(:user, :email => 'data_owner@alveo.edu.au', :password => "Pas$w0rd", :status => 'A')
   data_owner.role = Role.find_or_create_by_name(Role::DATA_OWNER_ROLE)
   data_owner.save!
   qa_collections_folder = "#{Rails.root}/test/samples/test_collections"

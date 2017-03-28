@@ -5,57 +5,57 @@ Feature: Locking out users after multiple failed password attempts
 
   Background:
     Given I have the usual roles and permissions
-    And I have a user "georgina@intersect.org.au" with role "admin"
+    And I have a user "georgina@alveo.edu.au" with role "admin"
 
   Scenario: 3 consecutive failed logins results in account being locked.
-    When I attempt to login with "georgina@intersect.org.au" and "blah"
+    When I attempt to login with "georgina@alveo.edu.au" and "blah"
     Then I should see "Invalid email or password."
     And I should be on the login page
-    When I attempt to login with "georgina@intersect.org.au" and "blah"
+    When I attempt to login with "georgina@alveo.edu.au" and "blah"
     Then I should see "Invalid email or password."
     And I should be on the login page
-    When I attempt to login with "georgina@intersect.org.au" and "blah"
+    When I attempt to login with "georgina@alveo.edu.au" and "blah"
     Then I should see "You entered an incorrect password 3 times in a row. For security reasons your account has been locked for one hour."
 
   Scenario: A successful login after 2 failures resets the failure count to zero
-    When I attempt to login with "georgina@intersect.org.au" and "blah"
+    When I attempt to login with "georgina@alveo.edu.au" and "blah"
     Then I should see "Invalid email or password."
-    When I attempt to login with "georgina@intersect.org.au" and "blah"
+    When I attempt to login with "georgina@alveo.edu.au" and "blah"
     Then I should see "Invalid email or password."
-    And the failed attempt count for "georgina@intersect.org.au" should be "2"
-    When I attempt to login with "georgina@intersect.org.au" and "Pas$w0rd"
+    And the failed attempt count for "georgina@alveo.edu.au" should be "2"
+    When I attempt to login with "georgina@alveo.edu.au" and "Pas$w0rd"
     Then I should see "Logged in successfully."
-    And the failed attempt count for "georgina@intersect.org.au" should be "0"
+    And the failed attempt count for "georgina@alveo.edu.au" should be "0"
     When I follow "Logout"
-    And I attempt to login with "georgina@intersect.org.au" and "blah"
+    And I attempt to login with "georgina@alveo.edu.au" and "blah"
     Then I should see "Invalid email or password."
-    And the failed attempt count for "georgina@intersect.org.au" should be "1"
+    And the failed attempt count for "georgina@alveo.edu.au" should be "1"
 
   Scenario: Can't login while locked even with correct password
-    Given I have a locked user "shuqian@intersect.org.au"
-    When I attempt to login with "shuqian@intersect.org.au" and "Pas$w0rd"
+    Given I have a locked user "shuqian@alveo.edu.au"
+    When I attempt to login with "shuqian@alveo.edu.au" and "Pas$w0rd"
     And I should see "You entered an incorrect password 3 times in a row. For security reasons your account has been locked for one hour."
     And I should be on the login page
 
   Scenario: Further incorrect attempts while locked show locked message
-    Given I have a locked user "shuqian@intersect.org.au"
-    When I attempt to login with "shuqian@intersect.org.au" and "asdf"
+    Given I have a locked user "shuqian@alveo.edu.au"
+    When I attempt to login with "shuqian@alveo.edu.au" and "asdf"
     And I should see "You entered an incorrect password 3 times in a row. For security reasons your account has been locked for one hour."
     And I should be on the login page
 
   Scenario: Can login with correct password after lock expiring
-    Given I have a user "shuqian@intersect.org.au" with an expired lock
-    When I attempt to login with "shuqian@intersect.org.au" and "Pas$w0rd"
+    Given I have a user "shuqian@alveo.edu.au" with an expired lock
+    When I attempt to login with "shuqian@alveo.edu.au" and "Pas$w0rd"
     Then I should see "Logged in successfully."
-    And the failed attempt count for "shuqian@intersect.org.au" should be "0"
+    And the failed attempt count for "shuqian@alveo.edu.au" should be "0"
 
   Scenario: User can reset password while locked out and this resets the lock and failure count
-    Given I have a locked user "shuqian@intersect.org.au"
-    When I attempt to login with "shuqian@intersect.org.au" and "Pas$w0rd"
+    Given I have a locked user "shuqian@alveo.edu.au"
+    When I attempt to login with "shuqian@alveo.edu.au" and "Pas$w0rd"
     Then I should see "You entered an incorrect password 3 times in a row. For security reasons your account has been locked for one hour."
-    When I request a reset for "shuqian@intersect.org.au"
+    When I request a reset for "shuqian@alveo.edu.au"
     Then I should see "If the email address you entered was the one previously used to sign up for an account, then you will receive an email with instructions about how to reset your password in a few minutes."
-    And "shuqian@intersect.org.au" should receive an email
+    And "shuqian@alveo.edu.au" should receive an email
     When I open the email
     Then I should see "Someone has requested a link to change your password on the Alveo website. You can do this through the link below." in the email body
     When I click the first link in the email
@@ -66,6 +66,6 @@ Feature: Locking out users after multiple failed password attempts
     Then I should see "Your password was changed successfully. You are now signed in."
   # to verify we are actually logged in
     And I should not see "Login"
-    And the failed attempt count for "shuqian@intersect.org.au" should be "0"
-    And I should be able to log in with "shuqian@intersect.org.au" and "Pass.456"
+    And the failed attempt count for "shuqian@alveo.edu.au" should be "0"
+    And I should be able to log in with "shuqian@alveo.edu.au" and "Pass.456"
 

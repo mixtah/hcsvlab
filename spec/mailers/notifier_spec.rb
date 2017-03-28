@@ -30,13 +30,13 @@ describe Notifier do
   it "should send the right email" do
     address = 'user@email.org'
     user = FactoryGirl.create(:user, :status => "U", :email => address)
-    User.should_receive(:get_superuser_emails) { ["super1@intersect.org.au", "super2@intersect.org.au"] }
+    User.should_receive(:get_superuser_emails) { ["super1@alveo.edu.au", "super2@alveo.edu.au"] }
     email = user.notify_admin_by_email
 
     # check that the email has been queued for sending
     ActionMailer::Base.deliveries.empty?.should eq(false)
     email.subject.should eq("#{PROJECT_NAME} - There has been a new access request")
-    email.to.should eq(["super1@intersect.org.au", "super2@intersect.org.au"])
+    email.to.should eq(["super1@alveo.edu.au", "super2@alveo.edu.au"])
   end
 
   describe "Notification to superusers when new issue report created"
@@ -44,13 +44,13 @@ describe Notifier do
     address = 'user@email.org'
     url = 'http://www.fake.org'
     report = IssueReport.new(:user_email => address, :url => url, :description => "something went wrong on this page")
-    User.should_receive(:get_superuser_emails) { ["super1@intersect.org.au", "super2@intersect.org.au"] }
+    User.should_receive(:get_superuser_emails) { ["super1@alveo.edu.au", "super2@alveo.edu.au"] }
     email = Notifier.notify_superusers_of_issue(report).deliver
 
     # check that the email has been queued for sending
     ActionMailer::Base.deliveries.empty?.should eq(false)
     email.subject.should eq("#{PROJECT_NAME} - An issue has been reported")
-    email.to.should eq(["super1@intersect.org.au", "super2@intersect.org.au"])
+    email.to.should eq(["super1@alveo.edu.au", "super2@alveo.edu.au"])
   end
 
 end

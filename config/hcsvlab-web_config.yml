@@ -1,10 +1,10 @@
 defaults: &defaults
-  password_reset_email_sender: kali@intersect.org.au
-  account_request_user_status_email_sender: kali@intersect.org.au
-  account_request_admin_notification_sender: kali@intersect.org.au
-  default_data_owner: data_owner@intersect.org.au
-  licence_access_request_notification_sender: kali@intersect.org.au
-  licence_access_request_response_sender: kali@intersect.org.au
+  password_reset_email_sender: karl.li@mq.edu.au
+  account_request_user_status_email_sender: karl.li@mq.edu.au
+  account_request_admin_notification_sender: karl.li@mq.edu.au
+  default_data_owner: karl.li@mq.edu.au
+  licence_access_request_notification_sender: karl.li@mq.edu.au
+  licence_access_request_response_sender: karl.li@mq.edu.au
   download_max_files: 200
 
 development:
@@ -12,7 +12,7 @@ development:
 
 test:
   <<: *defaults
-  default_data_owner: data_owner@intersect.org.au
+  default_data_owner: karl.li@mq.edu.au
 
 production:
   password_reset_email_sender: steve.cassidy@mq.edu.au
@@ -39,25 +39,25 @@ nci:
 
 staging:
   <<: *defaults
-  password_reset_email_sender: steve.cassidy@mq.edu.au
-  account_request_user_status_email_sender: steve.cassidy@mq.edu.au
-  account_request_admin_notification_sender: steve.cassidy@mq.edu.au
-  default_data_owner: steve.cassidy@mq.edu.au
-  licence_access_request_notification_sender: steve.cassidy@mq.edu.au
-  licence_access_request_response_sender: steve.cassidy@mq.edu.au
+  password_reset_email_sender: karl.li@mq.edu.au
+  account_request_user_status_email_sender: karl.li@mq.edu.au
+  account_request_admin_notification_sender: karl.li@mq.edu.au
+  default_data_owner: karl.li@mq.edu.au
+  licence_access_request_notification_sender: karl.li@mq.edu.au
+  licence_access_request_response_sender: karl.li@mq.edu.au
 
 staging2:
-  password_reset_email_sender: jared@intersect.org.au
-  account_request_user_status_email_sender: jared@intersect.org.au
-  account_request_admin_notification_sender: jared@intersect.org.au
-  default_data_owner: jared@intersect.org.au
-  licence_access_request_notification_sender: jared@intersect.org.au
-  licence_access_request_response_sender: jared@intersect.org.au
+  password_reset_email_sender: karl.li@mq.edu.au
+  account_request_user_status_email_sender: karl.li@mq.edu.au
+  account_request_admin_notification_sender: karl.li@mq.edu.au
+  default_data_owner: karl.li@mq.edu.au
+  licence_access_request_notification_sender: karl.li@mq.edu.au
+  licence_access_request_response_sender: karl.li@mq.edu.au
 
 trove:
-  password_reset_email_sender: steve.cassidy@mq.edu.au
-  account_request_user_status_email_sender: steve.cassidy@mq.edu.au
-  account_request_admin_notification_sender: steve.cassidy@mq.edu.au
-  default_data_owner: steve.cassidy@mq.edu.au
-  licence_access_request_notification_sender: steve.cassidy@mq.edu.au
-  licence_access_request_response_sender: steve.cassidy@mq.edu.au
+  password_reset_email_sender: karl.li@mq.edu.au
+  account_request_user_status_email_sender: karl.li@mq.edu.au
+  account_request_admin_notification_sender: karl.li@mq.edu.au
+  default_data_owner: karl.li@mq.edu.au
+  licence_access_request_notification_sender: karl.li@mq.edu.au
+  licence_access_request_response_sender: karl.li@mq.edu.au

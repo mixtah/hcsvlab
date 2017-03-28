@@ -1,5 +1,5 @@
 Given /^Collections ownership is$/ do |table|
-  # table is a | cooee      | data_owner@intersect.org.au |
+  # table is a | cooee      | data_owner@alveo.edu.au |
   table.hashes.each_with_index do |row|
     collection = Collection.find_by_name(row[:collection])
     user = User.find_by_email(row[:owner_email])

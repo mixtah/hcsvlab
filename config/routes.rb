@@ -27,6 +27,9 @@ HcsvlabWeb::Application.routes.draw do
   get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
 
+  # for header navbar
+  get "discover", :to => 'catalog#index', :as => 'header_discover'
+
   # Collection definitions
   get "catalog", :to => 'collections#index', :as => 'collections'
   get "collections", :to => 'collections#index', :as => 'collections'
@@ -49,6 +52,7 @@ HcsvlabWeb::Application.routes.draw do
   post 'collections/:collection_id/attachments', :to => 'attachments#create', :as => 'create_attachment'
   # can proceed with own attachment id
   resources :attachments, only: [:show, :edit, :update, :destroy]
+
 
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
@@ -93,13 +97,14 @@ HcsvlabWeb::Application.routes.draw do
     get "/users/sign_in", :to => "devise/sessions#oauth2_new", :as => 'oauth2_sign_in'
 
     get "/users/aaf_sign_in", :to => "devise/sessions#aaf_new"
-    get "/account/", :to => "user_registers#index" #allow users to edit their own password
-    get "/account/edit", :to => "user_registers#edit" #allow users to edit their own password
+    get "/account/", :to => "user_registers#index"
+    get "/account/edit", :to => "user_registers#edit"
     get "/account/edit_password", :to => "user_registers#edit_password" #allow users to edit their own password
-    get "/account/licence_agreements", :to => "user_registers#licence_agreements" #allow users to edit their own password
-    put "/account/update_password", :to => "user_registers#update_password" #allow users to edit their own password
+    put "/account/update_password", :to => "user_registers#update_password" #allow users to update their own password
     get "/account/generate_token", :to => "user_registers#generate_token" #allow users to generate an API token
     get "/account_api_key", :to => "user_registers#download_token"
+    get "/account/get_details", :to => "user_registers#download_details"
+    get "/account/licence_agreements", :to => "user_registers#licence_agreements"
     delete "/account/delete_token", :to => "user_registers#delete_token" #allow users to delete their API token
     delete "/account/licence_agreements/:id/cancel_request", :to => "user_licence_requests#cancel_request", :as => 'cancel_request'
   end

@@ -1,20 +1,32 @@
 = render partial: 'display_breadcrumb', locals: {nav_links: {'collections' => collections_path, "#{@collection.name}" => nil}}
 
--#.sidenav.static.span3.facets
--#  %h4{data: {toggle: 'collapse', target: '.facets-collapse'}} Metadata
--#  - metadata_fields = collection_show_fields(@collection)
--#  - metadata_fields.each do |field|
--#    - if field.first[0] != "Description" && field.first[0] != "Abstract"
--#      %dt
--#        %strong #{field.first[0]}
--#      %dd{:style => "text-align: right;"} #{field.first[1]}
-
 - metadata_fields = collection_show_fields(@collection)
 
 .container-fluid
   .row-fluid
     .page-header
-      %h2=  @collection.name
+      .row-fluid
+        .span4
+          .pull-left
+            %h2=@collection.name
+        .span8
+          .pull-right
+            - unless params[:state].nil?
+              = link_to "Back to Licence Agreements", "/account/licence_agreements", :class => "btn btn-primary"
+
+            - if can? :web_add_item, @collection
+              %br
+              = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn btn-primary"
+
+            - if can? :edit_collection, @collection
+              = link_to "Edit Collection", edit_collection_path, id: 'edit_collection', :class => "btn btn-primary"
+
+            - if can? :delete_collection, @collection
+              - if @collection.items.size == 0
+                = link_to "Delete Collection", delete_collection_path, method: :delete, id: 'edit_collection', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current collection?"}
+              - else
+                %button.btn.btn-danger.btn-sm{:disabled => "disabled", :type => "button", :title => "Collection not empty, can't delete!"} Delete Collection?
+
 
   .row-fluid
     .span3{:style => "overflow-wrap:break-word;"}
@@ -22,7 +34,7 @@
         %ul.nav.nav-list.text-left
           %li.nav-header Metadata
           - metadata_fields.each do |field|
-            - if field.first[0] != "Description" && field.first[0] != "Abstract" && field.first[0] != "RDF Type" && field.first[0] != "SPARQL Endpoint"
+            - if field.first[0] != "Abstract" && field.first[0] != "RDF Type" && field.first[0] != "SPARQL Endpoint"
               %li
                 %strong
                   #{field.first[0]}:
@@ -30,25 +42,9 @@
 
       = render partial: 'display_attachment_sidebar', locals: {attachment_url: @attachment_url}
 
-    .span9
-      .hero-unit
-        -#%h3= @collection.name
-        %p
-          - metadata_fields.each do |field|
-            - if field.first[0] == "Description"
-              = field.first[1].to_s.html_safe
-          -#%a.btn.btn-primary.btn-large{:href => "#"} Learn more »
+    .span1
+    .span8
+      .row-fluid
+        = @collection.html_text.html_safe
 
 
-        - unless params[:state].nil?
-          = link_to "Back to Licence Agreements", "/account/licence_agreements", :class => "btn btn-primary"
-
-        - if can? :web_add_item, @collection
-          %br
-          = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn btn-primary"
-
-        - if can? :edit_collection, @collection
-          = link_to "Edit Collection", edit_collection_path, id: 'edit_collection', :class => "btn btn-primary"
-
-        - if can? :delete_collection, @collection
-          = link_to "Delete Collection", delete_collection_path, method: :delete, id: 'edit_collection', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current collection?"}

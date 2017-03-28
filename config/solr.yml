@@ -1,7 +1,7 @@
 # This is a sample config file that does not have multiple solr instances. You will also need to be sure to
 development:
   url: http://localhost:8983/solr/development
-#  url: http://alveo-qa-solr.intersect.org.au:8080/solr/hcsvlab
+#  url: http://alveo-qa-solr.alveo.edu.au:8080/solr/hcsvlab
 test: &TEST
   url: http://localhost:8983/solr/test
 cucumber:
@@ -19,4 +19,4 @@ staging2:
 production:
   url: http://localhost:8080/solr/hcsvlab
 trove:
-  url: http://alveo-solr.intersect.org.au:8080/solr/hcsvlab
+  url: http://alveo-solr.alveo.edu.au:8080/solr/hcsvlab

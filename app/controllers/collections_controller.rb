@@ -41,15 +41,18 @@ class CollectionsController < ApplicationController
     # @collection_lists = lists_by_name
 
     @collection = Collection.find_by_name(params[:id])
-    @attachment_url = collection_attachments_path(@collection.id)
 
-    respond_to do |format|
-      if @collection.nil? or @collection.name.nil?
+    if @collection.nil? || @collection.name.nil?
+      respond_to do |format|
         format.html {
-          flash[:error] = "Collection does not exist with the given id"
+          flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
           redirect_to collections_path }
         format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
-      else
+      end
+    else
+      @attachment_url = collection_attachments_path(@collection.id)
+
+      respond_to do |format|
         format.html { render :show }
         format.json {}
       end
@@ -142,25 +145,18 @@ class CollectionsController < ApplicationController
     @collection_language = params[:collection_language]
     @collection_language = 'eng - English' if @collection_language.nil?
     @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
-
-
-
+    #
+    #
     @collection_creation_date = params[:collection_creation_date]
     @collection_creator = params[:collection_creator]
-    @collection_linguistic_field_name = params[:collection_linguistic_field_name]
-    @collection_linguistic_field_value = params[:collection_linguistic_field_value]
+    # @collection_linguistic_field_name = params[:collection_linguistic_field_name]
+    # @collection_linguistic_field_value = params[:collection_linguistic_field_value]
+    @olac_subject = params[:olac_subject].nil? ? "Anthropological Linguistics" : params[:olac_subject]
+
 
     @collection_licences = licences
 
     if request.get?
-      # web_new_collection
-
-      # @collection_licences = licences
-      # if @collection_licences.nil?
-      #   @collection_licences = {"MIT" => "MIT"}
-      # end
-
-      # @collection_olac_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH.invert
 
       @collection_name = nil
       @collection_title = nil
@@ -168,58 +164,69 @@ class CollectionsController < ApplicationController
       @collection_creator = nil
       @collection_owner = nil
       @collection_abstract = nil
-      # @collection_text = MetadataHelper::demo_text
       @collection_text = nil
+
+      #   load content only for Get
+      @olac_subject_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH
+
+      @additional_metadata = {}
+      @additional_metadata_options = metadata_names_mapping
 
     end
 
     if request.post?
       begin
         validate_required_web_fields(
-            params,
-            {
-                :collection_name => 'collection name',
-                :collection_title => 'collection title',
-                :collection_language => 'collection language',
-                :collection_creation_date => 'collection creation date',
-                :collection_creator => 'collection creator',
-                :collection_owner => 'collection owner',
-                :collection_olac_name => 'collection OLAC linguistic subject',
-                :collection_olac_value => 'collection OLAC linguistic subject value',
-                :collection_abstract => 'collection abstract',
-                :collection_text => 'collection description'
-            }
+          params,
+          {
+            :collection_name => 'collection name'
+            # :collection_title => 'collection title',
+            # :collection_language => 'collection language',
+            # :collection_creation_date => 'collection creation date',
+            # :collection_creator => 'collection creator',
+            # :collection_owner => 'collection owner',
+            # :collection_olac_name => 'collection OLAC linguistic subject',
+            # :collection_olac_value => 'collection OLAC linguistic subject value',
+            # :collection_abstract => 'collection abstract'
+            # :collection_text => 'collection description'
+          }
         )
 
         # Validate and sanitise OLAC metadata fields
-        olac_metadata = validate_collection_olac_metadata(params)
+        # olac_metadata = validate_collection_olac_metadata(params)
 
         # logger.debug "olac_metadata=#{olac_metadata}"
 
         # Validate and sanitise additional metadata fields
         additional_metadata = validate_collection_additional_metadata(params)
 
+        # retrieve valid licence
+        lic = licence(@licence_id)
+
         # Construct collection Json-ld
         json_ld = {
-            '@context' => JsonLdHelper::default_context,
-            '@type' => 'dcmitype:Collection',
-            MetadataHelper::TITLE.to_s => @collection_title,
-            MetadataHelper::DC_LANGUAGE.to_s => @collection_language,
-            MetadataHelper::CREATED.to_s => @collection_creation_date,
-            MetadataHelper::CREATOR.to_s => @collection_creator,
-            MetadataHelper::LOC_OWNER => @collection_owner,
-            MetadataHelper::LICENCE => @licence_id,
-            # @collection_linguistic_field_name => @collection_linguistic_field_value,
-            MetadataHelper::ABSTRACT.to_s => @collection_abstract
+          '@context' => JsonLdHelper::default_context,
+          '@type' => 'dcmitype:Collection',
+          MetadataHelper::LOC_OWNER.to_s => @collection_owner,
+          MetadataHelper::LICENCE.to_s => lic.name,
+          MetadataHelper::OLAC_SUBJECT.to_s => @olac_subject,
+          MetadataHelper::ABSTRACT.to_s => @collection_abstract
         }
 
-        json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
+        # json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
 
         json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
 
         # Ingest new collection
         name = Collection.sanitise_name(params[:collection_name])
-        msg = create_collection_core(name, json_ld, current_user, params[:licence_id], @approval_required == 'private', @collection_text)
+        msg = create_collection_core(
+          name,
+          json_ld,
+          current_user,
+          lic.id,
+          @approval_required == 'private',
+          @collection_text)
+
         redirect_to collection_path(id: name), notice: msg
       rescue ResponseError => e
         flash[:error] = e.message
@@ -419,32 +426,35 @@ class CollectionsController < ApplicationController
 
     # mandatory collection properties
     properties = {}
+    exclude_prop = ['@context', '@type', '@id', MetadataHelper::PFX_LICENCE]
     @collection.collection_properties.each do |prop|
       # remove the leading or trailing quote
       # properties[prop.property.gsub!(/^\"|\"?$/, '')] = prop.value
-      properties[prop.property] = prop.value
+      properties[prop.property] = prop.value unless exclude_prop.include?(prop.property)
     end
 
 
-    @collection_title = properties[MetadataHelper::PFX_TITLE]
-    @collection_owner = properties[MetadataHelper::PFX_OWNER]
-    @collection_language = properties[MetadataHelper::PFX_LANGUAGE]
+    @collection_title = properties.delete(MetadataHelper::PFX_TITLE)
+    @collection_owner = properties.delete(MetadataHelper::PFX_OWNER)
+    @collection_language = properties.delete(MetadataHelper::PFX_LANGUAGE)
     @collection_language = 'eng - English' if @collection_language.nil?
     @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
 
-    @collection_creation_date = properties[MetadataHelper::PFX_CREATION_DATE]
-    @collection_creator = properties[MetadataHelper::PFX_CREATOR]
-    @collection_abstract = properties[MetadataHelper::PFX_ABSTRACT]
+    @collection_creation_date = properties.delete(MetadataHelper::PFX_CREATION_DATE)
+    @collection_creator = properties.delete(MetadataHelper::PFX_CREATOR)
+    @collection_abstract = properties.delete(MetadataHelper::PFX_ABSTRACT)
 
-    # olac fields pattern
-    olac_pattern = Regexp.new("^#{MetadataHelper::PFX_OLAC}")
-    @collection_olac_properties = properties.select { |k, v| k[olac_pattern] }
-
+    # olac subject
+    @olac_subject = properties.delete(MetadataHelper::PFX_OLAC_SUBJECT)
+    @olac_subject_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH
 
     # additional metadata
-    @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
+    # OK, all basic metadata gone, so only additional metadata left
+    @additional_metadata = properties
+    @additional_metadata_options = metadata_names_mapping
 
     #   attachment url
+    @attachment = Attachment.new({collection_id: @collection.id})
     @attachment_url = new_attachment_url(@collection)
   end
 
@@ -459,56 +469,46 @@ class CollectionsController < ApplicationController
   def update_collection
     authorize! :update_collection, Collection
 
-    begin
-      validate_required_web_fields(
-          params,
-          {
-              # :collection_name => 'collection name',
-              :collection_title => 'collection title',
-              :collection_language => 'collection language',
-              :collection_creation_date => 'collection creation date',
-              :collection_creator => 'collection creator',
-              :collection_owner => 'collection owner',
-              :collection_olac_name => 'collection OLAC linguistic subject',
-              :collection_olac_value => 'collection OLAC linguistic subject value',
-              :collection_abstract => 'collection abstract',
-              :collection_text => 'collection description'
-          }
-      )
+    name = Collection.sanitise_name(params[:id])
 
-      # Validate and sanitise OLAC metadata fields
-      olac_metadata = validate_collection_olac_metadata(params)
+    begin
+
+      lic = licence(params[:licence_id])
 
       # logger.debug "olac_metadata=#{olac_metadata}"
 
       # Validate and sanitise additional metadata fields
       additional_metadata = validate_collection_additional_metadata(params)
+      logger.debug "update_collection: additional_metadata=#{additional_metadata}"
 
       # Construct collection Json-ld
       json_ld = {
-          '@context' => JsonLdHelper::default_context,
-          '@type' => 'dcmitype:Collection',
-          MetadataHelper::TITLE.to_s => params[:collection_title],
-          MetadataHelper::DC_LANGUAGE.to_s => params[:collection_language],
-          MetadataHelper::CREATED.to_s => params[:collection_creation_date],
-          MetadataHelper::CREATOR.to_s => params[:collection_creator],
-          MetadataHelper::LOC_OWNER => params[:collection_owner],
-          MetadataHelper::LICENCE => params[:licence_id],
-          # @collection_linguistic_field_name => @collection_linguistic_field_value,
-          MetadataHelper::ABSTRACT.to_s => params[:collection_abstract]
+        '@context' => JsonLdHelper::default_context,
+        '@type' => 'dcmitype:Collection',
+        MetadataHelper::TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
+        MetadataHelper::DC_LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
+        MetadataHelper::CREATED.to_s => params[:collection_creation_date].nil? ? '' : params[:collection_creation_date],
+        MetadataHelper::CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
+        MetadataHelper::LOC_OWNER.to_s => params[:collection_owner].nil? ? '' : params[:collection_owner],
+        MetadataHelper::OLAC_SUBJECT.to_s => params[:olac_subject].nil? ? '' : params[:olac_subject],
+        MetadataHelper::LICENCE.to_s => lic.name,
+        MetadataHelper::ABSTRACT.to_s => params[:collection_abstract].nil? ? '' : params[:collection_abstract]
       }
 
-      json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
+      # json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
 
       json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
 
       # Ingest new collection
       # name = Collection.sanitise_name(params[:collection_name])
-      name = Collection.sanitise_name(params[:id])
-      msg = create_collection_core(name, json_ld, current_user, params[:licence_id], @approval_required == 'private', params[:collection_text])
+
+      msg = create_collection_core(name, json_ld, current_user, lic.id, @approval_required == 'private', params[:collection_text])
       redirect_to collection_path(id: name), notice: msg
     rescue ResponseError => e
       flash[:error] = e.message
+      logger.error "update_collection: collection name: #{name}, #{e.message}"
+
+      redirect_to edit_collection_path(id: name)
     end
 
   end
@@ -818,8 +818,7 @@ class CollectionsController < ApplicationController
   # Write item JSON metadata to RDF file and returns a hash containing :identifier, :rdf_file
   # TODO: collection_enhancement
   def write_item_metadata(corpus_dir, item_json)
-    # rdf_metadata = convert_json_metadata_to_rdf(item_json["metadata"])
-    rdf_metadata = MetadataHelper::json_to_rdf_graph(item_json["metadata"])
+    rdf_metadata = MetadataHelper::json_to_rdf_graph(item_json["metadata"]).dump(:ttl)
     item_identifiers = get_item_identifiers(item_json["metadata"])
     if item_identifiers.count == 1
       rdf_file = create_item_rdf(corpus_dir, item_identifiers.first, rdf_metadata)
@@ -1052,7 +1051,6 @@ class CollectionsController < ApplicationController
   # Returns an Alveo formatted collection full URL
   def format_collection_url(collection_name)
     collection_url(collection_name)
-    # MetadataHelper::format_collection_url(collection_name)
   end
 
   # Returns an Alevo formatted item full URL
@@ -1221,9 +1219,9 @@ class CollectionsController < ApplicationController
   #
   # Core functionality common to creating a collection
   #
-  # TODO: collection_enhancement
   def create_collection_core(name, metadata, owner, licence_id=nil, private=true, text='')
-    metadata = update_jsonld_collection_id(metadata, name)
+    metadata = update_jsonld_collection_id(
+      MetadataHelper::not_empty_collection_metadata!(name, current_user.full_name, metadata), name)
     uri = metadata['@id']
     # KL: if collection exist, update
     # if Collection.find_by_uri(uri).present? # ingest skips collections with non-unique uri
@@ -1282,7 +1280,6 @@ class CollectionsController < ApplicationController
   # Core functionality common to add item ingest (via api and web app)
   # Returns a list of item identifiers corresponding to the items ingested
   #
-  # TODO: collection_enhancement
   def add_item_core(collection, item_id_and_file_hash)
     rdf_files = []
     item_id_and_file_hash.each do |item|
@@ -1313,28 +1310,20 @@ class CollectionsController < ApplicationController
   #
   # Returns a validated hash of the collection additional metadata params
   #
-  # These properties are required:
-  #
-  # dcterms:title (Title) e.g., Australian Radio Talkback Corpus
-  # dcterms:language (Language) e.g., iso-639
-  # dcterms:created (Creation Date) e.g., 19/12/2013
-  # dcterms:creator (Creator) person, e.g., Michael Jackson
-  # dcterms:licence (Licence) MIT
-  # olac:linguistic-field (Linguistic Field) (see http://www.language-archives.org/REC/field.html for possible values) e.g., olac:Lexicography (http://www.language-archives.org/REC/field.html#lexicography)
   def validate_collection_additional_metadata(params)
     if params.has_key?(:additional_key) && params.has_key?(:additional_value)
       protected_collection_fields = [
-          'dc:identifier',
-          'dcterms:identifier',
-          MetadataHelper::IDENTIFIER.to_s,
-          'dc:title',
-          'dcterms:title',
-          MetadataHelper::TITLE.to_s,
-          'dc:abstract',
-          'dcterms:abstract',
-          MetadataHelper::ABSTRACT.to_s,
-          'marcrel:OWN',
-          MetadataHelper::LOC_OWNER.to_s]
+        'dc:identifier',
+        'dcterms:identifier',
+        MetadataHelper::IDENTIFIER.to_s,
+        'dc:title',
+        'dcterms:title',
+        MetadataHelper::TITLE.to_s,
+        'dc:abstract',
+        'dcterms:abstract',
+        MetadataHelper::ABSTRACT.to_s,
+        'marcrel:OWN',
+        MetadataHelper::LOC_OWNER.to_s]
 
       validate_additional_metadata(params[:additional_key].zip(params[:additional_value]), protected_collection_fields)
     else
@@ -1428,6 +1417,42 @@ class CollectionsController < ApplicationController
     else
       meta_field_names.zip(meta_field_values)
     end
+  end
+
+  # Return default licence object.
+  # If no licence retrieve according to input licence id, return default licence (Creative Commons v3.0 BY) instead
+  def licence(licence_id)
+    lic = nil
+    begin
+      lic = Licence.find_by_id(licence_id)
+    rescue Exception => e
+      logger.error "licence: cannot find licence by id[#{licence_id}]: #{e.message}"
+    ensure
+      if lic.nil?
+        lic = Licence.find_by_name('Creative Commons v3.0 BY')
+      end
+    end
+
+    lic
+  end
+
+  #
+  # Retrieve RDF name mapping
+  #
+  def metadata_names_mapping
+    rlt = {}
+
+    exclude_name = ['rdf:type']
+
+    mappings = MetadataHelper::searchable_fields
+    mappings.each do |m|
+      unless exclude_name.include?(m.rdf_name)
+        # rlt[m.rdf_name] = m.user_friendly_name.nil? ? m.rdf_name : m.user_friendly_name
+        rlt[m.rdf_name] = m.rdf_name
+      end
+    end
+
+    rlt
   end
 
 end

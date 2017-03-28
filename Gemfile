@@ -37,6 +37,7 @@ group :development do
   gem 'zeus'
   gem "better_errors"
   gem "binding_of_caller"
+  gem 'sextant'
 
   # Deployment tracker
   gem "create_deployment_record", git: 'https://github.com/IntersectAustralia/create_deployment_record.git'
@@ -72,7 +73,10 @@ gem 'zeroclipboard-rails'
 gem "haml"
 gem "haml-rails"
 gem "simple_form"
-gem "select2-rails", "~> 3.5.9"
+
+# 4.0.3 fix the "TypeError: element.select2 is not a function" issue
+gem "select2-rails"
+
 gem "devise", "~> 2.2.4"
 gem "email_spec", :group => :test
 gem "cancan"
@@ -106,7 +110,7 @@ gem 'colorize'
 gem 'rabl'
 
 # exception tracker
-gem 'whoops_rails_logger', git: 'https://github.com/IntersectAustralia/whoops_rails_logger.git'
+# gem 'whoops_rails_logger', git: 'https://github.com/IntersectAustralia/whoops_rails_logger.git'
 
 gem 'linkeddata', '~> 1.0.0'
 gem 'rdf-turtle'

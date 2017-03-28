@@ -18,7 +18,7 @@ describe CollectionList do
       c = CollectionList.new
       c.name = "coll_list"
 
-      u = FactoryGirl.create(:user, :status => 'A', :email => "test@intersect.org.au")
+      u = FactoryGirl.create(:user, :status => 'A', :email => "test@alveo.edu.au")
       c.owner_id = u.id.to_s
 
       c.save
@@ -33,7 +33,7 @@ describe CollectionList do
 
   describe "Collection List Licence" do
     it "should persist licence information for a Collection List" do
-      u = FactoryGirl.create(:user, :status => 'A', :email => "test@intersect.org.au")
+      u = FactoryGirl.create(:user, :status => 'A', :email => "test@alveo.edu.au")
       c = FactoryGirl.create(:collection_list, :owner_id => u.id.to_s)
       l = FactoryGirl.create(:licence, :owner_id => u.id.to_s)
 
@@ -49,7 +49,7 @@ describe CollectionList do
     end
 
     it "should keep integrity between the Collection's licence" do
-      u = FactoryGirl.create(:user, :status => 'A', :email => "test@intersect.org.au")
+      u = FactoryGirl.create(:user, :status => 'A', :email => "test@alveo.edu.au")
       cl = FactoryGirl.create(:collection_list, :owner_id => u.id)
       c = FactoryGirl.create(:collection, :owner_id => u.id)
       l1 = FactoryGirl.create(:licence, :owner_id => u.id)
@@ -72,7 +72,7 @@ describe CollectionList do
     end
 
     it "should remove Collection's licence when the Collection is removed from the Collection List" do
-      u = FactoryGirl.create(:user, :status => 'A', :email => "test@intersect.org.au")
+      u = FactoryGirl.create(:user, :status => 'A', :email => "test@alveo.edu.au")
       cl = FactoryGirl.create(:collection_list, :owner_id => u.id)
       c = FactoryGirl.create(:collection, :owner_id => u.id)
       l1 = FactoryGirl.create(:licence, :owner_id => u.id)

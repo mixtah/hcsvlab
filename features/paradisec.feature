@@ -4,9 +4,9 @@ Feature: Displaying Items
 
   Background:
     Given I have the usual roles and permissions
-    And I have a user "data_owner@intersect.org.au" with role "data owner"
-    And I am logged in as "data_owner@intersect.org.au"
-    And "data_owner@intersect.org.au" has an api token
+    And I have a user "data_owner@alveo.edu.au" with role "data owner"
+    And I am logged in as "data_owner@alveo.edu.au"
+    And "data_owner@alveo.edu.au" has an api token
 
   Scenario: PARADISEC Open
     And I ingest the sample folder "paradisec/old/paradisec-test"
@@ -14,7 +14,7 @@ Feature: Displaying Items
     And I am on the licences page
     And The Collection Lists table should have
       | collection_list | owner                       | licence     | licence_terms | collections    |
-      | PARADISEC       | data_owner@intersect.org.au | Add Licence |               | paradisec-test |
+      | PARADISEC       | data_owner@alveo.edu.au | Add Licence |               | paradisec-test |
 
     And I am on the catalog page for "paradisec-test:1-001"
     Then I should see a page with the title: "Alveo - paradisec-test:1-001"
@@ -25,7 +25,7 @@ Feature: Displaying Items
     And I should see "1-001-plain.txt"
     And I should see "1-001-raw.txt"
 
-    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 200 response code
     And the response should be:
     """
@@ -38,7 +38,7 @@ Feature: Displaying Items
     And I should see "Documents"
     And I should see "1-002-plain.txt"
 
-    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 200 response code
     And the response should be:
     """
@@ -58,13 +58,13 @@ Feature: Displaying Items
     And I should see "1-001.txt"
     And I should see "1-001-plain.txt"
 
-    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 404 response code
 
     And I am on the catalog page for "paradisec-test:1-002"
     Then I should see a page with the title: "Alveo"
     Then I should see "Sorry, you have requested a document that doesn't exist."
-    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 404 response code
 
     And I clear the collection metadata for "paradisec-test"
@@ -74,13 +74,13 @@ Feature: Displaying Items
     And I am on the catalog page for "paradisec-test:1-001"
     Then I should see a page with the title: "Alveo"
     Then I should see "Sorry, you have requested a document that doesn't exist."
-    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 404 response code
 
     And I am on the catalog page for "paradisec-test:1-002"
     Then I should see a page with the title: "Alveo"
     Then I should see "Sorry, you have requested a document that doesn't exist."
-    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 404 response code
 
 
@@ -92,12 +92,12 @@ Feature: Displaying Items
     And I am on the catalog page for "paradisec-test:1-001"
     Then I should see a page with the title: "Alveo"
     Then I should see "Sorry, you have requested a document that doesn't exist."
-    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-001-raw.txt" for item "paradisec-test:1-001" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 404 response code
 
     And I am on the catalog page for "paradisec-test:1-002"
     Then I should see a page with the title: "Alveo"
     Then I should see "Sorry, you have requested a document that doesn't exist."
-    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@intersect.org.au"
+    When I make a JSON request for the document content page for file "1-002-plain.txt" for item "paradisec-test:1-002" with the API token for "data_owner@alveo.edu.au"
     Then I should get a 404 response code
 

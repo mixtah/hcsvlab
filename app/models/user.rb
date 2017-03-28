@@ -463,4 +463,8 @@ class User < ActiveRecord::Base
   def initialize_status
     self.status = "U" unless self.status
   end
+
+  def User::reset_pk_seq
+    ActiveRecord::Base.connection.reset_pk_sequence!(User.table_name)
+  end
 end

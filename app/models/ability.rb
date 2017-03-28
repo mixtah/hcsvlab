@@ -126,7 +126,7 @@ class Ability
 
     # User can edit a collection only if he/she is the owner or if he/she was granted
     # with edit access to that collection
-    #can :edit, Collection do |aCollection|
+    # can :edit, Collection do |aCollection|
     #  (user.id.eql? aCollection.owner_id) or
     #      ((user.groups & aCollection.edit_groups).length > 0)
     #end
@@ -136,9 +136,13 @@ class Ability
       can :web_create_collection, Collection
       can :edit_collection, Collection
       can :update_collection, Collection
-      can :delete_collection, Collection
     else
       cannot :create, Collection
+    end
+
+    #  Only superuser can delete collection
+    if is_superuser
+      can :delete_collection, Collection
     end
 
     ############################################################

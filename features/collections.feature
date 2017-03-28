@@ -4,11 +4,11 @@ Feature: Collections
 
   Background:
     Given I have the usual roles and permissions
-    And I have a user "data_owner@intersect.org.au" with role "data owner"
-    And I have a user "researcher@intersect.org.au" with role "researcher"
+    And I have a user "data_owner@alveo.edu.au" with role "data owner"
+    And I have a user "researcher@alveo.edu.au" with role "researcher"
     And I ingest "cooee:1-001"
     And I ingest "auslit:adaessa"
-    And I am logged in as "researcher@intersect.org.au"
+    And I am logged in as "researcher@alveo.edu.au"
 
   Scenario: View list of collections
     Given I am on the collections page
@@ -32,7 +32,7 @@ Feature: Collections
     And I should not see "Back to Licence Agreements"
 
   Scenario: Access collection details from item details page
-    Given "researcher@intersect.org.au" has "read" access to collection "cooee"
+    Given "researcher@alveo.edu.au" has "read" access to collection "cooee"
     Given I am on the catalog page for "cooee:1-001"
     And I follow "cooee"
     Then I should be on the collection page for "cooee"
