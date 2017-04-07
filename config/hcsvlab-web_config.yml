@@ -5,7 +5,7 @@ defaults: &defaults
   default_data_owner: karl.li@mq.edu.au
   licence_access_request_notification_sender: karl.li@mq.edu.au
   licence_access_request_response_sender: karl.li@mq.edu.au
-  download_max_files: 200
+  download_max_files: 9999
 
 development:
   <<: *defaults

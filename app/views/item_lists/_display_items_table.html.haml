@@ -14,11 +14,7 @@
           %li
             = link_to("Use in Galaxy", "#", :onclick => 'jQuery("#galaxy_list").submit()')
           %li
-            %a{"data-toggle" => "modal", :href => "#get_r_script", :role => "button"} Use in Emu/R
-          %li
             %a{"data-toggle" => "modal", :href => "#download_item_list", :role => "button"} Download as ZIP
-          %li
-            %a{"data-toggle" => "modal", :href => "#download_item_list_using_aspera", :role => "button"} Download using Aspera
           - if @item_list.user_id == current_user.id
             %li
               - if @item_list.shared?
@@ -90,14 +86,6 @@
     = render 'download_all_documents'
     = render 'download_selected_document_types'
     = render 'download_matching_documents'
-
-  .modal.hide.fade.in{:id => "download_item_list_using_aspera", "aria-hidden" => "true", "aria-labelledby" => "myModalLabel", :role => "dialog", :tabindex => "-1"}
-    .modal-header
-      %button.close{"aria-hidden" => "true", "data-dismiss" => "modal", :type => "button"} ×
-      %h3#myModalLabel= "Download Options for Item List: #{@item_list.name}"
-    = render 'aspera_download_all_documents'
-    = render 'aspera_download_selected_document_types'
-    = render 'aspera_download_matching_documents'
 
 :javascript
 

@@ -1,4 +1,11 @@
 class AttachmentsController < ActionController::Base
+
+  # enable streaming responses
+  include ActionController::Streaming
+  # enable zipline
+  include Zipline
+  # include ActionController::Live
+
   # GET /collections/:collection_id/attachments
   # GET /collections/:collection_id/attachments.json
   def index
@@ -80,7 +87,7 @@ class AttachmentsController < ActionController::Base
 
     respond_to do |format|
       if @attachment.save
-      # unless att.nil?
+        # unless att.nil?
         format.html {
           render :json => [@attachment.to_jq_upload].to_json,
                  :content_type => 'text/html',
@@ -131,10 +138,53 @@ class AttachmentsController < ActionController::Base
   # GET /attachments
   def download
 
+
+    file_path = '/Users/mq20146034/RubymineProjects/hcsvlab.2017/public/collections/42/attachments/25/iloveoz.map.2.jpg'
+    file_name = "test/test.jpg"
+
+    # respond_to do |format|
+    #   format.html do
+    #     redirect_to root_url and return
+    #   end
+    #   format.zip do
+    compressed_filestream = Zip::OutputStream.write_buffer do |zos|
+      zos.put_next_entry file_name
+      # zos.print animal.to_json(only: [:name, :age, :species])
+      zos.write File.open(file_path, 'r').read
+    end
+    compressed_filestream.rewind
+    send_data compressed_filestream.read, filename: "attach.zip"
+    #   end
+    # end
+
+  end
+
+  def _normalize(file)
+    unless is_io?(file)
+      if file.respond_to?(:url) || file.respond_to?(:expiring_url)
+        file = file
+      elsif file.respond_to? :file
+        file = File.open(file.file)
+      elsif file.respond_to? :path
+        file = File.open(file.path)
+      else
+        raise(ArgumentError, 'Bad File/Stream')
+      end
+    end
+    file
   end
 
   def attachments_by_collection(collection_id)
     # collection = Collection.find_by_name(collection_id)
     Attachment.by_collection(collection_id)
   end
+
+  def stream_download
+    # file_path = '/Users/mq20146034/RubymineProjects/hcsvlab.2017/public/collections/42/attachments/25/iloveoz.map.2.jpg'
+    # file_name = "test/test.jpg"
+    #
+    # files = [[File.new(file_path), file_name]]
+    # zipline(files, 'attach.zip')
+  end
+
 end

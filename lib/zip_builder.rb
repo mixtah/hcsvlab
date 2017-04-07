@@ -3,6 +3,8 @@ require 'zip/zip'
 class ZipBuilder
 
   def self.build_simple_zip_from_files(zip_path, file_details)
+    file_size = 0
+
     Zip::ZipFile.open(zip_path, Zip::ZipFile::CREATE) do |zipfile|
       file_details.each do |file_details|
         name = file_details[0]
@@ -10,9 +12,14 @@ class ZipBuilder
         # Takes two arguments:
         # - The name of the file as it will appear in the archive
         # - The original file, including the path to find it
+
+        file_size += File.size(path_to_file)
+
         zipfile.add(name, path_to_file)
       end
     end
+
+    logger.debug "build_simple_zip_from_files: #{zip_path} file size: #{file_size.to_s}, zip size: (#{File.new(zip_path).size}) done"
   end
 
   def self.build_zip(zip_file, file_paths)

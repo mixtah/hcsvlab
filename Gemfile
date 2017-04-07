@@ -30,7 +30,9 @@ group :development, :test do
 end
 
 group :development do
-  gem 'thin'
+  # gem 'thin'
+  gem 'puma'
+
   gem 'xray-rails'
   gem 'pry'
   gem 'pry-rails'
@@ -52,7 +54,7 @@ group :test do
   gem "simplecov", ">=0.3.8", :require => false
   gem 'simplecov-rcov'
   gem "poltergeist"
-  gem "selenium-webdriver"
+  # gem "selenium-webdriver"
   gem 'spreewald'
   gem "json-compare", '0.1.8'
   # KL: 12/12
@@ -129,7 +131,8 @@ gem "capistrano_colors"
 gem 'tinymce-rails'
 # KL 13/12/2016
 # gem 'rubyzip', '0.9.9'
-gem 'rubyzip'
+gem 'rubyzip', '>= 1.0.0' # will load new rubyzip version
+gem 'zip-zip'             # will load compatibility for old rubyzip API.
 gem 'bagit'
 
 gem 'google-analytics-rails'
@@ -155,3 +158,9 @@ gem 'mini_magick'
 
 # http://stackoverflow.com/questions/35893584/nomethoderror-undefined-method-last-comment-after-upgrading-to-rake-11
 gem 'rake', '< 11.0'
+
+# A gem to stream dynamically generated zip files from a rails application.
+gem 'zipline'
+
+# activerecord-import is a library for bulk inserting data using ActiveRecord.
+gem "activerecord-import", ">= 0.2.0"

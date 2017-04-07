@@ -40,4 +40,17 @@ class DocumentAudit < ActiveRecord::Base
 
     return file
   end
+
+  #
+  # Batch create with parameter:
+  #
+  # audit_info => [
+  #   [document_id, user_id],
+  #   [document_id, user_id]
+  # ]
+  #
+  def self.batch_create(audit_info)
+    columns = [:document_id, :user_id]
+    DocumentAudit.import columns, audit_info
+  end
 end
