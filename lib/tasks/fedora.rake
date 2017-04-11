@@ -127,8 +127,9 @@ namespace :fedora do
   #
   task :reindex_corpus => :environment do
 
-    corpus = ENV['corpus']
+    STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
+    corpus = ENV['corpus']
     if corpus.nil?
       puts "Usage: rake fedora:reindex_corpus corpus=<corpus name>"
       exit 1
@@ -141,7 +142,7 @@ namespace :fedora do
     count = items.count
     logger.info "Reindexing #{count} items"
 
-    stomp_client = Stomp::Client.open "stomp://localhost:61613"
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
 
     items.each_with_index do |item_id,i|
       print "Indexing #{i+1}/#{count}\r"
@@ -158,6 +159,8 @@ namespace :fedora do
   BATCH_SIZE = 5000
   task :consolidate => :environment do
 
+    STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
+
     corpus = ENV['corpus']
     if corpus
       query = Item.where(collection_id: Collection.find_by_name(corpus)).unindexed
@@ -168,7 +171,7 @@ namespace :fedora do
     count = query.count
     logger.info "Indexing all #{count} #{corpus} items"
     # solr_worker = Solr_Worker.new
-    stomp_client = Stomp::Client.open "stomp://localhost:61613"
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
 
     i = 1
     query.select(:id).find_each(:batch_size => BATCH_SIZE) do |item|
@@ -186,14 +189,16 @@ namespace :fedora do
   # Reindex the whole blinkin' lot
   #
   task :reindex_all => :environment do
-
+    
     logger.info "rake fedora:reindex_all"
+
+    STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
     count = Item.count
     logger.info "Reindexing all #{count} Items"
 
     # solr_worker = Solr_Worker.new
-    stomp_client = Stomp::Client.open "stomp://localhost:61613"
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
     i = 1
     Item.select(:id).find_each(:batch_size => BATCH_SIZE) do |item|
       print "Indexing #{i}/#{count}\r"

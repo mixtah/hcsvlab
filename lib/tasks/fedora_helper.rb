@@ -8,6 +8,7 @@ STORE_DOCUMENT_TYPES = ['Text']
 MANIFEST_FILE_NAME = "manifest.json"
 
 SESAME_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/sesame.yml")[Rails.env] unless defined? SESAME_CONFIG
+STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
 #
 # Ingests a single item, creating both a collection object and manifest if they don't
@@ -67,7 +68,7 @@ def create_item_from_file(corpus_dir, rdf_file, manifest, collection)
     item.collection = collection
     item.save!
     unless Rails.env.test?
-      stomp_client = Stomp::Client.open "stomp://localhost:61613"
+      stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       reindex_item_to_solr(item.id, stomp_client)
       stomp_client.close
     end
@@ -100,7 +101,7 @@ def delete_object_from_solr(object_id)
   if Rails.env.test?
     Solr_Worker.new.on_message("delete #{object_id}")
   else
-    stomp_client = Stomp::Client.open "stomp://localhost:61613"
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
     stomp_client.publish('alveo.solr.worker', "delete #{object_id}")
     stomp_client.close
   end

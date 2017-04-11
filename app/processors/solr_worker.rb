@@ -34,6 +34,7 @@ class Solr_Worker < ApplicationProcessor
 
   FACETS_CONFIG = YAML.load_file(Rails.root.join("config", "facets.yml")) unless const_defined?(:FACETS_CONFIG)
   SESAME_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/sesame.yml")[Rails.env] unless const_defined?(:SESAME_CONFIG)
+  STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
   load_config
   subscribes_to :solr_worker
@@ -78,7 +79,7 @@ class Solr_Worker < ApplicationProcessor
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
           # Create when necessary rather than leaving an open connection for each worker
-          stomp_client = Stomp::Client.open "stomp://localhost:61613"
+          stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
           stomp_client.publish('alveo.solr.worker.dlq', message)
           stomp_client.close
         end

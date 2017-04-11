@@ -12,7 +12,10 @@ namespace :a13g do
 
   task :republish_dlq => :environment do
     puts "Republishing Dead Letter Queue"
-    stomp_client = Stomp::Client.open "stomp://localhost:61613"
+
+    STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
+
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
     stomp_client.subscribe('alveo.solr.worker.dlq', {ack: :client}) do |msg|
       stomp_client.publish('alveo.solr.worker', msg.body)
       stomp_client.acknowledge(msg)

@@ -8,6 +8,9 @@ require 'fileutils'
 
 
 class CollectionsController < ApplicationController
+
+  STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
+
   # include MetadataHelper
   # before_filter :authenticate_user!
   before_filter :authenticate_user!, except: [:index, :show]
@@ -834,7 +837,7 @@ class CollectionsController < ApplicationController
     if Rails.env.test?
       Solr_Worker.new.on_message("index #{item.id}")
     else
-      stomp_client = Stomp::Client.open "stomp://localhost:61613"
+      stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       reindex_item_to_solr(item.id, stomp_client)
       stomp_client.close
     end
