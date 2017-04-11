@@ -208,7 +208,7 @@ class CollectionsController < ApplicationController
           '@context' => JsonLdHelper::default_context,
           '@type' => 'dcmitype:Collection',
           MetadataHelper::LOC_OWNER.to_s => @collection_owner,
-          MetadataHelper::LICENCE.to_s => lic.name,
+          MetadataHelper::LICENCE.to_s => (lic ? lic.name : ""),
           MetadataHelper::OLAC_SUBJECT.to_s => @olac_subject,
           MetadataHelper::ABSTRACT.to_s => @collection_abstract
         }
@@ -223,7 +223,7 @@ class CollectionsController < ApplicationController
           name,
           json_ld,
           current_user,
-          lic.id,
+          (lic ? lic.id : nil),
           @approval_required == 'private',
           @collection_text)
 
