@@ -6,11 +6,19 @@ class Item < ActiveRecord::Base
 
   validates :uri, presence: true
   validates :collection_id, presence: true
-  validates :handle, presence: true, uniqueness: {case_sensitive: false}
+
+  # validates :handle, presence: true, uniqueness: {case_sensitive: false}
+  validates :handle, presence: true, uniqueness: true
+
+  before_save :downcase_handle
 
   scope :unindexed, where(indexed_at: nil)
   scope :indexed, where('indexed_at is not null')
 
+  def downcase_handle
+    self.handle.downcase!
+  end
+  
   def self.sanitise_name(name)
     # Spaces shouldn't be used since Sesame uses the name within the metadata URI
     # . and / shouldn't be used in the name since they can break the routes mapping
