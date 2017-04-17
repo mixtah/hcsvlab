@@ -1204,15 +1204,15 @@ class CollectionsController < ApplicationController
 
   # Adds a document to Sesame and updates the corresponding item in Solr
   def add_and_index_document(item, document_json_ld)
-    # Upload doc rdf to seasame
+    # Upload doc rdf to Sesame
     document_RDF = RDF::Graph.new << JSON::LD::API.toRDF(document_json_ld)
     update_sesame_with_graph(document_RDF, item.collection)
-    #Add link in item rdf to doc rdf in sesame
+    # Add link in item rdf to doc rdf in sesame
     document_RDF_URI = RDF::URI.new(document_json_ld['@id'])
     item_document_link = {'@id' => item.uri, MetadataHelper::DOCUMENT.to_s => document_RDF_URI}
     append_item_graph = RDF::Graph.new << JSON::LD::API.toRDF(item_document_link)
     update_sesame_with_graph(append_item_graph, item.collection)
-    #Reindex item in Solr
+    # Reindex item in Solr
     delete_item_from_solr(item.id)
     item.indexed_at = nil
     item.save
