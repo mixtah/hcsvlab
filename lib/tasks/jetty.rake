@@ -6,6 +6,7 @@ tasks.delete 'jetty:start'
 
 namespace :jetty do
 
+  desc "Stop a13g workers, clear jetty and start a13g workers"
   task :reset_all do
     Rake::Task['a13g:stop_pollers'].invoke
     Rake::Task['jetty:stop'].invoke
@@ -15,9 +16,9 @@ namespace :jetty do
     Rake::Task['a13g:start_pollers'].invoke
   end
 
+  desc "Configure Jetty"
   task :config => :environment do
     puts "Alveo jetty config task"
-
 
     system 'cp -vp solr_conf/conf/schema.xml jetty/solr/development-core/conf/'
     system 'cp -vp solr_conf/conf/schema.xml jetty/solr/test-core/conf/'
@@ -30,6 +31,7 @@ namespace :jetty do
     system 'cp -vp sesame_bin/openrdf-workbench.war jetty/webapps/'
   end
 
+  desc "Stop Jetty, delete submodule and re-init"
   task :clean => :environment do
     puts "HCS vLab jetty:clean task"
     system 'rake jetty:stop'
@@ -48,6 +50,8 @@ namespace :jetty do
     while !ping(Blacklight.solr_config[:url]) do
       sleep 5
     end
+
+    # FIXME seems to assume or not care about Sesame readiness
     puts "Solr and Sesame are ready".green
   end
 

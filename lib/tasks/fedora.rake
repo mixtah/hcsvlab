@@ -7,6 +7,7 @@ namespace :fedora do
   #
   # Ingest one metadata file, given as an argument
   #
+  desc "Ingest one metadata file"
   task :ingest_one, [:corpus_rdf] => :environment do |t, args|
     corpus_rdf = args.corpus_rdf
     if (corpus_rdf.nil?) || (!File.exists?(corpus_rdf))
@@ -22,6 +23,7 @@ namespace :fedora do
   #
   # Ingest one corpus directory, given as an argument
   #
+  desc "Ingest one corpus directory"
   task :ingest => :environment do
 
     # defaults
@@ -49,9 +51,10 @@ namespace :fedora do
     ingest_corpus(corpus_dir, num_spec, random, annotations)
   end
 
-   #
+  #
   # Clear everything out of the system
   #
+  desc "Clear out all data from the system"
   task :clear => :environment do
 
     logger.info "rake fedora:clear"
@@ -81,13 +84,12 @@ namespace :fedora do
         server.delete(repositories[repositoryName].path)
       end
     end
-
   end
-
 
   #
   # Clear one corpus (given as corpus=<corpus-name>) out of the system
   #
+  desc "Clear a single corpus from the system"
   task :clear_corpus => :environment do
 
     corpus = ENV['corpus']
@@ -119,12 +121,12 @@ namespace :fedora do
     server = RDF::Sesame::Server.new(SESAME_CONFIG["url"].to_s)
     repository = server.repository(corpus)
     repository.clear if repository.present?
-
   end
 
   #
   # Reindex one corpus (given as corpus=<corpus-name>)
   #
+  desc "Re-index a single corpus"
   task :reindex_corpus => :environment do
 
     STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
@@ -157,6 +159,7 @@ namespace :fedora do
   # Consolidate cores by indexing unindexed items
   #
   BATCH_SIZE = 5000
+  desc "Run indexing for un-indexed items"
   task :consolidate => :environment do
 
     STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
@@ -188,6 +191,7 @@ namespace :fedora do
   #
   # Reindex the whole blinkin' lot
   #
+  desc "Re-index all items in the system"
   task :reindex_all => :environment do
     
     logger.info "rake fedora:reindex_all"
@@ -214,11 +218,13 @@ namespace :fedora do
   #
   # Ingest and create default set of licenses
   #
+  desc "Ingest licenses"
   task :ingest_licences => :environment do
     logger.info "rake fedora:ingest_licences"
     create_default_licences
   end
 
+  desc "Ingest collection metadata"
   task :ingest_collection_metadata => :environment do
     dir = ENV['dir'] unless ENV['dir'].nil?
 
@@ -243,6 +249,7 @@ namespace :fedora do
   #
   # Set up the default CollectionLists and License assignments
   #
+  desc "Set up default collection lists and license assignments"
   task :collection_setup => :environment do
     logger.info "rake fedora:collection_setup"
 
@@ -263,6 +270,7 @@ namespace :fedora do
     Collection.assign_licence("llc", licences["LLC Terms of Use"])
   end
 
+  desc "Clear Paradisec collections"
   task :paradisec_clear => :environment do
     collection_list = CollectionList.find_by_name("PARADISEC")
     collection_list.collections.each do |coll|
@@ -274,6 +282,7 @@ namespace :fedora do
   #
   # Check a corpus directory, given as an argument
   #
+  desc "Check one corpus directory"
   task :check => :environment do
 
     corpus_dir = ENV['corpus'] unless ENV['corpus'].nil?
@@ -295,6 +304,7 @@ namespace :fedora do
   #
   # Create a manifest for a collection outlining the collection name, item ids and document metadata
   #
+  desc "Create manifest for a collection"
   task :create_collection_manifest => :environment do
     corpus_dir = ENV['corpus'] unless ENV['corpus'].nil?
 
@@ -311,7 +321,4 @@ namespace :fedora do
     logger.info "rake fedora:create_collection_manifest corpus=#{corpus_dir}"
     create_collection_manifest(corpus_dir)
   end
-
-
-
 end
