@@ -15,27 +15,23 @@ STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env]
 # already exist. NOTE: the id variable should only be passed in for use in automated tests!
 #
 def ingest_one(corpus_dir, rdf_file)
-  check_and_create_manifest(corpus_dir)
-  manifest = JSON.parse(IO.read(File.join(corpus_dir, MANIFEST_FILE_NAME)))
-
-  collection_name = manifest["collection_name"]
-  collection = check_and_create_collection(collection_name, corpus_dir)
-
-  ingest_rdf_file(corpus_dir, rdf_file, true, manifest, collection)
+  collection_name = extract_manifest_collection(rdf_file)
+  collection = check_and_create_collection(collection_name, corpus_dir, {}, File.basename(rdf_file))
+  ingest_rdf_file(corpus_dir, rdf_file, true, collection)
 end
 
-def ingest_rdf_file(corpus_dir, rdf_file, annotations, manifest, collection)
+def ingest_rdf_file(corpus_dir, rdf_file, annotations, collection)
   unless rdf_file.to_s =~ /metadata/ # HCSVLAB-441
     raise ArgumentError, "#{rdf_file} does not appear to be a metadata file - at least, its name doesn't say 'metadata'"
   end
   logger.info "Ingesting item: #{rdf_file}"
 
-  item, update = create_item_from_file(corpus_dir, rdf_file, manifest, collection)
+  filename, item_info = extract_manifest_info(rdf_file)
+  item, update = create_item_from_file(corpus_dir, rdf_file, collection, item_info)
 
   if update
     look_for_annotations(item, rdf_file) if annotations
-
-    look_for_documents(item, corpus_dir, rdf_file, manifest)
+    look_for_documents(item, corpus_dir, rdf_file, item_info)
 
     item.save!
   end
@@ -43,13 +39,12 @@ def ingest_rdf_file(corpus_dir, rdf_file, annotations, manifest, collection)
   item.id
 end
 
-def create_item_from_file(corpus_dir, rdf_file, manifest, collection)
-  item_info = manifest["files"][File.basename(rdf_file)]
-  raise ArgumentError, "Error with file during manifest creation - #{rdf_file}" if !item_info["error"].nil?
+def create_item_from_file(corpus_dir, rdf_file, collection, item_info)
   identifier = item_info["id"]
   uri = item_info["uri"]
-  collection_name = manifest["collection_name"]
-  handle = "#{collection_name}:#{identifier}"
+
+  # collection_name = manifest["collection_name"]
+  handle = "#{collection.name}:#{identifier}"
 
   existing_item = Item.find_by_handle(handle)
 
@@ -208,9 +203,7 @@ def create_collection_from_file(collection_file, collection_name)
   logger.info "Collection '#{coll.name}' Metadata = #{coll.id}" unless Rails.env.test?
 end
 
-def look_for_documents(item, corpus_dir, rdf_file, manifest)
-  docs = manifest["files"][File.basename(rdf_file)]["docs"]
-
+def look_for_documents(item, corpus_dir, rdf_file, item_info)
   # Create a primary text in the Item for primary text documents
   begin
     server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
@@ -235,7 +228,7 @@ def look_for_documents(item, corpus_dir, rdf_file, manifest)
     Rails.logger.error "Could not connect to triplestore - #{SESAME_CONFIG["url"].to_s}"
   end
 
-  docs.each do |result|
+  item_info["docs"].each do |result|
     identifier = result["identifier"]
     source = result["source"]
     path = URI.decode(URI(source).path)
@@ -330,39 +323,11 @@ end
 
 #
 # Create collection manifest if one doesn't already exist
-#
+# Deprecated: old ingest route. TODO update tests
 def check_and_create_manifest(corpus_dir)
   if !File.exists? File.join(corpus_dir, MANIFEST_FILE_NAME)
     create_collection_manifest(corpus_dir)
   end
-end
-
-#
-# Updates an existing collection manifest for a directory with the info for new rdf files
-#
-def update_collection_manifest(corpus_dir, rdf_files)
-  logger.info("Updating collection manifest for #{corpus_dir}")
-  overall_start = Time.now
-  failures = []
-
-  manifest_file = File.join(corpus_dir, MANIFEST_FILE_NAME)
-  manifest_hash = JSON.parse(IO.read(manifest_file))
-
-  rdf_files.each do |rdf_file|
-    filename, manifest_entry = extract_manifest_info(rdf_file)
-    manifest_hash["files"][filename] = manifest_entry
-    if !manifest_entry["error"].nil?
-      failures << filename
-    end
-  end
-
-  File.open(manifest_file, 'w') do |file|
-    file.puts(manifest_hash.to_json)
-  end
-
-  endTime = Time.now
-  logger.debug("Time for updating manifest for #{corpus_dir}: (#{'%.1f' % ((endTime.to_f - overall_start.to_f)*1000)}ms)")
-  logger.debug("Failures: #{failures.to_s}") if failures.size > 0
 end
 
 #
@@ -671,7 +636,6 @@ def report_check_results(size, corpus_dir, errors, handles)
     logstream.close
   end
 end
-
 
 def parse_boolean(string, default=false)
   return default if string.blank? # nil.blank? returns true, so this is also a nil guard.
