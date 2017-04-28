@@ -12,8 +12,11 @@ class CollectionsController < ApplicationController
   STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
   # include MetadataHelper
-  # before_filter :authenticate_user!
+
+  # Don't bother updating _sign_in_at fields for every API request 
+  prepend_before_filter :skip_trackable # , only: [:add_items_to_collection, :add_document_to_item]
   before_filter :authenticate_user!, except: [:index, :show]
+
   #load_and_authorize_resource
   load_resource :only => [:create]
   skip_authorize_resource :only => [:create] # authorise create method with custom permission denied error
@@ -1458,4 +1461,8 @@ class CollectionsController < ApplicationController
     rlt
   end
 
+  private
+  def skip_trackable
+    request.env['devise.skip_trackable'] = true
+  end
 end
