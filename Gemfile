@@ -67,8 +67,6 @@ gem 'doorkeeper'
 # KL
 # gem 'rdf', '1.1.3'
 
-gem 'newrelic_rpm'
-
 gem "jsonpath"
 
 gem 'zeroclipboard-rails'
