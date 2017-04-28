@@ -103,10 +103,7 @@ def delete_object_from_solr(object_id)
 end
 
 # TODO: collection_enhancement
-def check_and_create_collection(
-    collection_name,
-    corpus_dir,
-    json_metadata={})
+def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, glob="*-{metadata,ann}.rdf")
 
   # KL
   # if collection_name == "ice" && File.basename(corpus_dir)!="ice" #ice has different directory structure
@@ -124,6 +121,9 @@ def check_and_create_collection(
 
   collection = Collection.find_by_name(collection_name)
 
+  # Tip: if the collection doesn't exist, it's created by
+  # update_rdf_graph via update_collection_metadata_from_json
+  # 
   is_new = false
   if collection.nil?
     is_new = true
@@ -139,9 +139,8 @@ def check_and_create_collection(
     # collection.rdf_file_path = coll_metadata
   end
 
-  paradisec_collection_setup(collection, is_new)
-
-  populate_triple_store(corpus_dir, collection_name, "*-{metadata,ann}.rdf")
+  paradisec_collection_setup(collection, is_new)  
+  populate_triple_store(corpus_dir, collection_name, glob)
 
   collection.save
   collection
@@ -694,19 +693,20 @@ end
 #
 # Store all metadata and annotations from the given directory in the triplestore
 #
-def populate_triple_store(corpus_dir, collection_name, glob)
+def populate_triple_store(corpus_dir, collection_name, glob, skip_ingest=false)
   logger.info "Start ingesting files matching #{glob} in #{corpus_dir}"
 
   server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
 
   # First we will create the repository for the collection, in case it does not exists
+  # This returns false if the repo already exists (costs about 4ms)
   server.create_repository(RDF::Sesame::HcsvlabServer::NATIVE_STORE_TYPE, collection_name, "Metadata and Annotations for #{collection_name} collection")
-
+  
   # Create a instance of the repository where we are going to store the metadata
   repository = server.repository(collection_name)
 
   # Now will store every RDF file
-  repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
+  repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}") unless skip_ingest
 
   logger.info "Finished ingesting files matching #{glob} in #{corpus_dir}"
 end
