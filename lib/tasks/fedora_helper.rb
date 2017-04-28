@@ -365,6 +365,8 @@ end
 # query the given rdf file to find the collection name
 #
 def extract_manifest_collection(rdf_file)
+  extract_start = Time.now
+
   graph = RDF::Graph.load(rdf_file, :format => :ttl, :validate => true)
   query = RDF::Query.new({
                              :item => {
@@ -378,6 +380,9 @@ def extract_manifest_collection(rdf_file)
   if query.execute(graph).any? { |r| r.collection == "http://ns.austalk.edu.au/corpus" }
     collection_name = "austalk"
   end
+
+  endTime = Time.now
+  logger.debug("Time to extract info from #{rdf_file} (#{'%.1f' % ((endTime.to_f - extract_start.to_f)*1000)}ms)")
 
   collection_name
 end
