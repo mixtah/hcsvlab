@@ -454,7 +454,9 @@ def extract_manifest_info(rdf_file)
   return filename, hash
 end
 
+# Deprecated: old ingest route. TODO update tests
 def ingest_corpus(corpus_dir, num_spec=:all, shuffle=false, annotations=true)
+  raise "Deprecated"
 
   label = "Ingesting...\n"
   label += "   corpus:      #{corpus_dir}\n"
