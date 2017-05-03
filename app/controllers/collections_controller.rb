@@ -12,8 +12,11 @@ class CollectionsController < ApplicationController
   STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
   # include MetadataHelper
-  # before_filter :authenticate_user!
+
+  # Don't bother updating _sign_in_at fields for every API request 
+  prepend_before_filter :skip_trackable # , only: [:add_items_to_collection, :add_document_to_item]
   before_filter :authenticate_user!, except: [:index, :show]
+
   #load_and_authorize_resource
   load_resource :only => [:create]
   skip_authorize_resource :only => [:create] # authorise create method with custom permission denied error
@@ -236,7 +239,6 @@ class CollectionsController < ApplicationController
       end
     end
   end
-
 
   def add_items_to_collection
     # referenced documents (HCSVLAB-1019) are already handled by the look_for_documents part of the item ingest
@@ -828,6 +830,7 @@ class CollectionsController < ApplicationController
     else
       rdf_file = create_combined_item_rdf(corpus_dir, item_identifiers, rdf_metadata)
     end
+
     {:identifier => item_identifiers, :rdf_file => rdf_file}
   end
 
@@ -857,6 +860,8 @@ class CollectionsController < ApplicationController
   # Updates Sesame with the metadata graph
   # If statements already exist this updates the statement object rather than appending new statements
   def update_sesame_with_graph(graph, collection)
+    # FIXME synchronous Sesame call, move to workers
+
     repository = get_sesame_repository(collection)
     graph.each_statement do |statement|
       if statement.predicate == MetadataHelper::DOCUMENT
@@ -1284,11 +1289,6 @@ class CollectionsController < ApplicationController
   # Returns a list of item identifiers corresponding to the items ingested
   #
   def add_item_core(collection, item_id_and_file_hash)
-    rdf_files = []
-    item_id_and_file_hash.each do |item|
-      rdf_files.push(item[:rdf_file])
-    end
-    update_collection_manifest(collection.corpus_dir, rdf_files)
     ingest_items(collection.corpus_dir, item_id_and_file_hash)
   end
 
@@ -1458,4 +1458,8 @@ class CollectionsController < ApplicationController
     rlt
   end
 
+  private
+  def skip_trackable
+    request.env['devise.skip_trackable'] = true
+  end
 end

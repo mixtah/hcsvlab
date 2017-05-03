@@ -280,9 +280,8 @@ public
   end
 
   # Save or update collection record with metadata (rdf graph) into DB
-  def self::update_rdf_graph(
-      collection_name,
-      graph=nil)
+  def self::update_rdf_graph(collection_name, graph=nil)
+    
     collection = Collection.find_by_name(collection_name)
 
     if collection.nil?
@@ -354,9 +353,9 @@ public
 
     logger.debug "json_to_rdf_graph: graph=#{graph.dump(format)}"
     # graph.dump(format)
+
     graph
   end
-
 
   # Load collection metadata from DB then convert to RDF graph
   #
