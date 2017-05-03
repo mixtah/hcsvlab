@@ -16,7 +16,7 @@ load 'db/seed_helper'
 set :shared_file_dir, "files"
 set(:shared_file_path) { File.join(shared_path, shared_file_dir) }
 
-set :keep_releases, 5
+set :keep_releases, 3
 set :application, 'hcsvlab-web'
 set :stages, %w(qa qa2 nci staging staging2 production trove)
 set :default_stage, "nci"
@@ -257,7 +257,7 @@ namespace :deploy do
   # We need to define our own cleanup task since there is an issue on Capistrano deploy:cleanup task
   #https://github.com/capistrano/capistrano/issues/474
   task :customcleanup, :except => {:no_release => true} do
-      count = fetch(:keep_releases, 5).to_i
+      count = fetch(:keep_releases, 3).to_i
       run "ls -1dt #{releases_path}/* | tail -n +#{count + 1} | xargs rm -rf"
   end
 
