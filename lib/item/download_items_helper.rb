@@ -215,10 +215,16 @@ module Item::DownloadItemsHelper
 
           # logger.debug "zip_as_flat: filenames=#{filenames}"
 
-          unless File.directory?(APP_CONFIG['download_tmp_dir'])
-            FileUtils.mkdir_p(APP_CONFIG['download_tmp_dir'])
+          # Set download_tmp_dir as an absolute path if it starts with "/" 
+          # or otherwise relative to Rails.root
+          if APP_CONFIG['download_tmp_dir'][0] == "/"
+            tmp_dir = APP_CONFIG['download_tmp_dir']
+          else
+            tmp_dir = Rails.root.join(APP_CONFIG['download_tmp_dir'])
           end
-          zip_path = "#{Rails.root.join(APP_CONFIG['download_tmp_dir'], "#{digest_filename}.tmp")}"
+                    
+          FileUtils.mkdir_p(tmp_dir) unless File.directory?(tmp_dir)
+          zip_path = File.join(tmp_dir, "#{digest_filename}.tmp")
           # zip_file = File.new(zip_path, 'a+')
           ZipBuilder.build_simple_zip_from_files(zip_path, filenames)
 
