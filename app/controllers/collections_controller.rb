@@ -8,9 +8,15 @@ require 'fileutils'
 
 
 class CollectionsController < ApplicationController
+
+  STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
+
   # include MetadataHelper
-  # before_filter :authenticate_user!
+
+  # Don't bother updating _sign_in_at fields for every API request 
+  prepend_before_filter :skip_trackable # , only: [:add_items_to_collection, :add_document_to_item]
   before_filter :authenticate_user!, except: [:index, :show]
+
   #load_and_authorize_resource
   load_resource :only => [:create]
   skip_authorize_resource :only => [:create] # authorise create method with custom permission denied error
@@ -208,7 +214,7 @@ class CollectionsController < ApplicationController
           '@context' => JsonLdHelper::default_context,
           '@type' => 'dcmitype:Collection',
           MetadataHelper::LOC_OWNER.to_s => @collection_owner,
-          MetadataHelper::LICENCE.to_s => lic.name,
+          MetadataHelper::LICENCE.to_s => (lic ? lic.name : ""),
           MetadataHelper::OLAC_SUBJECT.to_s => @olac_subject,
           MetadataHelper::ABSTRACT.to_s => @collection_abstract
         }
@@ -223,7 +229,7 @@ class CollectionsController < ApplicationController
           name,
           json_ld,
           current_user,
-          lic.id,
+          (lic ? lic.id : nil),
           @approval_required == 'private',
           @collection_text)
 
@@ -233,7 +239,6 @@ class CollectionsController < ApplicationController
       end
     end
   end
-
 
   def add_items_to_collection
     # referenced documents (HCSVLAB-1019) are already handled by the look_for_documents part of the item ingest
@@ -825,6 +830,7 @@ class CollectionsController < ApplicationController
     else
       rdf_file = create_combined_item_rdf(corpus_dir, item_identifiers, rdf_metadata)
     end
+
     {:identifier => item_identifiers, :rdf_file => rdf_file}
   end
 
@@ -834,7 +840,7 @@ class CollectionsController < ApplicationController
     if Rails.env.test?
       Solr_Worker.new.on_message("index #{item.id}")
     else
-      stomp_client = Stomp::Client.open "stomp://localhost:61613"
+      stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       reindex_item_to_solr(item.id, stomp_client)
       stomp_client.close
     end
@@ -854,6 +860,8 @@ class CollectionsController < ApplicationController
   # Updates Sesame with the metadata graph
   # If statements already exist this updates the statement object rather than appending new statements
   def update_sesame_with_graph(graph, collection)
+    # FIXME synchronous Sesame call, move to workers
+
     repository = get_sesame_repository(collection)
     graph.each_statement do |statement|
       if statement.predicate == MetadataHelper::DOCUMENT
@@ -1201,15 +1209,15 @@ class CollectionsController < ApplicationController
 
   # Adds a document to Sesame and updates the corresponding item in Solr
   def add_and_index_document(item, document_json_ld)
-    # Upload doc rdf to seasame
+    # Upload doc rdf to Sesame
     document_RDF = RDF::Graph.new << JSON::LD::API.toRDF(document_json_ld)
     update_sesame_with_graph(document_RDF, item.collection)
-    #Add link in item rdf to doc rdf in sesame
+    # Add link in item rdf to doc rdf in sesame
     document_RDF_URI = RDF::URI.new(document_json_ld['@id'])
     item_document_link = {'@id' => item.uri, MetadataHelper::DOCUMENT.to_s => document_RDF_URI}
     append_item_graph = RDF::Graph.new << JSON::LD::API.toRDF(item_document_link)
     update_sesame_with_graph(append_item_graph, item.collection)
-    #Reindex item in Solr
+    # Reindex item in Solr
     delete_item_from_solr(item.id)
     item.indexed_at = nil
     item.save
@@ -1281,11 +1289,6 @@ class CollectionsController < ApplicationController
   # Returns a list of item identifiers corresponding to the items ingested
   #
   def add_item_core(collection, item_id_and_file_hash)
-    rdf_files = []
-    item_id_and_file_hash.each do |item|
-      rdf_files.push(item[:rdf_file])
-    end
-    update_collection_manifest(collection.corpus_dir, rdf_files)
     ingest_items(collection.corpus_dir, item_id_and_file_hash)
   end
 
@@ -1455,4 +1458,8 @@ class CollectionsController < ApplicationController
     rlt
   end
 
+  private
+  def skip_trackable
+    request.env['devise.skip_trackable'] = true
+  end
 end

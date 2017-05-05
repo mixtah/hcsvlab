@@ -20,11 +20,11 @@ class ApplicationProcessor < ActiveMessaging::Processor
   end
 
   def info(from, message)
-    logger.info("[#{DateTime.now}], [#{from}], [INFO ] #{message}")
+    logger.info("[#{DateTime.now}], [#{from}], [INFO] #{message}")
   end
 
   def warn(from, message)
-    logger.warn("[#{DateTime.now}], [#{from}], [WARN ] #{message}")
+    logger.warn("[#{DateTime.now}], [#{from}], [WARN] #{message}")
   end
 
   def warning(from, message)

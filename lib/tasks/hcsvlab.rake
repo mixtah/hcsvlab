@@ -3,17 +3,21 @@ tasks = Rake.application.instance_variable_get '@tasks'
 tasks.delete 'jetty:clean'
 tasks.delete 'jetty:config'
 tasks.delete 'jetty:start'
+
 namespace :jetty do
 
   namespace :hcsvlab do
+    desc "Start background services"
     task :start_services => :environment do
       start_services
     end
 
+    desc "Stop background services"
     task :stop_services => :environment do
       stop_services
     end
 
+    desc "Restart background services"
     task :restart_services => :environment do
       stop_services
       start_services
@@ -21,14 +25,18 @@ namespace :jetty do
   end
 
   namespace :hcsvlab_test do
+
+    desc "Start background services in test mode"
     task :start_services => :environment do
       start_services(true)
     end
 
+    desc "Stop background services in test mode"
     task :stop_services => :environment do
       stop_services(true)
     end
 
+    desc "Restart background services in test mode"
     task :restart_services => :environment do
       stop_services(true)
       start_services(true)
