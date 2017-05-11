@@ -321,7 +321,6 @@ after 'multistage:ensure' do
     config/hcsvlab-web_config.yml
     config/linguistics.yml
     config/solr.yml
-    config/newrelic.yml
     config/aspera.yml
     )
   # TODO: add sesame.yml
