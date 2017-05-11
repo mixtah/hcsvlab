@@ -861,6 +861,7 @@ class CollectionsController < ApplicationController
   # If statements already exist this updates the statement object rather than appending new statements
   def update_sesame_with_graph(graph, collection)
     # FIXME synchronous Sesame call, move to workers
+    start = Time.now
 
     repository = get_sesame_repository(collection)
     graph.each_statement do |statement|
@@ -882,6 +883,10 @@ class CollectionsController < ApplicationController
         end
       end
     end
+
+    endTime = Time.now
+    logger.debug("Time for update_sesame_with_graph: #{corpus_dir}: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
+
     repository
   end
 
