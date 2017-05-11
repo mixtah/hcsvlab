@@ -203,6 +203,8 @@ def create_collection_from_file(collection_file, collection_name)
 end
 
 def look_for_documents(item, corpus_dir, rdf_file, item_info)
+  start = Time.now
+
   # Create a primary text in the Item for primary text documents
   begin
     server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
@@ -254,6 +256,8 @@ def look_for_documents(item, corpus_dir, rdf_file, item_info)
     end
   end
 
+  endTime = Time.now
+  logger.debug("Time for look_for_documents: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
 end
 
 def update_document(document, item, file_name, identifier, source, type, corpus_dir)
@@ -700,6 +704,7 @@ end
 #
 def populate_triple_store(corpus_dir, collection_name, glob, skip_ingest=false)
   logger.info "Start ingesting files matching #{glob} in #{corpus_dir}"
+  start = Time.now
 
   server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
 
@@ -712,6 +717,9 @@ def populate_triple_store(corpus_dir, collection_name, glob, skip_ingest=false)
 
   # Now will store every RDF file
   repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}") unless skip_ingest
+
+  endTime = Time.now
+  logger.debug("Time for populate_triple_store: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
 
   logger.info "Finished ingesting files matching #{glob} in #{corpus_dir}"
 end
