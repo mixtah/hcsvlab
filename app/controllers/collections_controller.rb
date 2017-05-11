@@ -885,7 +885,7 @@ class CollectionsController < ApplicationController
     end
 
     endTime = Time.now
-    logger.debug("Time for update_sesame_with_graph: #{corpus_dir}: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
+    logger.debug("Time for update_sesame_with_graph: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
 
     repository
   end
