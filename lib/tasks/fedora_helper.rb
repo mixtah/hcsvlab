@@ -12,7 +12,7 @@ STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env]
 
 #
 # Ingests a single item, creating both a collection object and manifest if they don't
-# already exist. NOTE: the id variable should only be passed in for use in automated tests!
+# already exist.
 #
 def ingest_one(corpus_dir, rdf_file)
   collection_name = extract_manifest_collection(rdf_file)
