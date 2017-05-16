@@ -627,7 +627,7 @@ end
 #
 # Store all metadata and annotations from the given directory in the triplestore
 #
-def populate_triple_store(corpus_dir, collection_name, glob, skip_ingest=false)
+def populate_triple_store(corpus_dir, collection_name, glob)
   logger.info "Start ingesting files matching #{glob} in #{corpus_dir}"
   start = Time.now
 
@@ -641,7 +641,7 @@ def populate_triple_store(corpus_dir, collection_name, glob, skip_ingest=false)
   repository = server.repository(collection_name)
 
   # Now will store every RDF file
-  repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}") unless skip_ingest
+  repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
 
   endTime = Time.now
   logger.debug("Time for populate_triple_store: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
