@@ -82,7 +82,8 @@ end
 # e.g. rake tasks
 def reindex_item_to_solr(item_id, stomp_client)
   logger.info "Reindexing item: #{item_id}"
-  stomp_client.publish('/queue/alveo.solr.worker', "index #{item_id}")
+  packet = {:cmd => "index", :arg => item_id}
+  stomp_client.publish('alveo.solr.worker', packet.to_json)
 end
 
 def delete_item_from_solr(item_id)
@@ -100,7 +101,8 @@ def delete_object_from_solr(object_id)
     Solr_Worker.new.on_message("delete #{object_id}")
   else
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
-    stomp_client.publish('alveo.solr.worker', "delete #{object_id}")
+    packet = {:cmd => "delete", :arg => object_id}
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
     stomp_client.close
   end
 end

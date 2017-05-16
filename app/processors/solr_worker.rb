@@ -56,25 +56,21 @@ class Solr_Worker < ApplicationProcessor
   # Deal with an incoming message
   #
   def on_message(message)
-    # Expect message to be a command verb followed by the id of the Item
-    # and then do what the verb says to the object. Complain if the message is
-    # badly formed, or we don't understand the command verb.
+    # Expect message to be a json object containing at least a 'cmd' (command) verb
     
     info("Solr_Worker", "received: #{message}")
-    parse = message.split(' ')
 
-    if parse.size != 2
-       error("Solr_Worker", "badly formatted instruction, expecting 'command object'")
-       return
-    end
+    packet = JSON.parse(message)    
+    info("Solr_Worker", "packet: #{packet.inspect}")
 
-    command = parse[0]
-    object = parse[1]
+    command = packet["cmd"]
+    
 
     case command
       when "index"
+        item_id = packet["arg"]
         begin
-          index_item(object)
+          index_item(item_id)
         rescue Exception => e
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
@@ -83,8 +79,20 @@ class Solr_Worker < ApplicationProcessor
           stomp_client.publish('alveo.solr.worker.dlq', message)
           stomp_client.close
         end
+
       when "delete"
-        delete(object)
+        # TODO should we catch exceptions here?
+        item_id = packet["arg"]
+        delete(item_id)
+
+      when "sesame_update"
+        begin
+          args = packet["arg"]
+          sesame_updates(args["item_id"], args["json_document_ld"])
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
     else
       error("Solr_Worker", "unknown instruction: #{command}")
       return
