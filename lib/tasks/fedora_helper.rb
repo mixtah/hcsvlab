@@ -590,14 +590,16 @@ def setup_collection_list(list_name, licence, *collection_names)
   logger.warn("Didn't create CollectionList #{list_name}") if list.nil?
 end
 
-def send_solr_message(command, objectID)
-  info("Fedora_Worker", "sending instruction to Solr_Worker: #{command} #{objectID}")
-  publish :solr_worker, "#{command} #{objectID}"
-  debug("Fedora_Worker", "Cache size: #{@@cache.size}")
-  @@cache.each_pair { |key, value|
-    debug("Fedora_Worker", "   @cache[#{key}] = #{value}")
-  }
-end
+# Appears to be unused
+# 
+# def send_solr_message(command, objectID)
+#   info("Fedora_Worker", "sending instruction to Solr_Worker: #{command} #{objectID}")
+#   publish :solr_worker, "#{command} #{objectID}"
+#   debug("Fedora_Worker", "Cache size: #{@@cache.size}")
+#   @@cache.each_pair { |key, value|
+#     debug("Fedora_Worker", "   @cache[#{key}] = #{value}")
+#   }
+# end
 
 #
 # Store all metadata and annotations from the given directory in the triplestore
