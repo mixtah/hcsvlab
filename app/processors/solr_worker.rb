@@ -85,14 +85,24 @@ class Solr_Worker < ApplicationProcessor
         item_id = packet["arg"]
         delete(item_id)
 
-      when "sesame_update"
+      when "update_item_in_sesame"
         begin
           args = packet["arg"]
-          sesame_updates(args["item_id"], args["json_document_ld"])
+          update_item_in_sesame(args["new_metadata"], args["collection_id"])
         rescue Exception => e
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
         end
+
+      when "update_item_in_sesame_with_link"
+        begin
+          args = packet["arg"]
+          update_item_in_sesame_with_link(args["item_id"], args["document_json_ld"])
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
+      
     else
       error("Solr_Worker", "unknown instruction: #{command}")
       return
@@ -101,6 +111,63 @@ class Solr_Worker < ApplicationProcessor
   end
 
 private
+
+  #
+  # =============================================================================
+  # Backgrounded Sesame routines
+  # =============================================================================
+  #
+  def update_item_in_sesame(new_metadata, collection_id)
+    collection = Collection.find(collection_id)
+    repository = get_sesame_repository(collection)
+    update_sesame_with_graph(new_metadata, repository)
+  end
+
+  def update_item_in_sesame_with_link(item_id, document_json_ld)
+    item = Item.find(item_id)
+    repository = get_sesame_repository(item.collection)
+
+    # Upload doc rdf to Sesame
+    document_RDF = RDF::Graph.new << JSON::LD::API.toRDF(document_json_ld)
+    update_sesame_with_graph(document_RDF, repository)
+
+    # Add link in item rdf to doc rdf in sesame
+    document_RDF_URI = RDF::URI.new(document_json_ld['@id'])
+    item_document_link = {'@id' => item.uri, MetadataHelper::DOCUMENT.to_s => document_RDF_URI}
+    append_item_graph = RDF::Graph.new << JSON::LD::API.toRDF(item_document_link)
+    update_sesame_with_graph(append_item_graph, repository)
+  end
+
+  # Updates Sesame with the metadata graph
+  # If statements already exist this updates the statement object rather than appending new statements
+  def update_sesame_with_graph(graph, repository)
+    start = Time.now
+
+    graph.each_statement do |statement|
+      if statement.predicate == MetadataHelper::DOCUMENT
+        # An item can contain multiple document statements (same subj and pred, different obj)
+        repository.insert(statement)
+      else
+        # All other statements should have unique subjects and predicates
+        matches = RDF::Query.execute(repository) { pattern [statement.subject, statement.predicate, :object] }
+        if matches.count == 0
+          repository.insert(statement)
+        else
+          matches.each do |match|
+            unless match[:object] == statement.object
+              repository.delete([statement.subject, statement.predicate, match[:object]])
+              repository.insert(statement)
+            end
+          end
+        end
+      end
+    end
+
+    endTime = Time.now
+    logger.debug("Time for update_sesame_with_graph: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
+
+    repository
+  end
 
   #
   # =============================================================================
@@ -467,6 +534,12 @@ private
       @@solr_config = Blacklight.solr_config
       @@solr        = RSolr.connect(@@solr_config)
     end
+  end
+
+  # Returns a collection repository from the Sesame server
+  def get_sesame_repository(collection)
+    server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
+    server.repository(collection.name)
   end
 
   #

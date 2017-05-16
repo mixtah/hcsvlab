@@ -78,6 +78,21 @@ def create_item_from_file(corpus_dir, rdf_file, collection, item_info)
   end
 end
 
+def add_and_index_document_in_sesame(item_id, document_json_ld)
+  unless Rails.env.test?
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+    packet = {
+      :cmd => "update_item_in_sesame_with_link",
+      :arg => {
+        :item_id => item_id,
+        :document_json_ld => document_json_ld
+      }
+    }
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
+    stomp_client.close
+  end
+end
+
 # stomp_client is passed in because this method may be called repeatedly on one connection
 # e.g. rake tasks
 def reindex_item_to_solr(item_id, stomp_client)
