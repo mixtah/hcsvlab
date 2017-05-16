@@ -62,6 +62,7 @@ def create_item_from_file(corpus_dir, rdf_file, collection, item_info)
     item.uri = uri
     item.collection = collection
     item.save!
+
     unless Rails.env.test?
       stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       reindex_item_to_solr(item.id, stomp_client)
@@ -77,6 +78,8 @@ def create_item_from_file(corpus_dir, rdf_file, collection, item_info)
   end
 end
 
+# stomp_client is passed in because this method may be called repeatedly on one connection
+# e.g. rake tasks
 def reindex_item_to_solr(item_id, stomp_client)
   logger.info "Reindexing item: #{item_id}"
   stomp_client.publish('/queue/alveo.solr.worker', "index #{item_id}")
@@ -426,84 +429,6 @@ def extract_manifest_info(rdf_file)
 
   return filename, hash
 end
-
-# Deprecated: old ingest route. TODO update tests
-def ingest_corpus(corpus_dir, num_spec=:all, shuffle=false, annotations=true)
-  raise "Deprecated"
-
-  label = "Ingesting...\n"
-  label += "   corpus:      #{corpus_dir}\n"
-  label += "   amount:      #{num_spec}\n"
-  label += "   random:      #{shuffle}\n"
-  label += "   annotations: #{annotations}"
-  puts label unless Rails.env.test?
-
-  check_and_create_manifest(corpus_dir)
-
-  overall_start = Time.now
-
-  manifest_file = File.open(File.join(corpus_dir, MANIFEST_FILE_NAME))
-  manifest = JSON.parse(manifest_file.read)
-  manifest_file.close
-
-  collection_name = manifest["collection_name"]
-  begin
-    collection = check_and_create_collection(collection_name, corpus_dir)
-  rescue ArgumentError => e
-    logger.error(e.message)
-    puts e.message
-    return
-  end
-
-  rdf_files = Dir.glob(corpus_dir + '/*-metadata.rdf')
-
-  if num_spec == :all
-    num = rdf_files.size
-  elsif num_spec.is_a? String
-    if num_spec.end_with?('%')
-      # The argument is a percentage
-      num_spec = num_spec.slice(0, num_spec.size-1) # drop the % sign
-      percentage = num_spec.to_f
-      if percentage == 0 || percentage > 100
-        puts "   Percentage should be a number between 0 and 100"
-        exit 1
-      end
-      num = ((rdf_files.size * percentage)/100).to_i
-      num = 1 if num < 1
-    else
-      # The argument is just a number. Well, it should be.
-      num = num_spec.to_i
-      if num == 0 || num > rdf_files.size
-        puts "   Amount should be a number between 0 and the number of RDF files in the corpus (#{rdf_files.size})"
-        exit 1
-      end
-    end
-  end
-
-  logger.info "Ingesting #{num} file#{(num==1) ? '' : 's'} of #{rdf_files.size}"
-  errors = {}
-  successes = {}
-
-  rdf_files.shuffle! if shuffle
-  rdf_files = rdf_files.slice(0, num)
-
-  rdf_files.each do |rdf_file|
-    begin
-      pid = ingest_rdf_file(corpus_dir, rdf_file, annotations, manifest, collection)
-
-      successes[rdf_file] = pid
-    rescue => e
-      logger.error "Error! #{e.message}\n#{e.backtrace}"
-      errors[rdf_file] = e.message
-    end
-  end
-
-  report_results(label, corpus_dir, successes, errors)
-  end_time = Time.now
-  logger.info("Time for ingesting #{corpus_dir}: (#{'%.1f' % ((end_time.to_f - overall_start.to_f)*1000)}ms)")
-
-end
-
 
 def check_corpus(corpus_dir)
 
