@@ -180,7 +180,6 @@ def paradisec_collection_setup(collection, is_new)
 
 end
 
-# TODO: collection_enhancement
 def create_collection_from_file(collection_file, collection_name)
   coll = Collection.new
   coll.name = collection_name

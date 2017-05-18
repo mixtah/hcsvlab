@@ -57,6 +57,7 @@ group :test do
   # gem "selenium-webdriver"
   gem 'spreewald'
   gem "json-compare", '0.1.8'
+  gem 'rspec-json_expectations', '~>2.0.0'
   # KL: 12/12
   gem 'test-unit', '~> 3.0'
 end
@@ -108,6 +109,7 @@ gem 'colorize'
 
 # ruby json builder
 gem 'rabl'
+gem 'jbuilder'
 
 # exception tracker
 # gem 'whoops_rails_logger', git: 'https://github.com/IntersectAustralia/whoops_rails_logger.git'

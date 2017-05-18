@@ -1,4 +1,5 @@
 HcsvlabWeb::Application.routes.draw do
+
   use_doorkeeper
 
   # This constraint specify that we are going to accept any character except '/' for an item id.
@@ -87,6 +88,16 @@ HcsvlabWeb::Application.routes.draw do
 
   get "add-document/:collection/:itemId", :to => 'collections#web_add_document', :as => 'web_add_document'
   post "add-document/:collection/:itemId", :to => 'collections#web_add_document'
+
+  # speaker metadata
+  get "/speakers/:collection", :to => "speakers#index", :as => "speakers"
+  post "/speakers/:collection", :to => "speakers#create", :as => "create_speaker"
+
+  get "/speakers/:collection/:speaker_id", :to => "speakers#show", :as => "show_speaker"
+  # rails 3.2 only supports PUT, rails 4 supports PATCH
+  put "/speakers/:collection/:speaker_id", :to => "speakers#update", :as => "update_speaker"
+  delete "/speakers/:collection/:speaker_id", :to => "speakers#delete", :as => "delete_speaker"
+
 
   HydraHead.add_routes(self)
 
