@@ -87,6 +87,8 @@ RSpec.describe MetadataHelper, :type => :helper do
     marcrel:OWN "karl" .
       )
       @graph = RDF::Graph.new << RDF::Turtle::Reader.new(@graph_str)
+
+
     end
 
     it 'corpus_dir_by_name' do
@@ -116,7 +118,7 @@ RSpec.describe MetadataHelper, :type => :helper do
     end
 
 
-    it "should persist new collection (graph) metadata"  do
+    it "should persist new collection (graph) metadata" do
       # collection_name = "mycollection"
       collection = Collection.new
       collection.name = @collection_name
@@ -151,7 +153,7 @@ RSpec.describe MetadataHelper, :type => :helper do
       end
     end
 
-    describe "should update existing collection (graph) metadata"  do
+    describe "should update existing collection (graph) metadata" do
       it "update existing property" do
 
         collection = Collection.new
@@ -238,7 +240,7 @@ RSpec.describe MetadataHelper, :type => :helper do
 
         # diff = JsonCompare.get_diff(ori_json, actual_json)
 
-        expect(JsonCompare.get_diff(ori_json, actual_json)).to include(:remove => {property_name=>property_value})
+        expect(JsonCompare.get_diff(ori_json, actual_json)).to include(:remove => {property_name => property_value})
       end
 
 
@@ -250,7 +252,7 @@ RSpec.describe MetadataHelper, :type => :helper do
         collection_name = 'heal the world'
         full_name = "Michael Jackson"
         metadata = {
-          MetadataHelper::DC_LANGUAGE.to_s => ''  # empty field
+          MetadataHelper::DC_LANGUAGE.to_s => '' # empty field
         }
 
         metadata_fields = {
@@ -270,5 +272,6 @@ RSpec.describe MetadataHelper, :type => :helper do
 
       end
     end
+
   end
 end

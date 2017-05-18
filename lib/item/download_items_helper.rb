@@ -218,7 +218,7 @@ module Item::DownloadItemsHelper
           unless File.directory?(APP_CONFIG['download_tmp_dir'])
             FileUtils.mkdir_p(APP_CONFIG['download_tmp_dir'])
           end
-          zip_path = "#{Rails.root.join(APP_CONFIG['download_tmp_dir'], "#{digest_filename}.tmp")}"
+          zip_path = Rails.root.join(APP_CONFIG['download_tmp_dir'], "#{digest_filename}.tmp").to_s
           # zip_file = File.new(zip_path, 'a+')
           ZipBuilder.build_simple_zip_from_files(zip_path, filenames)
 

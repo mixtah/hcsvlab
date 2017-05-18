@@ -348,11 +348,12 @@ public
   end
 
   # Use json-ld to convert JSON to RDF graph
-  def self::json_to_rdf_graph(json, format=:ttl)
-    logger.debug "json_to_rdf_graph: json=#{json.to_s}"
+  # @raise [InvalidContext]
+  def self::json_to_rdf_graph(json, format=:n3)
+    logger.debug "json_to_rdf_graph start: json=#{json.to_s}"
     graph = RDF::Graph.new << JSON::LD::API.toRDF(json)
 
-    logger.debug "json_to_rdf_graph: graph=#{graph.dump(format)}"
+    logger.debug "json_to_rdf_graph end: graph=#{graph.dump(format)}"
     # graph.dump(format)
     graph
   end

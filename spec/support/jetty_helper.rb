@@ -25,7 +25,10 @@ def clear_jetty
   repositories = server.repositories
   repositories.each_key do |repositoryName|
     if (!"SYSTEM".eql? repositoryName)
-      server.delete(repositories[repositoryName].path)
+      if repositoryName.start_with? "test_"
+        # only delete test repo
+        server.delete(repositories[repositoryName].path)
+      end
     end
   end
 end
