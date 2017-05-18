@@ -848,7 +848,6 @@ class CollectionsController < ApplicationController
   
   def update_item_in_sesame(new_metadata, collection)
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
-    packet = {:cmd => "index", :arg => item_id}
 
     packet = {
       :cmd => "update_item_in_sesame",
@@ -873,18 +872,6 @@ class CollectionsController < ApplicationController
     graph.each_statement { |statement| repository.insert(statement) }
   end
 
-  # Deletes statements with the item's URI from Sesame
-  def delete_item_from_sesame(item, repository)
-    item_subject = RDF::URI.new(item.uri)
-    item_query = RDF::Query.new do
-      pattern [item_subject, :predicate, :object]
-    end
-    item_statements = repository.query(item_query)
-    item_statements.each do |item_statement|
-      repository.delete(RDF::Statement(item_subject, item_statement[:predicate], item_statement[:object]))
-    end
-  end
-
   #
   # Gets the document URI from Sesame
   # URI is obtained by querying the item's RDF documents for a doc with a metadata ID matching the doc filename in the db
@@ -906,25 +893,6 @@ class CollectionsController < ApplicationController
     end
     raise 'Could not obtain document URI from Sesame' if document_uri.nil?
     document_uri
-  end
-
-  #
-  # Deletes statements from Sesame where the RDF subject matches the document URI
-  #
-  def delete_document_from_sesame(document, repository)
-    document_uri = get_doc_subject_uri_from_sesame(document, repository)
-    triples_with_doc_subject = RDF::Query.execute(repository) do
-      pattern [document_uri, :predicate, :object]
-    end
-    triples_with_doc_subject.each do |statement|
-      repository.delete(RDF::Statement(document_uri, statement[:predicate], statement[:object]))
-    end
-    triples_with_doc_object = RDF::Query.execute(repository) do
-      pattern [:subject, :predicate, document_uri]
-    end
-    triples_with_doc_object.each do |statement|
-      repository.delete(RDF::Statement(statement[:subject], statement[:predicate], document_uri))
-    end
   end
 
   # Removes a document from the database, filesystem, Sesame and Solr
@@ -955,11 +923,16 @@ class CollectionsController < ApplicationController
 
   # Deletes an item and its documents from Sesame
   def delete_from_sesame(item, collection)
-    repository = get_sesame_repository(collection)
-    item.documents.each do |document|
-      delete_document_from_sesame(document, repository)
-    end
-    delete_item_from_sesame(item, repository)
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+
+    packet = {
+      :cmd => "delete_item_from_sesame",
+      :arg => {
+        :item_id => item.id
+      }
+    }
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
+    stomp_client.close
   end
 
   # Attempts to delete a file or logs any exceptions raised

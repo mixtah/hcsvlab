@@ -103,6 +103,14 @@ class Solr_Worker < ApplicationProcessor
           error("Solr Worker", e.backtrace)
         end
       
+      when "delete_item_from_sesame"
+        begin
+          args = packet["arg"]
+          delete_item_from_sesame(item)
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
     else
       error("Solr_Worker", "unknown instruction: #{command}")
       return
@@ -117,6 +125,46 @@ private
   # Backgrounded Sesame routines
   # =============================================================================
   #
+
+  def delete_item_from_sesame(item)
+    repository = get_sesame_repository(item.collection)
+    item.documents.each do |document|
+      delete_document_from_sesame(document, repository)
+    end
+    delete_item_from_sesame(item, repository)
+  end
+
+  #
+  # Deletes statements from Sesame where the RDF subject matches the document URI
+  #
+  def delete_document_from_sesame(document, repository)
+    document_uri = get_doc_subject_uri_from_sesame(document, repository)
+    triples_with_doc_subject = RDF::Query.execute(repository) do
+      pattern [document_uri, :predicate, :object]
+    end
+    triples_with_doc_subject.each do |statement|
+      repository.delete(RDF::Statement(document_uri, statement[:predicate], statement[:object]))
+    end
+    triples_with_doc_object = RDF::Query.execute(repository) do
+      pattern [:subject, :predicate, document_uri]
+    end
+    triples_with_doc_object.each do |statement|
+      repository.delete(RDF::Statement(statement[:subject], statement[:predicate], document_uri))
+    end
+  end
+  
+  # Deletes statements with the item's URI from Sesame
+  def delete_item_from_sesame(item, repository)
+    item_subject = RDF::URI.new(item.uri)
+    item_query = RDF::Query.new do
+      pattern [item_subject, :predicate, :object]
+    end
+    item_statements = repository.query(item_query)
+    item_statements.each do |item_statement|
+      repository.delete(RDF::Statement(item_subject, item_statement[:predicate], item_statement[:object]))
+    end
+  end
+
   def update_item_in_sesame(new_metadata, collection_id)
     collection = Collection.find(collection_id)
     repository = get_sesame_repository(collection)
