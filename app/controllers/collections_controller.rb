@@ -848,7 +848,6 @@ class CollectionsController < ApplicationController
   
   def update_item_in_sesame(new_metadata, collection)
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
-    packet = {:cmd => "index", :arg => item_id}
 
     packet = {
       :cmd => "update_item_in_sesame",
