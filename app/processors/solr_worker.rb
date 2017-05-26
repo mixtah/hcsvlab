@@ -56,25 +56,21 @@ class Solr_Worker < ApplicationProcessor
   # Deal with an incoming message
   #
   def on_message(message)
-    # Expect message to be a command verb followed by the id of the Item
-    # and then do what the verb says to the object. Complain if the message is
-    # badly formed, or we don't understand the command verb.
+    # Expect message to be a json object containing at least a 'cmd' (command) verb
     
     info("Solr_Worker", "received: #{message}")
-    parse = message.split(' ')
 
-    if parse.size != 2
-       error("Solr_Worker", "badly formatted instruction, expecting 'command object'")
-       return
-    end
+    packet = JSON.parse(message)    
+    info("Solr_Worker", "packet: #{packet.inspect}")
 
-    command = parse[0]
-    object = parse[1]
+    command = packet["cmd"]
+    
 
     case command
       when "index"
+        item_id = packet["arg"]
         begin
-          index_item(object)
+          index_item(item_id)
         rescue Exception => e
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
@@ -83,8 +79,38 @@ class Solr_Worker < ApplicationProcessor
           stomp_client.publish('alveo.solr.worker.dlq', message)
           stomp_client.close
         end
+
       when "delete"
-        delete(object)
+        # TODO should we catch exceptions here?
+        item_id = packet["arg"]
+        delete(item_id)
+
+      when "update_item_in_sesame"
+        begin
+          args = packet["arg"]
+          update_item_in_sesame(args["new_metadata"], args["collection_id"])
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
+
+      when "update_item_in_sesame_with_link"
+        begin
+          args = packet["arg"]
+          update_item_in_sesame_with_link(args["item_id"], args["document_json_ld"])
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
+      
+      when "delete_item_from_sesame"
+        begin
+          args = packet["arg"]
+          delete_item_from_sesame(item)
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
     else
       error("Solr_Worker", "unknown instruction: #{command}")
       return
@@ -93,6 +119,103 @@ class Solr_Worker < ApplicationProcessor
   end
 
 private
+
+  #
+  # =============================================================================
+  # Backgrounded Sesame routines
+  # =============================================================================
+  #
+
+  def delete_item_from_sesame(item)
+    repository = get_sesame_repository(item.collection)
+    item.documents.each do |document|
+      delete_document_from_sesame(document, repository)
+    end
+    delete_item_from_sesame(item, repository)
+  end
+
+  #
+  # Deletes statements from Sesame where the RDF subject matches the document URI
+  #
+  def delete_document_from_sesame(document, repository)
+    document_uri = get_doc_subject_uri_from_sesame(document, repository)
+    triples_with_doc_subject = RDF::Query.execute(repository) do
+      pattern [document_uri, :predicate, :object]
+    end
+    triples_with_doc_subject.each do |statement|
+      repository.delete(RDF::Statement(document_uri, statement[:predicate], statement[:object]))
+    end
+    triples_with_doc_object = RDF::Query.execute(repository) do
+      pattern [:subject, :predicate, document_uri]
+    end
+    triples_with_doc_object.each do |statement|
+      repository.delete(RDF::Statement(statement[:subject], statement[:predicate], document_uri))
+    end
+  end
+  
+  # Deletes statements with the item's URI from Sesame
+  def delete_item_from_sesame(item, repository)
+    item_subject = RDF::URI.new(item.uri)
+    item_query = RDF::Query.new do
+      pattern [item_subject, :predicate, :object]
+    end
+    item_statements = repository.query(item_query)
+    item_statements.each do |item_statement|
+      repository.delete(RDF::Statement(item_subject, item_statement[:predicate], item_statement[:object]))
+    end
+  end
+
+  def update_item_in_sesame(new_metadata, collection_id)
+    collection = Collection.find(collection_id)
+    repository = get_sesame_repository(collection)
+    update_sesame_with_graph(new_metadata, repository)
+  end
+
+  def update_item_in_sesame_with_link(item_id, document_json_ld)
+    item = Item.find(item_id)
+    repository = get_sesame_repository(item.collection)
+
+    # Upload doc rdf to Sesame
+    document_RDF = RDF::Graph.new << JSON::LD::API.toRDF(document_json_ld)
+    update_sesame_with_graph(document_RDF, repository)
+
+    # Add link in item rdf to doc rdf in sesame
+    document_RDF_URI = RDF::URI.new(document_json_ld['@id'])
+    item_document_link = {'@id' => item.uri, MetadataHelper::DOCUMENT.to_s => document_RDF_URI}
+    append_item_graph = RDF::Graph.new << JSON::LD::API.toRDF(item_document_link)
+    update_sesame_with_graph(append_item_graph, repository)
+  end
+
+  # Updates Sesame with the metadata graph
+  # If statements already exist this updates the statement object rather than appending new statements
+  def update_sesame_with_graph(graph, repository)
+    start = Time.now
+
+    graph.each_statement do |statement|
+      if statement.predicate == MetadataHelper::DOCUMENT
+        # An item can contain multiple document statements (same subj and pred, different obj)
+        repository.insert(statement)
+      else
+        # All other statements should have unique subjects and predicates
+        matches = RDF::Query.execute(repository) { pattern [statement.subject, statement.predicate, :object] }
+        if matches.count == 0
+          repository.insert(statement)
+        else
+          matches.each do |match|
+            unless match[:object] == statement.object
+              repository.delete([statement.subject, statement.predicate, match[:object]])
+              repository.insert(statement)
+            end
+          end
+        end
+      end
+    end
+
+    endTime = Time.now
+    logger.debug("Time for update_sesame_with_graph: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
+
+    repository
+  end
 
   #
   # =============================================================================
@@ -459,6 +582,12 @@ private
       @@solr_config = Blacklight.solr_config
       @@solr        = RSolr.connect(@@solr_config)
     end
+  end
+
+  # Returns a collection repository from the Sesame server
+  def get_sesame_repository(collection)
+    server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
+    server.repository(collection.name)
   end
 
   #

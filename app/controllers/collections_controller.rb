@@ -549,7 +549,7 @@ class CollectionsController < ApplicationController
       item = validate_item_exists(collection, params[:itemId])
       validate_jsonld(params[:metadata])
       new_metadata = format_update_item_metadata(item, params[:metadata])
-      update_sesame_with_graph(new_metadata, collection)
+      update_item_in_sesame(new_metadata, collection)
       update_item_in_solr(item)
       @success_message = "Updated item #{item.get_name} in collection #{collection.name}"
     rescue ResponseError => e
@@ -845,6 +845,21 @@ class CollectionsController < ApplicationController
       stomp_client.close
     end
   end
+  
+  def update_item_in_sesame(new_metadata, collection)
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+
+    packet = {
+      :cmd => "update_item_in_sesame",
+      :arg => {
+        :new_metadata => new_metadata,
+        :collection_id => collection.id
+      }
+    }
+    
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
+    stomp_client.close
+  end
 
   # Returns a collection repository from the Sesame server
   def get_sesame_repository(collection)
@@ -855,51 +870,6 @@ class CollectionsController < ApplicationController
   # Inserts the statements of the graph into the Sesame repository
   def insert_graph_into_repository(graph, repository)
     graph.each_statement { |statement| repository.insert(statement) }
-  end
-
-  # Updates Sesame with the metadata graph
-  # If statements already exist this updates the statement object rather than appending new statements
-  def update_sesame_with_graph(graph, collection)
-    # FIXME synchronous Sesame call, move to workers
-    start = Time.now
-
-    repository = get_sesame_repository(collection)
-    graph.each_statement do |statement|
-      if statement.predicate == MetadataHelper::DOCUMENT
-        # An item can contain multiple document statements (same subj and pred, different obj)
-        repository.insert(statement)
-      else
-        # All other statements should have unique subjects and predicates
-        matches = RDF::Query.execute(repository) { pattern [statement.subject, statement.predicate, :object] }
-        if matches.count == 0
-          repository.insert(statement)
-        else
-          matches.each do |match|
-            unless match[:object] == statement.object
-              repository.delete([statement.subject, statement.predicate, match[:object]])
-              repository.insert(statement)
-            end
-          end
-        end
-      end
-    end
-
-    endTime = Time.now
-    logger.debug("Time for update_sesame_with_graph: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
-
-    repository
-  end
-
-  # Deletes statements with the item's URI from Sesame
-  def delete_item_from_sesame(item, repository)
-    item_subject = RDF::URI.new(item.uri)
-    item_query = RDF::Query.new do
-      pattern [item_subject, :predicate, :object]
-    end
-    item_statements = repository.query(item_query)
-    item_statements.each do |item_statement|
-      repository.delete(RDF::Statement(item_subject, item_statement[:predicate], item_statement[:object]))
-    end
   end
 
   #
@@ -923,25 +893,6 @@ class CollectionsController < ApplicationController
     end
     raise 'Could not obtain document URI from Sesame' if document_uri.nil?
     document_uri
-  end
-
-  #
-  # Deletes statements from Sesame where the RDF subject matches the document URI
-  #
-  def delete_document_from_sesame(document, repository)
-    document_uri = get_doc_subject_uri_from_sesame(document, repository)
-    triples_with_doc_subject = RDF::Query.execute(repository) do
-      pattern [document_uri, :predicate, :object]
-    end
-    triples_with_doc_subject.each do |statement|
-      repository.delete(RDF::Statement(document_uri, statement[:predicate], statement[:object]))
-    end
-    triples_with_doc_object = RDF::Query.execute(repository) do
-      pattern [:subject, :predicate, document_uri]
-    end
-    triples_with_doc_object.each do |statement|
-      repository.delete(RDF::Statement(statement[:subject], statement[:predicate], document_uri))
-    end
   end
 
   # Removes a document from the database, filesystem, Sesame and Solr
@@ -972,11 +923,16 @@ class CollectionsController < ApplicationController
 
   # Deletes an item and its documents from Sesame
   def delete_from_sesame(item, collection)
-    repository = get_sesame_repository(collection)
-    item.documents.each do |document|
-      delete_document_from_sesame(document, repository)
-    end
-    delete_item_from_sesame(item, repository)
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+
+    packet = {
+      :cmd => "delete_item_from_sesame",
+      :arg => {
+        :item_id => item.id
+      }
+    }
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
+    stomp_client.close
   end
 
   # Attempts to delete a file or logs any exceptions raised
@@ -1214,14 +1170,8 @@ class CollectionsController < ApplicationController
 
   # Adds a document to Sesame and updates the corresponding item in Solr
   def add_and_index_document(item, document_json_ld)
-    # Upload doc rdf to Sesame
-    document_RDF = RDF::Graph.new << JSON::LD::API.toRDF(document_json_ld)
-    update_sesame_with_graph(document_RDF, item.collection)
-    # Add link in item rdf to doc rdf in sesame
-    document_RDF_URI = RDF::URI.new(document_json_ld['@id'])
-    item_document_link = {'@id' => item.uri, MetadataHelper::DOCUMENT.to_s => document_RDF_URI}
-    append_item_graph = RDF::Graph.new << JSON::LD::API.toRDF(item_document_link)
-    update_sesame_with_graph(append_item_graph, item.collection)
+    add_and_index_document_in_sesame(item.id, document_json_ld)
+    
     # Reindex item in Solr
     delete_item_from_solr(item.id)
     item.indexed_at = nil
@@ -1242,7 +1192,7 @@ class CollectionsController < ApplicationController
 
     collection = Collection.find_by_uri(uri)
     unless collection.nil?
-      # existing collectioin, update
+      # existing collection, update
       collection.name = name
       collection.uri = uri
       collection.owner = owner

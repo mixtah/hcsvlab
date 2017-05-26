@@ -19,38 +19,6 @@ namespace :fedora do
     ingest_one(File.dirname(corpus_rdf), corpus_rdf)
   end
 
-
-  #
-  # Ingest one corpus directory, given as an argument
-  #
-  desc "Ingest one corpus directory"
-  task :ingest => :environment do
-
-    # defaults
-    num_spec = :all
-
-    corpus_dir = ENV['corpus'] unless ENV['corpus'].nil?
-    num_spec = ENV['amount'] unless ENV['amount'].nil?
-    random = parse_boolean(ENV['random'], false)
-    annotations = parse_boolean(ENV['annotations'], true)
-
-    if (corpus_dir.nil?) || (!Dir.exists?(corpus_dir))
-      if corpus_dir.nil?
-        puts "No corpus directory specified."
-      else
-        puts "Corpus directory #{corpus_dir} does not exist."
-      end
-      puts "Usage: rake fedora:ingest corpus=<corpus folder> [amount=<amount>] [random=<boolean>] [annotations=<boolean>]"
-      puts "       <amount> can be an absolute number or a percentage: eg. 10 or 10%"
-      puts "       <random> defaults to false"
-      puts "       <annotations> defaults to true"
-      exit 1
-    end
-
-    logger.info "rake fedora:ingest corpus=#{corpus_dir} amount=#{num_spec} random=#{random} annotations=#{annotations}"
-    ingest_corpus(corpus_dir, num_spec, random, annotations)
-  end
-
   #
   # Clear everything out of the system
   #
