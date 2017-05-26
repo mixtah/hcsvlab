@@ -10,7 +10,7 @@ qa2:
 nci:
   url: http://10.0.0.11:8080/openrdf-sesame
 staging:
-  url: http://localhost:8081/openrdf-sesame
+  url: http://10.0.0.26:8080/openrdf-sesame
 staging2:
   url: http://localhost:8080/openrdf-sesame
 production:
