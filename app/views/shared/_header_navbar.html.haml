@@ -5,7 +5,7 @@
         = link_to "#{PROJECT_NAME}".html_safe, root_path, :class => "brand span1"
         -#= link_to "#{PROJECT_NAME} #{image_tag('/assets/hcsvlab.png')}".html_safe, root_path, :class => "span1"
         .span10
-          .row
+          .row{:style => "border-bottom: 1px solid white"}
             %ul.nav
               %li
                 = link_to "Alveo", "http://alveo.edu.au"
@@ -17,10 +17,10 @@
                 = link_to "Help", "http://alveo.edu.au/help", :target => "_blank"
             %ul.nav.pull-right
               = render :partial => '/user_util_links'
-          .divider
           .row
             %ul.nav
               %li{class: activepath_fuzzy?("catalog") }
                 = link_to "Discover", header_discover_path
               %li{ class: activepath_fuzzy?("item_lists") }
                 = link_to "Item Lists", item_lists_path
+
