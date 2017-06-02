@@ -52,14 +52,14 @@ class CollectionsController < ApplicationController
       respond_to do |format|
         format.html {
           flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
-          redirect_to collections_path }
-        format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
+          redirect_to collections_path}
+        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
     else
       @attachment_url = collection_attachments_path(@collection.id)
 
       respond_to do |format|
-        format.html { render :show }
+        format.html {render :show}
         format.json {}
       end
     end
@@ -150,7 +150,7 @@ class CollectionsController < ApplicationController
     # mandatory params
     @collection_language = params[:collection_language]
     @collection_language = 'eng - English' if @collection_language.nil?
-    @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
+    @collection_languages = Language.all.collect {|l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"]}
     #
     #
     @collection_creation_date = params[:collection_creation_date]
@@ -221,7 +221,7 @@ class CollectionsController < ApplicationController
 
         # json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
 
-        json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
+        json_ld.merge!(additional_metadata) {|key, val1, val2| val1}
 
         # Ingest new collection
         name = Collection.sanitise_name(params[:collection_name])
@@ -306,7 +306,7 @@ class CollectionsController < ApplicationController
     authorize! :web_add_document, collection
     @language = params[:language]
     @language = 'eng - English' if @language.nil?
-    @languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
+    @languages = Language.all.collect {|l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"]}
     @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
     if request.post?
       item = Item.find_by_handle(Item.format_handle(collection.name, params[:itemId]))
@@ -414,19 +414,6 @@ class CollectionsController < ApplicationController
       raise ResponseError.new(404), "A collection with the name '#{params[:id]}' not exist."
     end
 
-    # KL
-    # respond_to do |format|
-    #   if @collection.nil? or @collection.name.nil?
-    #     format.html {
-    #       flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
-    #       redirect_to collections_path }
-    #     format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
-    #   else
-    #     format.html { render :index }
-    #     format.json {}
-    #   end
-    # end
-
     @collection_licences = licences
 
     # mandatory collection properties
@@ -438,12 +425,19 @@ class CollectionsController < ApplicationController
       properties[prop.property] = prop.value unless exclude_prop.include?(prop.property)
     end
 
-
     @collection_title = properties.delete(MetadataHelper::PFX_TITLE)
     @collection_owner = properties.delete(MetadataHelper::PFX_OWNER)
     @collection_language = properties.delete(MetadataHelper::PFX_LANGUAGE)
-    @collection_language = 'eng - English' if @collection_language.nil?
-    @collection_languages = Language.all.collect { |l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"] }
+    @collection_languages = Language.all.map {|l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"]}.to_h
+
+    if @collection_language.nil?
+      @collection_language = 'eng - English'
+    else
+      unless @collection_languages.key?(@collection_language)
+        #   no such lang, need to append
+        @collection_languages[@collection_language] = @collection_language
+      end
+    end
 
     @collection_creation_date = properties.delete(MetadataHelper::PFX_CREATION_DATE)
     @collection_creator = properties.delete(MetadataHelper::PFX_CREATOR)
@@ -490,10 +484,10 @@ class CollectionsController < ApplicationController
       json_ld = {
         '@context' => JsonLdHelper::default_context,
         '@type' => 'dcmitype:Collection',
-        MetadataHelper::TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
-        MetadataHelper::DC_LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
+        MetadataHelper::DC_TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
+        MetadataHelper::LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
         MetadataHelper::CREATED.to_s => params[:collection_creation_date].nil? ? '' : params[:collection_creation_date],
-        MetadataHelper::CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
+        MetadataHelper::DC_CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
         MetadataHelper::LOC_OWNER.to_s => params[:collection_owner].nil? ? '' : params[:collection_owner],
         MetadataHelper::OLAC_SUBJECT.to_s => params[:olac_subject].nil? ? '' : params[:olac_subject],
         MetadataHelper::LICENCE.to_s => lic.name,
@@ -502,7 +496,7 @@ class CollectionsController < ApplicationController
 
       # json_ld.merge!(olac_metadata) { |key, val1, val2| val1 }
 
-      json_ld.merge!(additional_metadata) { |key, val1, val2| val1 }
+      json_ld.merge!(additional_metadata) {|key, val1, val2| val1}
 
       # Ingest new collection
       # name = Collection.sanitise_name(params[:collection_name])
@@ -647,7 +641,7 @@ class CollectionsController < ApplicationController
     respond_to do |format|
       response = {:error => message}
       response[:failures] = params[:failures] unless params[:failures].blank?
-      format.any { render :json => response.to_json, :status => status_code }
+      format.any {render :json => response.to_json, :status => status_code}
     end
   end
 
@@ -815,13 +809,12 @@ class CollectionsController < ApplicationController
     items_ingested = []
     items.each do |item|
       ingest_one(corpus_dir, item[:rdf_file])
-      item[:identifier].each { |id| items_ingested.push(id) }
+      item[:identifier].each {|id| items_ingested.push(id)}
     end
     items_ingested
   end
 
   # Write item JSON metadata to RDF file and returns a hash containing :identifier, :rdf_file
-  # TODO: collection_enhancement
   def write_item_metadata(corpus_dir, item_json)
     rdf_metadata = MetadataHelper::json_to_rdf_graph(item_json["metadata"]).dump(:ttl)
     item_identifiers = get_item_identifiers(item_json["metadata"])
@@ -845,7 +838,7 @@ class CollectionsController < ApplicationController
       stomp_client.close
     end
   end
-  
+
   def update_item_in_sesame(new_metadata, collection)
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
 
@@ -856,7 +849,7 @@ class CollectionsController < ApplicationController
         :collection_id => collection.id
       }
     }
-    
+
     stomp_client.publish('alveo.solr.worker', packet.to_json)
     stomp_client.close
   end
@@ -869,7 +862,7 @@ class CollectionsController < ApplicationController
 
   # Inserts the statements of the graph into the Sesame repository
   def insert_graph_into_repository(graph, repository)
-    graph.each_statement { |statement| repository.insert(statement) }
+    graph.each_statement {|statement| repository.insert(statement)}
   end
 
   #
@@ -967,7 +960,7 @@ class CollectionsController < ApplicationController
   def update_graph(old_graph, new_graph)
     temp_graph = combine_graphs(old_graph, new_graph)
     new_graph.each do |new_statement|
-      matches = RDF::Query.execute(old_graph) { pattern [new_statement.subject, new_statement.predicate, :object] }
+      matches = RDF::Query.execute(old_graph) {pattern [new_statement.subject, new_statement.predicate, :object]}
       matches.each do |match|
         # when combining graphs the resulting graph only contains distinct statements, so don't delete any fully matching statements
         unless match[:object] == new_statement.object
@@ -980,7 +973,7 @@ class CollectionsController < ApplicationController
 
   # Prints the statements of the graph to screen for easier inspection
   def inspect_graph_statements(graph)
-    graph.each { |statement| puts statement.inspect }
+    graph.each {|statement| puts statement.inspect}
   end
 
   # Prints the RDF statements in a collection repository for easier inspection
@@ -1171,7 +1164,7 @@ class CollectionsController < ApplicationController
   # Adds a document to Sesame and updates the corresponding item in Solr
   def add_and_index_document(item, document_json_ld)
     add_and_index_document_in_sesame(item.id, document_json_ld)
-    
+
     # Reindex item in Solr
     delete_item_from_solr(item.id)
     item.indexed_at = nil
@@ -1213,28 +1206,12 @@ class CollectionsController < ApplicationController
       # corpus_dir = create_metadata_and_manifest(name, convert_json_metadata_to_rdf(metadata))
       MetadataHelper::create_manifest(name)
 
-      # create collection to make it exist
-      collection = Collection.new
-      collection.name = name
-      collection.uri = uri
-      collection.owner = owner
-      collection.licence_id = licence_id
-      collection.private = private
-      collection.text = text
-      collection.save
-
       MetadataHelper::update_collection_metadata_from_json(name, metadata)
 
       corpus_dir = MetadataHelper::corpus_dir_by_name(name)
 
-      # Create the collection without doing a full ingest since it won't contain any item metadata
-      # collection = check_and_create_collection(name, corpus_dir)
       check_and_create_collection(name, corpus_dir, metadata)
-      # collection = check_and_create_collection(name, corpus_dir, metadata)
-      # collection.owner = owner
-      # collection.licence_id = licence_id
-      # collection.private = private
-      # collection.save
+      
       "New collection '#{name}' (#{uri}) created"
     end
   end
@@ -1276,7 +1253,7 @@ class CollectionsController < ApplicationController
         MetadataHelper::IDENTIFIER.to_s,
         'dc:title',
         'dcterms:title',
-        MetadataHelper::TITLE.to_s,
+        MetadataHelper::DC_TITLE.to_s,
         'dc:abstract',
         'dcterms:abstract',
         MetadataHelper::ABSTRACT.to_s,
@@ -1324,7 +1301,7 @@ class CollectionsController < ApplicationController
     default_protected_fields = ['@id', '@type', '@context',
                                 'dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s]
     metadata_protected_fields = default_protected_fields | protected_field_keys
-    additional_metadata.delete_if { |key, value| key.blank? && value.blank? }
+    additional_metadata.delete_if {|key, value| key.blank? && value.blank?}
     metadata_hash = {}
     additional_metadata.each do |key, value|
       meta_key = key.delete(' ')
@@ -1347,10 +1324,10 @@ class CollectionsController < ApplicationController
   def construct_item_json_ld(collection, item_name, item_title, metadata)
     item_metadata = {'@id' => catalog_url(collection.name, item_name),
                      MetadataHelper::IDENTIFIER.to_s => item_name,
-                     MetadataHelper::TITLE.to_s => item_title,
+                     MetadataHelper::DC_TITLE.to_s => item_title,
                      MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
     }
-    item_metadata.merge!(metadata) { |key, val1, val2| val1 }
+    item_metadata.merge!(metadata) {|key, val1, val2| val1}
     {'@context' => JsonLdHelper::default_context, '@graph' => [item_metadata]}
   end
 
@@ -1365,7 +1342,7 @@ class CollectionsController < ApplicationController
                          MetadataHelper::SOURCE.to_s => format_document_source_metadata(document_file),
                          MetadataHelper::EXTENT.to_s => File.size(document_file)
     }
-    document_metadata.merge!(metadata) { |key, val1, val2| val1 }
+    document_metadata.merge!(metadata) {|key, val1, val2| val1}
     {'@context' => JsonLdHelper::default_context}.merge(document_metadata)
   end
 
@@ -1417,4 +1394,5 @@ class CollectionsController < ApplicationController
   def skip_trackable
     request.env['devise.skip_trackable'] = true
   end
+
 end

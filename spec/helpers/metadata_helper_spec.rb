@@ -252,14 +252,14 @@ RSpec.describe MetadataHelper, :type => :helper do
         collection_name = 'heal the world'
         full_name = "Michael Jackson"
         metadata = {
-          MetadataHelper::DC_LANGUAGE.to_s => '' # empty field
+          MetadataHelper::LANGUAGE.to_s => '' # empty field
         }
 
         metadata_fields = {
-          MetadataHelper::TITLE.to_s => collection_name,
-          MetadataHelper::DC_LANGUAGE.to_s => 'eng - English',
+          MetadataHelper::DC_TITLE.to_s => collection_name,
+          MetadataHelper::LANGUAGE.to_s => 'eng - English',
           MetadataHelper::CREATED.to_s => DateTime.now.strftime("%d/%m/%Y"),
-          MetadataHelper::CREATOR.to_s => full_name,
+          MetadataHelper::DC_CREATOR.to_s => full_name,
           MetadataHelper::LICENCE.to_s => 'Creative Commons v3.0 BY'
         }
 

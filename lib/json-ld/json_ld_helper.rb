@@ -85,6 +85,7 @@ public
     hash["marcrel"] = {"@id" => "http://www.loc.gov/loc.terms/relators/"}
     hash["dcterms"] = {"@id" => "http://purl.org/dc/terms/"}
     hash["dc"]      = {"@id" => "http://purl.org/dc/elements/1.1/"}
+    hash["cld"]     = {"@id" => "http://purl.org/cld/terms/"}
 
     hash
   end

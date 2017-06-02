@@ -18,7 +18,7 @@ Note: If the context for a field you want to enter is not available in the
 - batch_add = ''
 - @additional_metadata.each do |md_key, md_value|
   - unless md_key.blank? && md_value.blank?
-    - batch_add += "add_metadata_field('#{md_key}', '#{md_value}');"
+    - batch_add += "add_metadata_field('#{CGI::escapeHTML(md_key)}', '#{CGI::escapeHTML(md_value)}');"
 
 .row-fluid
   .span4
