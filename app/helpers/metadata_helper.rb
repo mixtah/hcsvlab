@@ -153,6 +153,7 @@ module MetadataHelper
   PFX_OLAC_SUBJECT = "olac:subject"
 
   OLAC_LINGUISTIC_SUBJECT_HASH = {
+    "" => "",
     "Anthropological Linguistics" => "Anthropological Linguistics",
     "Applied Linguistics" => "Applied Linguistics",
     "Cognitive Science" => "Cognitive Science",
@@ -325,20 +326,42 @@ module MetadataHelper
 
       json.each do |property, value|
         # logger.debug "update_rdf_graph: [#{property}] => (#{value.class}):#{value}"
+
+        if property.end_with? ("dcterms:isPartOf")
+          #   exclude "dcterms:isPartOf"
+          next
+        end
+
         collection_property = CollectionProperty.new
 
         collection_property.collection_id = collection.id
         collection_property.property = property
+
         if property == "@id"
           #   @id must equal to collection.uri
           collection_property.value = collection.uri
         else
-          collection_property.value = value.to_s.gsub(/=>/, ':')
+          # handle multi-value
+          if value.is_a? (Array)
+            value.each do |v|
+              coll_prop = CollectionProperty.new
+
+              coll_prop.collection_id = collection.id
+              coll_prop.property = property
+              coll_prop.value = v.to_s.gsub(/=>/, ':')
+
+              coll_prop.save
+            end
+
+            next
+          else
+            collection_property.value = value.to_s.gsub(/=>/, ':')
+          end
         end
 
-        # logger.debug "update_rdf_graph: add #{collection_property.property}=#{collection_property.value}"
-
         collection_property.save
+
+        # logger.debug "update_rdf_graph: add #{collection_property.property}=#{collection_property.value}"
       end
     end
 
@@ -347,6 +370,7 @@ module MetadataHelper
     collection
 
   end
+
 
   def self::valid_json?(json)
     begin

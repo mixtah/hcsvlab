@@ -155,10 +155,9 @@ class CollectionsController < ApplicationController
     #
     @collection_creation_date = params[:collection_creation_date]
     @collection_creator = params[:collection_creator]
-    # @collection_linguistic_field_name = params[:collection_linguistic_field_name]
-    # @collection_linguistic_field_value = params[:collection_linguistic_field_value]
-    @olac_subject = params[:olac_subject].nil? ? "Anthropological Linguistics" : params[:olac_subject]
 
+    # no default olac subject
+    @olac_subject = params[:olac_subject].nil? ? "" : params[:olac_subject]
 
     @collection_licences = licences
 
@@ -420,9 +419,20 @@ class CollectionsController < ApplicationController
     properties = {}
     exclude_prop = ['@context', '@type', '@id', MetadataHelper::PFX_LICENCE]
     @collection.collection_properties.each do |prop|
-      # remove the leading or trailing quote
-      # properties[prop.property.gsub!(/^\"|\"?$/, '')] = prop.value
-      properties[prop.property] = prop.value unless exclude_prop.include?(prop.property)
+      # use array to store multi value
+      unless exclude_prop.include?(prop.property)
+        if properties.key?(prop.property)
+          #   multi value?
+          value = properties[prop.property]
+          if value.is_a? (Array)
+            properties[prop.property] = (value << prop.value)
+          else
+            properties[prop.property] = (Array.new([value]) << prop.value)
+          end
+        else
+          properties[prop.property] = prop.value
+        end
+      end
     end
 
     @collection_title = properties.delete(MetadataHelper::PFX_TITLE)
@@ -1211,7 +1221,7 @@ class CollectionsController < ApplicationController
       corpus_dir = MetadataHelper::corpus_dir_by_name(name)
 
       check_and_create_collection(name, corpus_dir, metadata)
-      
+
       "New collection '#{name}' (#{uri}) created"
     end
   end
@@ -1308,7 +1318,21 @@ class CollectionsController < ApplicationController
       meta_value = value.strip
       raise ResponseError.new(400), "An #{metadata_type} metadata field is missing a name" if meta_key.blank?
       raise ResponseError.new(400), "An #{metadata_type} metadata field '#{meta_key}' is missing a value" if meta_value.blank?
-      metadata_hash[meta_key] = meta_value unless metadata_protected_fields.include?(meta_key)
+
+      unless metadata_protected_fields.include?(meta_key)
+        # handle multi value
+        if metadata_hash.key?(meta_key)
+          #   key already exists
+          v = metadata_hash[meta_key]
+          if v.is_a? (Array)
+            metadata_hash[meta_key] = (v << meta_value)
+          else
+            metadata_hash[meta_key] = (Array.new([v]) << meta_value)
+          end
+        else
+          metadata_hash[meta_key] = meta_value
+        end
+      end
     end
     metadata_hash
   end

@@ -45,6 +45,7 @@ RSpec.describe MetadataHelper, :type => :helper do
  "dcterms:language":"english",
  "dcterms:licence":"MIT",
  "dcterms:title":"myCollectionTitle",
+ "dcterms:itemType":["abc", "123"],
  "marcrel:OWN":"karl",
  "olac:history_of_linguistics":
   "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language."
@@ -139,6 +140,32 @@ RSpec.describe MetadataHelper, :type => :helper do
 
       expect(JsonCompare.get_diff(@json, actual_json)).to be_empty
 
+    end
+
+    it "handle multi-value property" do
+      @json.each do |property, value|
+        if value.is_a? (Array)
+          printf "#{value} is Array\n"
+          # value_arr = []
+          # value_arr = JSON.parse(value)
+          value.each do |v|
+            printf "#{v}\n"
+          end
+        end
+      end
+
+      str = "123"
+      tmp_arr = ["abc"]
+      str_arr = []
+      str_arr << str
+      str_arr += tmp_arr
+
+      prop = {}
+      prop["k1"] = (str_arr << str)
+      prop["k2"] = (Array.new([str]) << "456" << "789")
+
+
+      printf "prop = #{prop}"
     end
 
     describe "should update existing collection param" do
@@ -242,7 +269,6 @@ RSpec.describe MetadataHelper, :type => :helper do
 
         expect(JsonCompare.get_diff(ori_json, actual_json)).to include(:remove => {property_name => property_value})
       end
-
 
     end
 
