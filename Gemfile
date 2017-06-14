@@ -48,7 +48,7 @@ end
 group :test do
   # https://github.com/cucumber/cucumber-rails/blob/master/README.md
   # For Rails 3.x support, use version 1.4.5
-  gem "cucumber-rails", :require => false
+  gem "cucumber-rails", "=1.4.5", :require => false
   gem 'database_cleaner'
   gem "shoulda"
   gem "simplecov", ">=0.3.8", :require => false

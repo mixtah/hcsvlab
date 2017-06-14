@@ -1,15 +1,12 @@
 #
 # Import metadata from .n3 file to DB.
 #
-# .n3 file located in config.api_collections_location
+# .n3 file located in multiple directories
 #
 #
 
-def migrate_metadata_n3
-  logger.debug "seed_metadata_n3: start"
-
-  path = File.join(Rails.application.config.api_collections_location, "*.n3").to_s
-  files = Dir[path]
+def migrate_metadata_n3(files)
+  logger.debug "seed_metadata_n3: start - files[#{files}]"
 
   count = 0
 
