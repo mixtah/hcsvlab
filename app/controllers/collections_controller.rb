@@ -31,20 +31,14 @@ class CollectionsController < ApplicationController
   #
   def index
     @collections = collections_by_name
-    @collection_lists = lists_by_name
+
     respond_to do |format|
       format.html
       format.json
     end
   end
 
-
-  #
-  #
-  #
   def show
-    # @collections = collections_by_name
-    # @collection_lists = lists_by_name
 
     @collection = Collection.find_by_name(params[:id])
 
@@ -83,8 +77,11 @@ class CollectionsController < ApplicationController
     end
   end
 
+  #
+  # List all collections by name (include collection in collection_list)
+  #
   def collections_by_name
-    Collection.not_in_list.order(:name)
+    Collection.order(:name)
   end
 
   def lists_by_name

@@ -19,7 +19,7 @@ class Collection < ActiveRecord::Base
   belongs_to :collection_list
   belongs_to :licence
 
-  scope :not_in_list, where(collection_list_id: nil)
+  # scope :not_in_list, where(collection_list_id: nil)
   scope :only_public, where(private: false)
   scope :only_private, where(private: true)
 
