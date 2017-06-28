@@ -366,7 +366,7 @@ module FrequencySearchHelper
     end
 
     #
-    # This method will send a request request to solr and retrieve the
+    # This method will send a request to solr and retrieve the
     # documents list and the response object
     #
     def self.retrieve_documents_from_solr(params, item_handles, batch_group=50)

@@ -35,6 +35,7 @@ class CatalogController < ApplicationController
 
   # These before_filters apply the hydra access controls
   before_filter :wrapped_enforce_show_permissions, :only => [:show, :document, :primary_text, :annotations, :upload_annotation]
+
   # This applies appropriate access controls to all solr queries
   CatalogController.solr_search_params_logic += [:add_access_controls_to_solr_params]
   # This filters out objects that you want to exclude from search results, like FileAssets
@@ -548,8 +549,33 @@ class CatalogController < ApplicationController
   def primary_text
     bench_start = Time.now
     begin
+
       item = Item.find_by_handle(params[:id])
-      send_file item.primary_text_path
+      # send_file item.primary_text_path
+
+      if item.nil?
+        # item not exist
+        respond_to do |format|
+          format.html { flash[:error] = "Sorry, you have requested a document for an item that doesn't exist."
+          redirect_to root_path and return }
+          format.any { render :json => {:error => "item [#{params[:id]}] not-found"}.to_json, :status => 404 }
+        end
+
+        return
+      end
+
+      # retrieve primary text from solr
+      handle = item.handle
+
+      params = {:start => 0, :rows => 20}
+      handles = Array.new(handle)
+
+      doc_list, response = SearchUtils.retrieve_documents_from_solr(params, handles)
+
+      full_text = response['response']['docs'][0].full_text
+
+      send_data(full_text)
+
       bench_end = Time.now
       Rails.logger.debug("Time for retrieving primary text for #{params[:id]} took: (#{'%.1f' % ((bench_end.to_f - bench_start.to_f)*1000)}ms)")
     rescue Exception => e
