@@ -29,6 +29,8 @@ class CatalogController < ApplicationController
 
   include Blacklight::SolrHelper::Overrides
 
+  include FrequencySearchHelper
+
   prepend_before_filter :retrieve_and_set_item_id
 
   before_filter :check_item_indexed, :only => [:show, :document, :primary_text, :annotations, :upload_annotation]
@@ -43,8 +45,8 @@ class CatalogController < ApplicationController
 
   configure_blacklight do |config|
     config.default_solr_params = {
-        :qt => 'search',
-        :rows => 20
+      :qt => 'search',
+      :rows => 20
     }
 
     # solr field configuration for search results/index views
@@ -195,11 +197,11 @@ class CatalogController < ApplicationController
     # since we aren't specifying it otherwise.
 
     #    config.add_search_field 'all_fields', :label => 'All Fields'
-    config.add_search_field('all_fields', :label => 'All Fields') { |field|
+    config.add_search_field('all_fields', :label => 'All Fields') {|field|
 #      field.solr_parameters = { :'spellcheck.dictionary' => 'full text' }
       field.solr_local_parameters = {
-          :qf => '$all_fields_qf',
-          :pf => '$all_fields_pf'
+        :qf => '$all_fields_qf',
+        :pf => '$all_fields_pf'
       }
     }
 
@@ -316,8 +318,8 @@ class CatalogController < ApplicationController
         Rails.logger.debug(e.message)
         Rails.logger.debug(e.backtrace)
         raw_data = {
-            :exception => e,
-            :rack_env => env
+          :exception => e,
+          :rack_env => env
         }
         # WhoopsLogger.log(:rails_exception, raw_data) if WhoopsLogger.config.host
         redirect_to new_issue_report_path, alert: "Solr is experiencing problems at the moment. The administrators have been informed of the issue."
@@ -330,7 +332,7 @@ class CatalogController < ApplicationController
       logger.debug "catalog#index guest visit"
 
       respond_to do |format|
-        format.json { render :nothing => true, :status => 406 }
+        format.json {render :nothing => true, :status => 406}
         # format.html { render :template => 'collections/index'}
         # format.html { redirect_to controller: 'collections'}
         format.html {}
@@ -360,7 +362,7 @@ class CatalogController < ApplicationController
     unless @item.nil?
       render 'catalog/processing_show' and return if @processing_index
 
-      
+
       @response, @document = get_solr_response_for_doc_id
 
       # For some reason blacklight stopped to fullfill the counter value in the session since we changed
@@ -381,12 +383,12 @@ class CatalogController < ApplicationController
           flash[:error] = "Sorry, you have requested a record [#{params[:itemId]}] that doesn't exist..."
           redirect_to root_url and return
         }
-        format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
+        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
       return
     end
     respond_to do |format|
-      format.html { setup_next_and_previous_documents }
+      format.html {setup_next_and_previous_documents}
       format.json {}
       # Add all dynamically added (such as by document extensions)
       # export formats.
@@ -396,7 +398,7 @@ class CatalogController < ApplicationController
         @document.export_formats.each_key do |format_name|
           # It's important that the argument to send be a symbol;
           # if it's a string, it makes Rails unhappy for unclear reasons.
-          format.send(format_name.to_sym) { render :text => @document.export_as(format_name), :layout => false }
+          format.send(format_name.to_sym) {render :text => @document.export_as(format_name), :layout => false}
         end
       end
     end
@@ -435,7 +437,7 @@ class CatalogController < ApplicationController
       logger.error(e.message)
       logger.error(e.backtrace)
       respond_to do |format|
-        format.any { render :json => {:error => "bad-query"}.to_json, :status => 400 }
+        format.any {render :json => {:error => "bad-query"}.to_json, :status => 400}
       end
       return
     end
@@ -461,7 +463,7 @@ class CatalogController < ApplicationController
       Rails.logger.error(e.message)
       Rails.logger.error(e.backtrace.join("\n"))
       respond_to do |format|
-        format.json { render :json => {:error => "error in query parameters"}.to_json, :status => 400 }
+        format.json {render :json => {:error => "error in query parameters"}.to_json, :status => 400}
       end
       return
     end
@@ -470,7 +472,7 @@ class CatalogController < ApplicationController
       if @anns.present? and @anns[:annotations].present?
         format.json {}
       else
-        format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
+        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
     end
 
@@ -498,7 +500,7 @@ class CatalogController < ApplicationController
       # Fall through to return Not Found
     end
     respond_to do |format|
-      format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
+      format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
     end
   end
 
@@ -523,7 +525,7 @@ class CatalogController < ApplicationController
       # Fall through to return Not Found
     end
     respond_to do |format|
-      format.json { render :json => {:error => "not-found"}.to_json, :status => 404 }
+      format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
     end
   end
 
@@ -538,7 +540,7 @@ class CatalogController < ApplicationController
     html = "<pre><code>#{JSON.pretty_generate(@default_context)}</code></pre>"
 
     respond_to do |format|
-      format.html { render :text => html}
+      format.html {render :text => html}
       format.json
     end
   end
@@ -547,6 +549,7 @@ class CatalogController < ApplicationController
   #
   #
   def primary_text
+    logger.debug("primary_text: item handle[#{params[:id]}]")
     bench_start = Time.now
     begin
 
@@ -556,9 +559,9 @@ class CatalogController < ApplicationController
       if item.nil?
         # item not exist
         respond_to do |format|
-          format.html { flash[:error] = "Sorry, you have requested a document for an item that doesn't exist."
-          redirect_to root_path and return }
-          format.any { render :json => {:error => "item [#{params[:id]}] not-found"}.to_json, :status => 404 }
+          format.html {flash[:error] = "Sorry, you have requested a document for an item that doesn't exist."
+          redirect_to root_path and return}
+          format.any {render :json => {:error => "item [#{params[:id]}] not-found"}.to_json, :status => 404}
         end
 
         return
@@ -568,21 +571,24 @@ class CatalogController < ApplicationController
       handle = item.handle
 
       params = {:start => 0, :rows => 20}
-      handles = Array.new(handle)
+      handles = [handle]
+
+      logger.debug("handles=#{handles}")
 
       doc_list, response = SearchUtils.retrieve_documents_from_solr(params, handles)
 
-      full_text = response['response']['docs'][0].full_text
+      full_text = response['response']['docs'][0]["full_text"]
 
-      send_data(full_text)
+      send_data full_text, :filename => "#{handle}.full_text", :type => "text/plain"
 
       bench_end = Time.now
       Rails.logger.debug("Time for retrieving primary text for #{params[:id]} took: (#{'%.1f' % ((bench_end.to_f - bench_start.to_f)*1000)}ms)")
     rescue Exception => e
+      logger.error("primary_text: #{e.message}")
       respond_to do |format|
-        format.html { flash[:error] = "Sorry, you have requested a document for an item that doesn't exist."
-        redirect_to root_path and return }
-        format.any { render :json => {:error => "not-found"}.to_json, :status => 404 }
+        format.html {flash[:error] = "Sorry, internal error (#{e.message})"
+        redirect_to root_path and return}
+        format.any {render :json => {:error => "internal error (#{e.message})"}.to_json, :status => 500}
       end
     end
   end
@@ -592,12 +598,12 @@ class CatalogController < ApplicationController
   #
   def document
     begin
-      item = Item.find_by_handle(params[:id]) 
+      item = Item.find_by_handle(params[:id])
       doc = item.documents.find_by_file_name(params[:filename])
       # check if document exists in JSON metadata from Sesame/Solr
       # This is set during Solr indexing based on a variety of metadata from Solr and Sesame
       # See add_json_metadata_field in solr_worker.rb
-      metadata = Item.where(handle: params[:id]).where("json_metadata like ?","%#{doc.file_path}%") 
+      metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
       doc = nil if doc.present? and metadata.blank?
 
       if doc.present?
@@ -621,7 +627,7 @@ class CatalogController < ApplicationController
           response.header["Content-Length"] = length.to_s
           response.status = :partial_content
 
-          send_data IO.binread(doc.file_path,length, offset), disposition: params[:disposition], type: doc.mime_type, status: response.status, stream: true
+          send_data IO.binread(doc.file_path, length, offset), disposition: params[:disposition], type: doc.mime_type, status: response.status, stream: true
         else
           DocumentAudit.create(document: doc, user: current_user)
           send_file doc.file_path, disposition: params[:disposition], type: doc.mime_type, status: response.status
@@ -634,9 +640,9 @@ class CatalogController < ApplicationController
     end
     respond_to do |format|
       #format.html { raise ActionController::RoutingError.new('Not Found') }
-      format.html { flash[:error] = "Sorry, you have requested a document that doesn't exist."
-      redirect_to catalog_path(params[:id]) and return }
-      format.any { render :json => {:error => "not-found"}.to_json, :status => 404 }
+      format.html {flash[:error] = "Sorry, you have requested a document that doesn't exist."
+      redirect_to catalog_path(params[:id]) and return}
+      format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
     end
   end
 
@@ -650,7 +656,7 @@ class CatalogController < ApplicationController
         params.delete(:id)
         redirect_to catalog_path() and return
       }
-      format.any { render :json => {:error => "not-found"}.to_json, :status => 404 }
+      format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
     end
   end
 
@@ -660,7 +666,7 @@ class CatalogController < ApplicationController
   def download_items
     if params[:items].present?
 
-      itemHandles = params[:items].collect { |x| "#{File.basename(File.split(x).first)}:#{File.basename(x)}" }
+      itemHandles = params[:items].collect {|x| "#{File.basename(File.split(x).first)}:#{File.basename(x)}"}
 
       respond_to do |format|
         format.warc {
@@ -676,7 +682,7 @@ class CatalogController < ApplicationController
       end
     else
       respond_to do |format|
-        format.any { render :json => {:error => "Bad Request"}.to_json, :status => 400 }
+        format.any {render :json => {:error => "Bad Request"}.to_json, :status => 400}
       end
     end
 
@@ -794,23 +800,23 @@ class CatalogController < ApplicationController
     # If the 'query' parameter is no present then we return precondition no met error.
     if query.blank?
       respond_to do |format|
-        format.json { render :json => {:error => "Parameter 'query' is required."}.to_json, :status => 412 and return }
+        format.json {render :json => {:error => "Parameter 'query' is required."}.to_json, :status => 412 and return}
       end
     end
 
     # Now we are going to forbid the SERVICE keyword in the SPARQL query
     pattern = /SERVICE/i
-    matchingWords = query.to_enum(:scan, pattern).map { Regexp.last_match }
+    matchingWords = query.to_enum(:scan, pattern).map {Regexp.last_match}
     if matchingWords.present?
       respond_to do |format|
-        format.json { render :json => {:error => "Service keyword is forbidden in queries."}.to_json, :status => 412 and return }
+        format.json {render :json => {:error => "Service keyword is forbidden in queries."}.to_json, :status => 412 and return}
       end
     end
 
     collection = Collection.find_by_name(collection_name)
     if collection.nil?
       respond_to do |format|
-        format.json { render :json => {:error => "collection not-found"}.to_json, :status => 404 and return }
+        format.json {render :json => {:error => "collection not-found"}.to_json, :status => 404 and return}
       end
     end
 
@@ -836,12 +842,12 @@ class CatalogController < ApplicationController
     # If sesame returns an error, then we show the error received by sesame
     if (!res.is_a?(Net::HTTPSuccess))
       respond_to do |format|
-        format.json { render :json => {:error => res.body}.to_json, :status => res.code and return }
+        format.json {render :json => {:error => res.body}.to_json, :status => res.code and return}
       end
     else
       # Otherwise we send the response as json format.
       respond_to do |format|
-        format.json { render :json => res.body.to_s and return }
+        format.json {render :json => res.body.to_s and return}
       end
     end
   end
@@ -858,9 +864,9 @@ class CatalogController < ApplicationController
     #         word:word~
     #         word
     searchPattern = /(\w+)\s*:\s*([^\s")]+(\s\S+")*|"[^"]*")|(\w+)/i
-    matchingData = metadataSearchParam.to_enum(:scan, searchPattern).map { Regexp.last_match }
+    matchingData = metadataSearchParam.to_enum(:scan, searchPattern).map {Regexp.last_match}
 
-    matchingData.each { |m|
+    matchingData.each {|m|
       if (m.to_s.include?(':'))
         key = m[1].to_s
         value = m[2].to_s
@@ -911,8 +917,8 @@ class CatalogController < ApplicationController
       item = Item.find_by_handle(handle)
       if item.nil?
         respond_to do |format|
-          format.html { resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return }
-          format.any { render :json => {:error => "not-found"}.to_json, :status => 404 and return }
+          format.html {resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return}
+          format.any {render :json => {:error => "not-found"}.to_json, :status => 404 and return}
         end
       end
       params[:id] = handle
@@ -942,13 +948,13 @@ class CatalogController < ApplicationController
       enforce_show_permissions(opts) unless @processing_index
     rescue Hydra::AccessDenied => e
       respond_to do |format|
-        format.html { raise e }
-        format.any { render :json => {:error => "access-denied"}.to_json, :status => 403 }
+        format.html {raise e}
+        format.any {render :json => {:error => "access-denied"}.to_json, :status => 403}
       end
     rescue Blacklight::Exceptions::InvalidSolrID => e
       respond_to do |format|
-        format.html { resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return }
-        format.any { render :json => {:error => "not-found"}.to_json, :status => 404 }
+        format.html {resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return}
+        format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
     end
   end
@@ -1022,7 +1028,7 @@ class CatalogController < ApplicationController
     # Look for properties defined in the project's Json-LD
     predefinedProperties = JsonLdHelper::predefined_context_properties
     predefinedPropertiesMap = {}
-    predefinedProperties.map { |key, value|
+    predefinedProperties.map {|key, value|
       if (value.is_a?(String))
         predefinedPropertiesMap[value] = key
       else
@@ -1162,11 +1168,11 @@ class CatalogController < ApplicationController
         pattern [:display_doc, MetadataHelper::SOURCE, :source]
         pattern [:display_doc, MetadataHelper::IDENTIFIER, :id]
       end
-      
+
       results = repository.query(query)
 
       display_document = results.first.to_hash
-      display_document.each { |k,v| 
+      display_document.each {|k, v|
         display_document[k] = v.value
       }
 

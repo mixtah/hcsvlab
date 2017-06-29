@@ -370,6 +370,7 @@ module FrequencySearchHelper
     # documents list and the response object
     #
     def self.retrieve_documents_from_solr(params, item_handles, batch_group=50)
+      logger.debug("retrieve_documents_from_solr: start - params[#{params}], item_handles[#{item_handles}], batch_group[#{batch_group}]")
       # If the :start and :rows symbols are defined, we need to only search the
       # items handles in that range. Otherwise we search for everything
       if params[:start].present? and params[:rows].present?
