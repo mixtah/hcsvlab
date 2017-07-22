@@ -238,7 +238,7 @@ module SpeakersHelper
 WHERE {
   ?speaker ?property ?value .
   ?speaker a foaf:Person .
-  ?speaker dc:identifier "#{speaker_id}"
+  ?speaker dcterms:identifier "#{speaker_id}"
 }    )
 
     logger.debug "update_speaker: query[#{query}]"
@@ -258,14 +258,14 @@ WHERE {
     logger.debug "delete_speaker start: collection_name[#{collection_name}], speaker_id[#{speaker_id}]"
 
     query = %(
-      PREFIX dc: <http://purl.org/dc/terms/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
       PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
       DELETE {?speaker ?property ?value}
       WHERE {
         ?speaker ?property ?value.
         ?speaker a foaf:Person .
-        ?speaker dc:identifier "#{speaker_id}"
+        ?speaker dcterms:identifier "#{speaker_id}"
       }
     )
 
