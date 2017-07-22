@@ -75,6 +75,8 @@ class SpeakersController < ApplicationController
           }}, status: 422
         end
       rescue Exception => e
+        logger.error "speakers#create exception[#{e.message}]"
+
         render json: {errors: {
           id: "error",
           message: e.message

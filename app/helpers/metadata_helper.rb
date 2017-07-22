@@ -48,7 +48,7 @@ module MetadataHelper
     GCSAUSE_BASE_URI => "GCSAUSE",
     ICE_BASE_URI => "ICE",
 
-    DC_TERMS_BASE_URI => "DC",
+    DC_TERMS_BASE_URI => "DCTERMS",
     DC_ELEMENTS_BASE_URI => "DC",
     PURL_BIBO_BASE_URI => "PURL_BIBO",
     PURL_VOCAB_BASE_URI => "PURL_VOCAB",
@@ -106,19 +106,15 @@ module MetadataHelper
   # KL - collection enhancement
   LANGUAGE = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:LANGUAGE)
   LICENCE = RDF::URI(DC_TERMS_BASE_URI + 'license') unless const_defined?(:LICENCE)
-
-  #
-  # DC
-  #
-  DC_CREATOR = RDF::URI(DC_ELEMENTS_BASE_URI + 'creator') unless const_defined?(:DC_CREATOR)
-  DC_TITLE = RDF::URI(DC_ELEMENTS_BASE_URI + 'title') unless const_defined?(:DC_TITLE)
+  CREATOR = RDF::URI(DC_TERMS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
+  TITLE = RDF::URI(DC_TERMS_BASE_URI + 'title') unless const_defined?(:TITLE)
 
   # KL: compact prefix
-  PFX_TITLE = "dc:title"
+  PFX_TITLE = "dcterms:title"
   PFX_OWNER = "marcrel:OWN"
   PFX_LANGUAGE = "dcterms:language"
   PFX_CREATION_DATE = "dcterms:created"
-  PFX_CREATOR = "dc:creator"
+  PFX_CREATOR = "dcterms:creator"
   PFX_LICENCE = "dcterms:license"
   PFX_ABSTRACT = "dcterms:abstract"
 
@@ -127,7 +123,7 @@ module MetadataHelper
   @@lookup[CREATED.to_s] = prefixes[DC_TERMS_BASE_URI] + "_created"
   @@lookup[IDENTIFIER.to_s] = prefixes[DC_TERMS_BASE_URI] + "_identifier"
   @@lookup[SOURCE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_source"
-  @@lookup[DC_TITLE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_title"
+  @@lookup[TITLE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_title"
   @@lookup[TYPE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_type_facet"
   @@lookup[RIGHTS.to_s] = prefixes[DC_TERMS_BASE_URI] + "_rights"
   @@lookup[DESCRIPTION.to_s] = prefixes[DC_TERMS_BASE_URI] + "_description"
@@ -135,7 +131,7 @@ module MetadataHelper
   @@lookup[ABSTRACT.to_s] = prefixes[DC_TERMS_BASE_URI] + "_abstract"
   # KL - collection enhancement
   @@lookup[LANGUAGE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_language"
-  @@lookup[DC_CREATOR.to_s] = prefixes[DC_TERMS_BASE_URI] + "_creator"
+  @@lookup[CREATOR.to_s] = prefixes[DC_TERMS_BASE_URI] + "_creator"
   @@lookup[LICENCE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_licence"
 
 
@@ -465,10 +461,10 @@ module MetadataHelper
     logger.debug "not_empty_collection_metadata!: begin #{collection_name}, #{full_name}, #{metadata}"
 
     metadata_fields = {
-      MetadataHelper::DC_TITLE.to_s => collection_name,
+      MetadataHelper::TITLE.to_s => collection_name,
       MetadataHelper::LANGUAGE.to_s => 'eng - English',
       MetadataHelper::CREATED.to_s => DateTime.now.strftime("%d/%m/%Y"),
-      MetadataHelper::DC_CREATOR.to_s => full_name,
+      MetadataHelper::CREATOR.to_s => full_name,
       MetadataHelper::LICENCE.to_s => 'Creative Commons v3.0 BY'
     }
 

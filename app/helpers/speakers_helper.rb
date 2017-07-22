@@ -1,20 +1,20 @@
+
 module SpeakersHelper
 
-  @@CONTEXT_JSON = JSON.parse(%(
-  {
-    "@context" : {
-      "dbp": "http://dbpedia.org/ontology/",
-      "dc": "http://purl.org/dc/terms/",
-      "dcterms": "http://purl.org/dc/terms/",
-      "foaf": "http://xmlns.com/foaf/0.1/",
-      "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
-      "iso639": "http://downlode.org/rdf/iso-639/languages#",
-      "olac": "http://www.language-archives.org/OLAC/1.1/",
-      "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-      "xsd": "http://www.w3.org/2001/XMLSchema#"
-    }
-  }))['@context']
+  # @@CONTEXT_JSON = JSON.parse(%(
+  # {
+  #   "@context" : {
+  #     "dbp": "http://dbpedia.org/ontology/",
+  #     "dcterms": "http://purl.org/dc/terms/",
+  #     "foaf": "http://xmlns.com/foaf/0.1/",
+  #     "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+  #     "iso639": "http://downlode.org/rdf/iso-639/languages#",
+  #     "olac": "http://www.language-archives.org/OLAC/1.1/",
+  #     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  #     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+  #     "xsd": "http://www.w3.org/2001/XMLSchema#"
+  #   }
+  # }))['@context']
 
   public
 
@@ -40,13 +40,13 @@ module SpeakersHelper
 
     sparql = %(
       PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-      PREFIX dc: <http://purl.org/dc/terms/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
 
       SELECT ?identifier
       WHERE
       {
         ?input a foaf:Person.
-        ?input dc:identifier ?identifier.
+        ?input dcterms:identifier ?identifier.
       }
     )
 
@@ -75,23 +75,17 @@ module SpeakersHelper
 
     repo = SpeakersHelper.repo(SESAME_CONFIG["url"].to_s, collection_name)
 
-    speaker_metadata = JSON::LD::API.compact(json, @@CONTEXT_JSON).except("@context")
+    speaker_metadata = JSON::LD::API.compact(json, JsonLdHelper::default_context).except("@context")
 
-    speaker_id = speaker_metadata["dc:identifier"] unless speaker_metadata["dc:identifier"].nil?
+    logger.debug "create_speaker: speaker_metadata[#{speaker_metadata}]"
+
     speaker_id = speaker_metadata["dcterms:identifier"] unless speaker_metadata["dcterms:identifier"].nil?
 
     # check speaker_id
-    raise Exception.new("speaker identifier (dc:identifier/dcterms:identifier) not found from request") if (speaker_id.nil?)
+    raise Exception.new("speaker identifier (dcterms:identifier) not found from request") if (speaker_id.nil?)
 
     # compose rdf
-    rdf = ""
-
-    # compose @prefix
-    @@CONTEXT_JSON.each do |k, v|
-      rdf += %(@prefix #{k}: <#{v}> .\n)
-    end
-
-    rdf += "\n"
+    rdf = JsonLdHelper::default_rdf_prefix + "\n"
 
     # compose graph
     graph = URI::join(repo.uri.to_s+"/", "speakers/", speaker_id).to_s
@@ -99,11 +93,15 @@ module SpeakersHelper
 
     # compose metadata
     speaker_metadata.each_with_index do |(key, value), index|
-      if index == speaker_metadata.size - 1
-        rdf += %(#{key} "#{value}" .)
-      else
-        rdf += %(#{key} "#{value}" ;\n)
+
+      if !key.start_with?("@")
+        if index == speaker_metadata.size - 1
+          rdf += %(#{key} "#{value}" .)
+        else
+          rdf += %(#{key} "#{value}" ;\n)
+        end
       end
+
     end
 
     logger.debug "create_speaker: rdf[#{rdf}]"
@@ -130,12 +128,12 @@ module SpeakersHelper
 
     query = %(
       PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-      PREFIX dc: <http://purl.org/dc/terms/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
 
       SELECT ?property ?value
       WHERE {
         ?speaker a foaf:Person.
-        ?speaker dc:identifier "#{speaker_id}".
+        ?speaker dcterms:identifier "#{speaker_id}".
         ?speaker ?property ?value
       }
     )
@@ -145,20 +143,6 @@ module SpeakersHelper
 
     if solutions.size != 0
       identifier = url
-      context = JSON.parse(%(
-      {
-        "@context" : {
-          "dbp": "http://dbpedia.org/ontology/",
-          "dc": "http://purl.org/dc/terms/",
-          "foaf": "http://xmlns.com/foaf/0.1/",
-          "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
-          "iso639": "http://downlode.org/rdf/iso-639/languages#",
-          "olac": "http://www.language-archives.org/OLAC/1.1/",
-          "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-          "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-          "xsd": "http://www.w3.org/2001/XMLSchema#"
-        }
-      }))['@context']
 
       input = JSON.parse %(
       {
@@ -176,7 +160,7 @@ module SpeakersHelper
         input[property] = value
       end
 
-      rlt = JSON::LD::API.compact(input, context)
+      rlt = JSON::LD::API.compact(input, JsonLdHelper::default_context)
     end
 
 
@@ -188,7 +172,7 @@ module SpeakersHelper
 
   # Update speaker's metadata
   #
-  # PREFIX dc: <http://purl.org/dc/terms/>
+  # PREFIX dcterms: <http://purl.org/dc/terms/>
   # PREFIX foaf: <http://xmlns.com/foaf/0.1/>
   #
   # DELETE {
@@ -202,7 +186,7 @@ module SpeakersHelper
   # WHERE {
   #   ?speaker ?property ?value .
   #   ?speaker a foaf:Person .
-  #   ?speaker dc:identifier "1" .
+  #   ?speaker dcterms:identifier "1" .
   # }
   #
   # According to https://www.w3.org/TR/sparql11-update/#deleteInsert, DELETE then INSERT
@@ -215,29 +199,29 @@ module SpeakersHelper
     logger.debug "update_speaker start: collection_name[#{collection_name}], speaker_id[#{speaker_id}], json[#{json}]"
 
     # check speaker_id
-    raise Exception.new("speaker identifier (dc:identifier/dcterms:identifier) not found from request") if (speaker_id.nil?)
+    raise Exception.new("speaker identifier (dcterms:identifier) not found from request") if (speaker_id.nil?)
 
     repo = SpeakersHelper.repo(SESAME_CONFIG["url"].to_s, collection_name)
 
     query = ""
 
     # compose PREFIX part
-    @@CONTEXT_JSON.each do |k, v|
-      query += "PREFIX #{k.strip.gsub('"', '')}: <#{v}>\n"
+    JsonLdHelper::default_context.each do |k, v|
+      query += "PREFIX #{k.strip.gsub('"', '')}: <#{v['@id']}>\n"
     end
 
     # empty line between PREFIX and body
     query += "\n"
 
     # retrieve speaker metadata from json
-    speaker_metadata = JSON::LD::API.compact(json, @@CONTEXT_JSON).except("@context")
+    speaker_metadata = JSON::LD::API.compact(json, JsonLdHelper::default_context).except("@context")
 
     # compose DELETE and INSERT part
     query_delete = "DELETE {\n"
     query_insert = "INSERT {\n"
 
     speaker_metadata.each do |k, v|
-      if k != "dc:identifier" && k != "dcterms:identifier"
+      if k != "dcterms:identifier"
         # don't update identifier in case inconsistent
         query_delete += %(  ?speaker #{k} ?value .\n)
         query_insert += %(  ?speaker #{k} "#{v}" .\n)

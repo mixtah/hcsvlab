@@ -6,6 +6,7 @@ require "#{Rails.root}/lib/item/download_items_helper.rb"
 require "#{Rails.root}/lib/blacklight/blacklight_solrhelper_overrides.rb"
 require 'net/http'
 require 'uri'
+require "#{Rails.root}/lib/item_list/frequency_search_helper.rb"
 
 class CatalogController < ApplicationController
 
@@ -23,13 +24,12 @@ class CatalogController < ApplicationController
   include Hydra::Controller::ControllerBehavior
   include Blacklight::BlacklightHelperBehavior
   include Blacklight::CatalogHelperBehavior
+  include FrequencySearchHelper
 
   include Item::DownloadItemsHelper
   include ERB::Util
 
   include Blacklight::SolrHelper::Overrides
-
-  include FrequencySearchHelper
 
   prepend_before_filter :retrieve_and_set_item_id
 

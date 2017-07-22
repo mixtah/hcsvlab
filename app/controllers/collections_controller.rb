@@ -491,10 +491,10 @@ class CollectionsController < ApplicationController
       json_ld = {
         '@context' => JsonLdHelper::default_context,
         '@type' => 'dcmitype:Collection',
-        MetadataHelper::DC_TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
+        MetadataHelper::TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
         MetadataHelper::LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
         MetadataHelper::CREATED.to_s => params[:collection_creation_date].nil? ? '' : params[:collection_creation_date],
-        MetadataHelper::DC_CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
+        MetadataHelper::CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
         MetadataHelper::LOC_OWNER.to_s => params[:collection_owner].nil? ? '' : params[:collection_owner],
         MetadataHelper::OLAC_SUBJECT.to_s => params[:olac_subject].nil? ? '' : params[:olac_subject],
         MetadataHelper::LICENCE.to_s => lic.name,
@@ -1260,7 +1260,7 @@ class CollectionsController < ApplicationController
         MetadataHelper::IDENTIFIER.to_s,
         'dc:title',
         'dcterms:title',
-        MetadataHelper::DC_TITLE.to_s,
+        MetadataHelper::TITLE.to_s,
         'dc:abstract',
         'dcterms:abstract',
         MetadataHelper::ABSTRACT.to_s,
@@ -1345,7 +1345,7 @@ class CollectionsController < ApplicationController
   def construct_item_json_ld(collection, item_name, item_title, metadata)
     item_metadata = {'@id' => catalog_url(collection.name, item_name),
                      MetadataHelper::IDENTIFIER.to_s => item_name,
-                     MetadataHelper::DC_TITLE.to_s => item_title,
+                     MetadataHelper::TITLE.to_s => item_title,
                      MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
     }
     item_metadata.merge!(metadata) {|key, val1, val2| val1}

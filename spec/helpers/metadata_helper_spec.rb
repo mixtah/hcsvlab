@@ -273,7 +273,7 @@ RSpec.describe MetadataHelper, :type => :helper do
     end
 
     describe "should complete collection metadata" do
-      it "complete specified fields", :focus => true do
+      it "complete specified fields" do
 
         collection_name = 'heal the world'
         full_name = "Michael Jackson"
@@ -282,10 +282,10 @@ RSpec.describe MetadataHelper, :type => :helper do
         }
 
         metadata_fields = {
-          MetadataHelper::DC_TITLE.to_s => collection_name,
+          MetadataHelper::TITLE.to_s => collection_name,
           MetadataHelper::LANGUAGE.to_s => 'eng - English',
           MetadataHelper::CREATED.to_s => DateTime.now.strftime("%d/%m/%Y"),
-          MetadataHelper::DC_CREATOR.to_s => full_name,
+          MetadataHelper::CREATOR.to_s => full_name,
           MetadataHelper::LICENCE.to_s => 'Creative Commons v3.0 BY'
         }
 
@@ -298,6 +298,52 @@ RSpec.describe MetadataHelper, :type => :helper do
 
       end
     end
+
+    describe "should convert from json-ld to rdf(n3) properly" do
+      it "should convert austalk speaker json-ld properly", :focus => true do
+        json_str = %(
+{"@context": {"ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/",
+              "austalk": "http://ns.austalk.edu.au/",
+              "corpus": "http://ns.ausnc.org.au/corpora/",
+              "dcterms": "http://purl.org/dc/terms/",
+              "foaf": "http://xmlns.com/foaf/0.1/",
+              "hcsvlab": "http://alveo.edu.au/vocabulary/",
+              "olac": "http://www.language-archives.org/OLAC/1.1/",
+              "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+              "schema": "http://schema.org/",
+              "xsd": "http://www.w3.org/2001/XMLSchema#"},
+
+ "dcterms:identifier": "sp8"
+}
+        )
+
+        json = JSON.parse(json_str)
+
+        # puts "json[#{json}]"
+
+        context = {"@context" => JsonLdHelper::default_context}
+        # # json = JSON::LD::API.compact(json, context['@context']).except("@context")
+        json = JSON::LD::API.compact(json, context['@context'])
+        #
+        # puts "json[#{json}]"
+
+        graph = MetadataHelper::json_to_rdf_graph(json)
+
+        # puts "graph[#{graph.dump(:ttl, :standard_prefixes => true)}]"
+
+        # context = JsonLdHelper::default_context
+        # puts JsonLdHelper::default_rdf_prefix
+        input = JSON.parse %(
+        {
+          "@id": "abc",
+          "@type": "foaf:Person"
+        })
+        rlt = JSON::LD::API.compact(input, context['@context'])
+
+        puts rlt
+      end
+    end
+
 
   end
 end

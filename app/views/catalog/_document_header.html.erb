@@ -15,7 +15,7 @@
     %>
   </td>
   <td class="title_link_field">
-    <%= field = MetadataHelper::short_form(MetadataHelper::DC_TITLE) + "_tesim"
+    <%= field = MetadataHelper::short_form(MetadataHelper::TITLE) + "_tesim"
         if document.has_key?(field)
           format_value(document[field])
           #link_to_document document, :label=>field.to_sym, :counter => (document_counter + 1 + @response.params[:start].to_i)

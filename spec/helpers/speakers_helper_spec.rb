@@ -15,7 +15,6 @@ RSpec.describe SpeakersHelper, :type => :helper do
     str = %(
 {
   "@context": {
-    "dc": "http://purl.org/dc/terms/",
     "dcterms": "http://purl.org/dc/terms/",
     "foaf": "http://xmlns.com/foaf/0.1/",
     "olac": "http://www.language-archives.org/OLAC/1.1/",
@@ -98,7 +97,6 @@ RSpec.describe SpeakersHelper, :type => :helper do
       {
         "@context" : {
           "dbp": "http://dbpedia.org/ontology/",
-          "dc": "http://purl.org/dc/terms/",
           "dcterms": "http://purl.org/dc/terms/",
           "foaf": "http://xmlns.com/foaf/0.1/",
           "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
