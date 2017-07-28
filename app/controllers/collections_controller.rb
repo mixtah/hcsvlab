@@ -238,6 +238,8 @@ class CollectionsController < ApplicationController
 
   def add_items_to_collection
     # referenced documents (HCSVLAB-1019) are already handled by the look_for_documents part of the item ingest
+    logger.debug "collectios#add_items_to_collection"
+
     begin
       request_params = cleanse_params(params)
       collection = validate_collection(request_params[:id], request_params[:api_key])
@@ -1201,7 +1203,7 @@ class CollectionsController < ApplicationController
       collection.text = text
       collection.save
 
-      MetadataHelper::update_collection_metadata_from_json(name, metadata)
+      # MetadataHelper::update_collection_metadata_from_json(name, metadata)
 
       "Collection '#{name}' (#{uri}) updated"
 
@@ -1210,14 +1212,19 @@ class CollectionsController < ApplicationController
         raise ResponseError.new(400), "Licence with id #{licence_id} does not exist"
       end
 
-      # corpus_dir = create_metadata_and_manifest(name, convert_json_metadata_to_rdf(metadata))
       MetadataHelper::create_manifest(name)
 
       MetadataHelper::update_collection_metadata_from_json(name, metadata)
 
-      corpus_dir = MetadataHelper::corpus_dir_by_name(name)
+      # corpus_dir = MetadataHelper::corpus_dir_by_name(name)
 
-      check_and_create_collection(name, corpus_dir, metadata)
+      # check_and_create_collection(name, corpus_dir, metadata)
+
+      collection = Collection.find_by_name(name)
+
+      collection.owner = owner
+
+      collection.save
 
       "New collection '#{name}' (#{uri}) created"
     end

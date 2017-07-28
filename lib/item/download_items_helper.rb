@@ -279,7 +279,7 @@ module Item::DownloadItemsHelper
           else
             files = []
             json['ausnc:document'].each {|doc|
-              files << doc['dc:source']
+              files << doc['dcterms:source']
             }
             metadata[item.id][:files] = files
             json['metadata'] = {'handle' => item.handle}

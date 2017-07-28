@@ -122,7 +122,6 @@ def delete_object_from_solr(object_id)
   end
 end
 
-# TODO: collection_enhancement
 def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, glob="*-{metadata,ann}.rdf")
 
   # KL
@@ -153,6 +152,9 @@ def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, g
     collection = update_collection_metadata_from_json(collection_name, json_metadata)
 
     # collection = Collection.find_by_name(collection_name)
+
+    # set collection owner
+    collection.owner = current_user
   else
     # Update RDF file path but don't save yet.
     # KL
@@ -160,7 +162,7 @@ def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, g
   end
 
   paradisec_collection_setup(collection, is_new)  
-  populate_triple_store(corpus_dir, collection_name, glob)
+  # populate_triple_store(corpus_dir, collection_name, glob)
 
   collection.save
   collection

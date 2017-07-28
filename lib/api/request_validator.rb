@@ -148,7 +148,7 @@ module RequestValidator
       end
     end
 
-    # If the item documents contain both a dc:source and dc:identifier, check that they are the same
+    # If the item documents contain both a dcterms:source and dcterms:identifier, check that they are the same
     expanded_item = JSON::LD::API.expand(item_json['metadata']).first
     unless expanded_item[MetadataHelper::DOCUMENT.to_s].nil?
       expanded_item[MetadataHelper::DOCUMENT.to_s].each do |document|
@@ -199,7 +199,7 @@ module RequestValidator
     validate_new_document_file(corpus_dir, uploaded_file.original_filename, collection)
   end
 
-  # Validates all the document filenames match (in the @id, dc:identifier, dc:source)
+  # Validates all the document filenames match (in the @id, dcterms:identifier, dcterms:source)
   def validate_document_source(document_json_ld)
     expanded_metadata = JSON::LD::API.expand(document_json_ld).first
     source_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
