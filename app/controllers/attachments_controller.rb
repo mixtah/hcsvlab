@@ -65,26 +65,6 @@ class AttachmentsController < ActionController::Base
     @attachment.collection_id = params[:collection_id]
     @attachment.created_by = current_user.id
 
-    # logger.debug "attachments#create before save, attachment=#{@attachment.to_jq_upload}"
-    # respond_to do |format|
-    #   if @attachment.save
-    #     format.html { redirect_to @attachment, notice: 'Document was successfully created.' }
-    #     format.json { render json: @attachment, status: :created, location: @attachment }
-    #   else
-    #     format.html { render action: "new" }
-    #     format.json { render json: @attachment.errors, status: :unprocessable_entity }
-    #   end
-    # end
-
-    # begin
-    #   # @attachment.update_attributes
-    #   @attachment.save!
-    # rescue => error
-    #   logger.debug "unable to save attachment: #{error}"
-    # end
-
-    # att = Attachment.find(@attachment)
-
     respond_to do |format|
       if @attachment.save
         # unless att.nil?
@@ -139,21 +119,21 @@ class AttachmentsController < ActionController::Base
   def download
 
 
-    file_path = '/Users/mq20146034/RubymineProjects/hcsvlab.2017/public/collections/42/attachments/25/iloveoz.map.2.jpg'
-    file_name = "test/test.jpg"
+    # file_path = '/Users/mq20146034/RubymineProjects/hcsvlab.2017/public/collections/42/attachments/25/iloveoz.map.2.jpg'
+    # file_name = "test/test.jpg"
 
     # respond_to do |format|
     #   format.html do
     #     redirect_to root_url and return
     #   end
     #   format.zip do
-    compressed_filestream = Zip::OutputStream.write_buffer do |zos|
-      zos.put_next_entry file_name
-      # zos.print animal.to_json(only: [:name, :age, :species])
-      zos.write File.open(file_path, 'r').read
-    end
-    compressed_filestream.rewind
-    send_data compressed_filestream.read, filename: "attach.zip"
+    # compressed_filestream = Zip::OutputStream.write_buffer do |zos|
+    #   zos.put_next_entry file_name
+    #   # zos.print animal.to_json(only: [:name, :age, :species])
+    #   zos.write File.open(file_path, 'r').read
+    # end
+    # compressed_filestream.rewind
+    # send_data compressed_filestream.read, filename: "attach.zip"
     #   end
     # end
 

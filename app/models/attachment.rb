@@ -3,10 +3,13 @@ require 'set'
 class Attachment < ActiveRecord::Base
   before_save :update_attributes
 
+  # max file size (M)
+  MAX_FILE_SIZE = 200
+
   attr_accessible :file, :file_name, :content_type, :file_size, :created_by, :collection_id
 
   # remember to set in front end as well
-  validates :file, file_size: {less_than: 100.megabyte}
+  validates :file, file_size: {less_than: MAX_FILE_SIZE.megabyte}
 
   belongs_to :collection, inverse_of: :attachments
 
