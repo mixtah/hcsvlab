@@ -63,7 +63,6 @@ module SpeakersHelper
 
   # Add a new speaker from a JSON-LD payload
   #
-  # @param [String] url to compose speaker uri
   # @param [String] collection_name collection name
   # @param [Hash] json json-ld
   # @return [String] speaker id
@@ -88,8 +87,9 @@ module SpeakersHelper
     rdf = JsonLdHelper::default_rdf_prefix + "\n"
 
     # compose graph
-    graph = URI::join(repo.uri.to_s+"/", "speakers/", speaker_id).to_s
-    rdf += "<#{graph}> a foaf:Person;\n"
+    speaker_url = "#{SESAME_CONFIG["speaker_url"]}/#{collection_name}/#{speaker_id}"
+
+    rdf += "<#{speaker_url}> a foaf:Person;\n"
 
     # compose metadata
     speaker_metadata.each_with_index do |(key, value), index|
@@ -116,13 +116,12 @@ module SpeakersHelper
 
   # Return input JSON-LD description
   #
-  # @param [String] url to compose @id
   # @param [String] collection_name collection name
   # @param [String] speaker_id input identifier
   # @raise [Exception] collection error or collection not found
   # @return [JSON]
-  def self.find_speaker(url, collection_name, speaker_id)
-    logger.debug "find_speaker start: url[#{url}], collection_name[#{collection_name}], speaker_id[#{speaker_id}]"
+  def self.find_speaker(collection_name, speaker_id)
+    logger.debug "find_speaker start: collection_name[#{collection_name}], speaker_id[#{speaker_id}]"
 
     rlt = nil
 
@@ -142,7 +141,7 @@ module SpeakersHelper
     solutions = repo.sparql_query(query)
 
     if solutions.size != 0
-      identifier = url
+      identifier = "#{SESAME_CONFIG["url"]}/#{collection_name}/#{speaker_id}"
 
       input = JSON.parse %(
       {

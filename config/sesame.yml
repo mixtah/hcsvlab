@@ -1,21 +1,44 @@
+common: &common
+  speaker_url: http://localhost:3000/speakers
+
 development:
 #  url: http://alveo-qa-sesame.alveo.edu.au:8080/openrdf-sesame/
   url: http://localhost:8983/openrdf-sesame
+  <<: *common
+
 test: &TEST
   url: http://localhost:8983/openrdf-sesame
+  <<: *common
+
 qa:
   url: http://localhost:8080/openrdf-sesame
+  <<: *common
+
 qa2:
-  url: http://192.168.154.149:8080/openrdf-sesame/
+  url: http://192.168.154.149:8080/openrdf-sesame
+  <<: *common
+
 nci:
   url: http://10.0.0.11:8080/openrdf-sesame
+  <<: *common
+  speaker_url: https://app.alveo.edu.au/speakers
+
 staging:
   url: http://10.0.0.26:8080/openrdf-sesame
+  <<: *common
+  speaker_url: https://staging.alveo.edu.au/speakers
+
 staging2:
   url: http://localhost:8080/openrdf-sesame
+  <<: *common
+
 production:
   url: http://localhost:8080/openrdf-sesame
+  speaker_url: https://app.alveo.edu.au/speakers
+
 cucumber:
   <<: *TEST
+
 trove:
-  url: http://alveo-sesame.alveo.edu.au:8080/openrdf-sesame/
+  url: http://alveo-sesame.alveo.edu.au:8080/openrdf-sesame
+  <<: *common

@@ -29,7 +29,7 @@ class SpeakersController < ApplicationController
         ids = SpeakersHelper.find_speaker_by_collection(collection_name)
         @speaker_uri = []
         ids.each do |id|
-          @speaker_uri << URI::join(request.original_url, id).to_s
+          @speaker_uri << "#{SESAME_CONFIG["speaker_url"]}/#{collection_name}/#{id}"
         end
       rescue Exception => e
         render json: {errors: {
@@ -104,7 +104,7 @@ class SpeakersController < ApplicationController
       # get speaker
       begin
         speaker_id = params[:speaker_id]
-        speaker = SpeakersHelper.find_speaker(request.original_url, collection_name, speaker_id)
+        speaker = SpeakersHelper.find_speaker(collection_name, speaker_id)
 
         if speaker.nil?
           #   speaker not found
