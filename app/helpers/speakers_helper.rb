@@ -141,7 +141,7 @@ module SpeakersHelper
     solutions = repo.sparql_query(query)
 
     if solutions.size != 0
-      identifier = "#{SESAME_CONFIG["url"]}/#{collection_name}/#{speaker_id}"
+      identifier = "#{SESAME_CONFIG["speaker_url"]}/#{collection_name}/#{speaker_id}"
 
       input = JSON.parse %(
       {
