@@ -284,10 +284,10 @@ private
   #
   def add_field(result, field, value, binding)
     if @@configured_fields.include?(field)
-      debug("Solr_Worker", "Adding configured field #{field} with value #{value}")
+      debug("Solr_Worker", "Adding configured field[#{field}] with value[#{value}]")
       ::Solrizer::Extractor.insert_solr_field_value(result, field, value)
     else
-      debug("Solr_Worker", "Adding dynamic field #{field} with value #{value}")
+      debug("Solr_Worker", "Adding dynamic field[#{field}] with value[#{value}]")
       Solrizer.insert_field(result, field, value, :facetable, :stored_searchable)
     end
 
@@ -298,6 +298,7 @@ private
   # Make a Solr document from information extracted from the Item
   #
   def make_solr_document(object, results, full_text, extras, internal_use_data, collection)
+    logger.info "make_solr_document: start - object[#{object}], results[#{results}], full_text[#{full_text}], extras[#{extras}], internal_use_data[#{internal_use_data}], collection[#{collection}]"
     document = {}
     configured_fields_found = Set.new
     ident_parts = {collection: "Unknown Collection", identifier: "Unknown Identifier"}
@@ -400,6 +401,7 @@ private
       add_field(document, field, "unspecified", nil) unless configured_fields_found.include?(field)
     }
 
+    logger.info"make_solr_document: document[#{document}], internal_use_data[#{internal_use_data}]"
     add_json_metadata_field(object, document, internal_use_data)
 
     document
@@ -409,6 +411,8 @@ private
   #
   #
   def add_json_metadata_field(object, document, internal_use_data)
+    logger.info "add_json_metadata_field: start - object[#{object}], document[#{document}], internal_use_data[#{internal_use_data}]"
+
     item_info = create_display_info_hash(document)
     # Removes id, item_list, *_ssim and *_sim fields
     #metadata = itemInfo.metadata.delete_if {|key, value| key.to_s.match(/^(.*_sim|.*_ssim|item_lists|id)$/)}

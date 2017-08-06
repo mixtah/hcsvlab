@@ -26,7 +26,7 @@ module MetadataHelper
   ICE_BASE_URI = AUSNC_ROOT_URI + 'ice/'
 
   PURL_ROOT_URI = 'http://purl.org/'
-  DC_TERMS_BASE_URI = PURL_ROOT_URI + 'dc/terms/' unless const_defined?(:DC_TERMS_BASE_URI)
+  DCTERMS_BASE_URI = PURL_ROOT_URI + 'dc/terms/' unless const_defined?(:DCTERMS_BASE_URI)
   DC_ELEMENTS_BASE_URI = PURL_ROOT_URI + 'dc/elements/1.1/' unless const_defined?(:DC_ELEMENTS_BASE_URI)
   PURL_BIBO_BASE_URI = PURL_ROOT_URI + 'ontology/bibo/'
   PURL_VOCAB_BASE_URI = PURL_ROOT_URI + 'vocab/bio/0.1/'
@@ -48,7 +48,7 @@ module MetadataHelper
     GCSAUSE_BASE_URI => "GCSAUSE",
     ICE_BASE_URI => "ICE",
 
-    DC_TERMS_BASE_URI => "DCTERMS",
+    DCTERMS_BASE_URI => "DCTERMS",
     DC_ELEMENTS_BASE_URI => "DC",
     PURL_BIBO_BASE_URI => "PURL_BIBO",
     PURL_VOCAB_BASE_URI => "PURL_VOCAB",
@@ -93,21 +93,21 @@ module MetadataHelper
   #
   # DCTERMS
   #
-  IS_PART_OF = RDF::URI(DC_TERMS_BASE_URI + 'isPartOf') unless const_defined?(:IS_PART_OF)
-  TYPE = RDF::URI(DC_TERMS_BASE_URI + 'type') unless const_defined?(:TYPE)
-  EXTENT = RDF::URI(DC_TERMS_BASE_URI + 'extent') unless const_defined?(:EXTENT)
-  CREATED = RDF::URI(DC_TERMS_BASE_URI + 'created') unless const_defined?(:CREATED)
-  IDENTIFIER = RDF::URI(DC_TERMS_BASE_URI + 'identifier') unless const_defined?(:IDENTIFIER)
-  SOURCE = RDF::URI(DC_TERMS_BASE_URI + 'source') unless const_defined?(:SOURCE)
-  RIGHTS = RDF::URI(DC_TERMS_BASE_URI + 'rights') unless const_defined?(:RIGHTS)
-  DESCRIPTION = RDF::URI(DC_TERMS_BASE_URI + 'description') unless const_defined?(:DESCRIPTION)
-  BIBLIOGRAPHIC_CITATION = RDF::URI(DC_TERMS_BASE_URI + 'bibliographicCitation') unless const_defined?(:BIBLIO_CITATION)
-  ABSTRACT = RDF::URI(DC_TERMS_BASE_URI + 'abstract') unless const_defined?(:ABSTRACT)
+  IS_PART_OF = RDF::URI(DCTERMS_BASE_URI + 'isPartOf') unless const_defined?(:IS_PART_OF)
+  TYPE = RDF::URI(DCTERMS_BASE_URI + 'type') unless const_defined?(:TYPE)
+  EXTENT = RDF::URI(DCTERMS_BASE_URI + 'extent') unless const_defined?(:EXTENT)
+  CREATED = RDF::URI(DCTERMS_BASE_URI + 'created') unless const_defined?(:CREATED)
+  IDENTIFIER = RDF::URI(DCTERMS_BASE_URI + 'identifier') unless const_defined?(:IDENTIFIER)
+  SOURCE = RDF::URI(DCTERMS_BASE_URI + 'source') unless const_defined?(:SOURCE)
+  RIGHTS = RDF::URI(DCTERMS_BASE_URI + 'rights') unless const_defined?(:RIGHTS)
+  DESCRIPTION = RDF::URI(DCTERMS_BASE_URI + 'description') unless const_defined?(:DESCRIPTION)
+  BIBLIOGRAPHIC_CITATION = RDF::URI(DCTERMS_BASE_URI + 'bibliographicCitation') unless const_defined?(:BIBLIO_CITATION)
+  ABSTRACT = RDF::URI(DCTERMS_BASE_URI + 'abstract') unless const_defined?(:ABSTRACT)
   # KL - collection enhancement
-  LANGUAGE = RDF::URI(DC_TERMS_BASE_URI + 'language') unless const_defined?(:LANGUAGE)
-  LICENCE = RDF::URI(DC_TERMS_BASE_URI + 'license') unless const_defined?(:LICENCE)
-  CREATOR = RDF::URI(DC_TERMS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
-  TITLE = RDF::URI(DC_TERMS_BASE_URI + 'title') unless const_defined?(:TITLE)
+  LANGUAGE = RDF::URI(DCTERMS_BASE_URI + 'language') unless const_defined?(:LANGUAGE)
+  LICENCE = RDF::URI(DCTERMS_BASE_URI + 'license') unless const_defined?(:LICENCE)
+  CREATOR = RDF::URI(DCTERMS_BASE_URI + 'creator') unless const_defined?(:CREATOR)
+  TITLE = RDF::URI(DCTERMS_BASE_URI + 'title') unless const_defined?(:TITLE)
 
   # KL: compact prefix
   PFX_TITLE = "dcterms:title"
@@ -118,21 +118,21 @@ module MetadataHelper
   PFX_LICENCE = "dcterms:license"
   PFX_ABSTRACT = "dcterms:abstract"
 
-  @@lookup[IS_PART_OF.to_s] = prefixes[DC_TERMS_BASE_URI] + "_is_part_of"
-  @@lookup[EXTENT.to_s] = prefixes[DC_TERMS_BASE_URI] + "_extent"
-  @@lookup[CREATED.to_s] = prefixes[DC_TERMS_BASE_URI] + "_created"
-  @@lookup[IDENTIFIER.to_s] = prefixes[DC_TERMS_BASE_URI] + "_identifier"
-  @@lookup[SOURCE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_source"
-  @@lookup[TITLE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_title"
-  @@lookup[TYPE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_type_facet"
-  @@lookup[RIGHTS.to_s] = prefixes[DC_TERMS_BASE_URI] + "_rights"
-  @@lookup[DESCRIPTION.to_s] = prefixes[DC_TERMS_BASE_URI] + "_description"
-  @@lookup[BIBLIOGRAPHIC_CITATION.to_s] = prefixes[DC_TERMS_BASE_URI] + "_bibliographicCitation"
-  @@lookup[ABSTRACT.to_s] = prefixes[DC_TERMS_BASE_URI] + "_abstract"
+  @@lookup[IS_PART_OF.to_s] = prefixes[DCTERMS_BASE_URI] + "_is_part_of"
+  @@lookup[EXTENT.to_s] = prefixes[DCTERMS_BASE_URI] + "_extent"
+  @@lookup[CREATED.to_s] = prefixes[DCTERMS_BASE_URI] + "_created"
+  @@lookup[IDENTIFIER.to_s] = prefixes[DCTERMS_BASE_URI] + "_identifier"
+  @@lookup[SOURCE.to_s] = prefixes[DCTERMS_BASE_URI] + "_source"
+  @@lookup[TITLE.to_s] = prefixes[DCTERMS_BASE_URI] + "_title"
+  @@lookup[TYPE.to_s] = prefixes[DCTERMS_BASE_URI] + "_type_facet"
+  @@lookup[RIGHTS.to_s] = prefixes[DCTERMS_BASE_URI] + "_rights"
+  @@lookup[DESCRIPTION.to_s] = prefixes[DCTERMS_BASE_URI] + "_description"
+  @@lookup[BIBLIOGRAPHIC_CITATION.to_s] = prefixes[DCTERMS_BASE_URI] + "_bibliographicCitation"
+  @@lookup[ABSTRACT.to_s] = prefixes[DCTERMS_BASE_URI] + "_abstract"
   # KL - collection enhancement
-  @@lookup[LANGUAGE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_language"
-  @@lookup[CREATOR.to_s] = prefixes[DC_TERMS_BASE_URI] + "_creator"
-  @@lookup[LICENCE.to_s] = prefixes[DC_TERMS_BASE_URI] + "_licence"
+  @@lookup[LANGUAGE.to_s] = prefixes[DCTERMS_BASE_URI] + "_language"
+  @@lookup[CREATOR.to_s] = prefixes[DCTERMS_BASE_URI] + "_creator"
+  @@lookup[LICENCE.to_s] = prefixes[DCTERMS_BASE_URI] + "_licence"
 
 
   #

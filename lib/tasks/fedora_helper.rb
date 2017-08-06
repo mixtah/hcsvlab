@@ -161,8 +161,8 @@ def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, g
     # collection.rdf_file_path = coll_metadata
   end
 
-  paradisec_collection_setup(collection, is_new)  
-  # populate_triple_store(corpus_dir, collection_name, glob)
+  # paradisec_collection_setup(collection, is_new)
+  populate_triple_store(corpus_dir, collection_name, glob)
 
   collection.save
   collection
@@ -647,7 +647,7 @@ end
 #
 # Store all metadata and annotations from the given directory in the triplestore
 #
-def populate_triple_store(corpus_dir, collection_name, glob)
+def populate_triple_store(corpus_dir, collection_name, glob=nil)
   logger.info "Start ingesting files matching #{glob} in #{corpus_dir}"
   start = Time.now
 
@@ -661,7 +661,9 @@ def populate_triple_store(corpus_dir, collection_name, glob)
   repository = server.repository(collection_name)
 
   # Now will store every RDF file
-  repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
+  if !glob.nil?
+    repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
+  end
 
   endTime = Time.now
   logger.debug("Time for populate_triple_store: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")

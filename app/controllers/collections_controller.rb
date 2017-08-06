@@ -1040,7 +1040,7 @@ class CollectionsController < ApplicationController
       is_doc = node["@type"] == MetadataHelper::DOCUMENT.to_s || node["@type"] == MetadataHelper::FOAF_DOCUMENT.to_s
       part_of_exists= false
       unless is_doc
-        ['dc:isPartOf', 'dcterms:isPartOf', MetadataHelper::IS_PART_OF.to_s].each do |is_part_of|
+        ['dcterms:isPartOf', MetadataHelper::IS_PART_OF.to_s].each do |is_part_of|
           if node.has_key?(is_part_of)
             node[is_part_of]["@id"] = format_collection_url(collection_name)
             part_of_exists = true
@@ -1076,7 +1076,7 @@ class CollectionsController < ApplicationController
   # Extracts the value of the dc:identifier from a metadata hash
   def get_dc_identifier(metadata)
     dc_id = nil
-    ['dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
+    ['dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
       dc_id = metadata[dc_id_predicate] if metadata.has_key?(dc_id_predicate)
     end
     dc_id
@@ -1219,6 +1219,8 @@ class CollectionsController < ApplicationController
       # corpus_dir = MetadataHelper::corpus_dir_by_name(name)
 
       # check_and_create_collection(name, corpus_dir, metadata)
+
+      populate_triple_store(corpus_dir, collection_name, glob)
 
       collection = Collection.find_by_name(name)
 

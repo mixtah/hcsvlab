@@ -1,3 +1,5 @@
+require "#{Rails.root}/lib/tasks/fedora_helper.rb"
+
 class SpeakersController < ApplicationController
 
   before_filter :ensure_json_request
