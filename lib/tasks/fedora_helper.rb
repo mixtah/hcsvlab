@@ -661,7 +661,7 @@ def populate_triple_store(corpus_dir, collection_name, glob=nil)
   repository = server.repository(collection_name)
 
   # Now will store every RDF file
-  if !glob.nil?
+  if !corpus.nil? && !glob.nil?
     repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
   end
 

@@ -1220,7 +1220,7 @@ class CollectionsController < ApplicationController
 
       # check_and_create_collection(name, corpus_dir, metadata)
 
-      populate_triple_store(corpus_dir, collection_name, glob)
+      populate_triple_store(nil, collection_name, nil)
 
       collection = Collection.find_by_name(name)
 
