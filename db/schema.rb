@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20170202101231) do
+ActiveRecord::Schema.define(:version => 20170810070040) do
 
   create_table "attachments", :force => true do |t|
     t.string   "file"
@@ -116,7 +116,7 @@ ActiveRecord::Schema.define(:version => 20170202101231) do
     t.text     "json_metadata"
   end
 
-  add_index "items", ["handle"], :name => "index_items_on_handle"
+  add_index "items", ["handle"], :name => "index_items_on_handle", :unique => true
   add_index "items", ["uri"], :name => "index_items_on_uri"
 
   create_table "items_in_item_lists", :force => true do |t|

@@ -172,11 +172,15 @@ private
   end
 
   def update_item_in_sesame_with_link(item_id, document_json_ld)
+    logger.info "update_item_in_sesame_with_link: start - item_id[#{item_id}], document_json_ld[#{document_json_ld}]"
+
     item = Item.find(item_id)
     repository = get_sesame_repository(item.collection)
 
     # Upload doc rdf to Sesame
     document_RDF = RDF::Graph.new << JSON::LD::API.toRDF(document_json_ld)
+    logger.debug "update_item_in_sesame_with_link: document_RDF[#{document_RDF.dump(:ttl)}]"
+
     update_sesame_with_graph(document_RDF, repository)
 
     # Add link in item rdf to doc rdf in sesame
@@ -514,6 +518,8 @@ private
   # Update Solr with the information we've found
   #
   def store_results(object, results, full_text, extras = nil, internal_use_data, collection)
+    logger.info "store_results: start - object[#{object}], results[#{results}], full_text[#{full_text}], extras[#{extras}], internal_use_data[#{internal_use_data}], collection[#{collection}]"
+
     get_solr_connection
     document = make_solr_document(object, results, full_text, extras, internal_use_data, collection)
 

@@ -79,7 +79,10 @@ def create_item_from_file(corpus_dir, rdf_file, collection, item_info)
 end
 
 def add_and_index_document_in_sesame(item_id, document_json_ld)
+  logger.info "add_and_index_document_in_sesame: start - item_id[#{item_id}], document_json_ld[#{document_json_ld}]"
+
   unless Rails.env.test?
+
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
     packet = {
       :cmd => "update_item_in_sesame_with_link",

@@ -1,6 +1,7 @@
 require 'spec_helper'
 require "#{Rails.root}/app/models/collection.rb"
 require "#{Rails.root}/app/models/collection_property.rb"
+require "csv"
 
 
 RSpec.describe MetadataHelper, :type => :helper do
@@ -344,6 +345,37 @@ RSpec.describe MetadataHelper, :type => :helper do
       end
     end
 
+    describe "remove duplicated items" do
+      it "should list duplicated item_id" do
+        in_file = "/tmp/duplicated_item_1.csv"
+
+        dup_id_list = []
+        pool = {}
+        count = 0
+        CSV.foreach(in_file) do |row|
+          item_id = row[0]
+          handle = row[1]
+
+          if pool.key?(handle)
+            # csv already order by id desc
+            dup_id_list << item_id
+            count +=1
+            puts "#{count}: found duplicated: item_id[#{item_id}, #{pool[handle]}], handle[#{handle}]"
+          else
+            pool[handle] = item_id
+          end
+
+        end
+
+        File.open("/tmp/dup_item_id.txt", "w+") do |f|
+          f.puts(dup_id_list)
+        end
+
+        puts "total duplicated item amount [#{dup_id_list.size}]"
+
+      end
+
+    end
 
   end
 end
