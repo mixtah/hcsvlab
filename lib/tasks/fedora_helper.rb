@@ -29,6 +29,10 @@ def ingest_rdf_file(corpus_dir, rdf_file, annotations, collection)
   filename, item_info = extract_manifest_info(rdf_file)
   item, update = create_item_from_file(corpus_dir, rdf_file, collection, item_info)
 
+  server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
+  repository = server.repository(collection_name)
+  repository.insert_from_rdf_files(rdf_file)
+
   if update
     look_for_annotations(item, rdf_file) if annotations
     look_for_documents(item, corpus_dir, rdf_file, item_info)
