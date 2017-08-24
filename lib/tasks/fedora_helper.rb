@@ -30,7 +30,7 @@ def ingest_rdf_file(corpus_dir, rdf_file, annotations, collection)
   item, update = create_item_from_file(corpus_dir, rdf_file, collection, item_info)
 
   server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
-  repository = server.repository(collection_name)
+  repository = server.repository(collection.name)
   repository.insert_from_rdf_files(rdf_file)
 
   if update
