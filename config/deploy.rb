@@ -94,10 +94,11 @@ end
 
 after 'deploy:update' do
   server_setup.logging.rotation
-  deploy.new_secret
+  deploy.new_secret # why? This boots all sessions off
   deploy.restart
   deploy.additional_symlinks
   deploy.write_tag
+  deploy.stop_services
   deploy.start_services
   # We need to use our own cleanup task since there is an issue on Capistrano deploy:cleanup task
   #https://github.com/capistrano/capistrano/issues/474
