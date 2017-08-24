@@ -164,3 +164,5 @@ gem 'zipline'
 
 # activerecord-import is a library for bulk inserting data using ActiveRecord.
 gem "activerecord-import", ">= 0.2.0"
+
+gem 'exception_notification'
