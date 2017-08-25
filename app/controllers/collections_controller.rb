@@ -533,6 +533,8 @@ class CollectionsController < ApplicationController
     name = collection.name
     corpus_dir = collection.corpus_dir
 
+    # TODO: delete sesame & solr
+
     unless collection.destroy.nil?
       # unless collection.nil?
       #   delete directory as well

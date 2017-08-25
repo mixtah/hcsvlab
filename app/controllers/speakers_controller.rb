@@ -2,15 +2,7 @@ require "#{Rails.root}/lib/tasks/fedora_helper.rb"
 
 class SpeakersController < ApplicationController
 
-  before_filter :ensure_json_request
-
-  def ensure_json_request
-    return if request.format == :json
-    render json: {errors: {
-      id: "content_type",
-      message: "The only acceptable content-type is application/json"
-    }}, status: 406
-  end
+  before_filter :authenticate_user!
 
   # GET returns a list of speaker identifiers (URIs) associated with this collection
   def index
