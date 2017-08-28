@@ -361,6 +361,10 @@ private
           rdf_field_name = (uri.qname.present?)? uri.qname.join(':') : nil
           solr_name = (@@configured_fields.include?(field)) ? field : "#{field}_tesim"
 
+          # KL: To be compatible with existing SOLR field name,
+          # DCTERMS => DC
+          solr_name = solr_name.sub(/^DCTERMS_(.+)/, 'DC_\1')
+
           if ItemMetadataFieldNameMapping.create_or_update_field_mapping(solr_name, rdf_field_name, format_key(field))
             debug("Solr_Worker", "Creating new mapping for field #{field}")
           else
@@ -455,6 +459,10 @@ private
     end
 
     solr_name = @@configured_fields.include?(field) ? field : "#{field}_tesim"
+
+    # KL: To be compatible with existing SOLR field name,
+    # DCTERMS => DC
+    solr_name = solr_name.sub(/^DCTERMS_(.+)/, 'DC_\1')
 
     if ItemMetadataFieldNameMapping.create_or_update_field_mapping(solr_name, rdf_field_name, format_key(field))
       debug("Solr_Worker", "Creating new mapping for field #{solr_name}")
