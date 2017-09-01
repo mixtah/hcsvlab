@@ -2,7 +2,7 @@ require Rails.root.join('lib/tasks/fedora_helper.rb')
 require Rails.root.join('lib/api/response_error')
 require Rails.root.join('lib/api/request_validator')
 require Rails.root.join('lib/json-ld/json_ld_helper.rb')
-# require Rails.root.join('app/helpers/metadata_helper')
+require Rails.root.join('app/helpers/metadata_helper')
 # require 'metadata_helper'
 require 'fileutils'
 
@@ -287,10 +287,13 @@ class CollectionsController < ApplicationController
       collection = validate_collection(params[:collectionId], params[:api_key])
       item = validate_item_exists(collection, params[:itemId])
       doc_metadata = parse_str_to_json(params[:metadata], 'JSON document metadata is ill-formatted')
+
+      logger.debug "add_document_to_item: params[:metadata]=#{params[:metadata]}, doc_metadata[#{doc_metadata}]"
+
       doc_content = params[:document_content]
       uploaded_file = params[:file]
       uploaded_file = uploaded_file.first if uploaded_file.is_a? Array
-      doc_filename = get_dc_identifier(doc_metadata) # the document filename is the document id
+      doc_filename = MetadataHelper::get_dc_identifier(doc_metadata) # the document filename is the document id
       doc_metadata = format_and_validate_add_document_request(collection.corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
       @success_message = add_document_core(collection, item, doc_metadata, doc_filename)
     rescue ResponseError => e
@@ -842,7 +845,8 @@ class CollectionsController < ApplicationController
   def update_item_in_solr(item)
     # ToDo: refactor this workaround into a proper test mock/stub
     if Rails.env.test?
-      Solr_Worker.new.on_message("index #{item.id}")
+      json = {:cmd => "index", :arg => "#{item.id}"}
+      Solr_Worker.new.on_message(JSON.generate(json).to_s)
     else
       stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       reindex_item_to_solr(item.id, stomp_client)
@@ -1060,8 +1064,8 @@ class CollectionsController < ApplicationController
   def update_ids_in_jsonld(jsonld_metadata, collection)
     # NOTE: it is assumed that the metadata will contain only items at the outermost level and documents nested within them
     jsonld_metadata["@graph"].each do |item_metadata|
-      item_id = get_dc_identifier(item_metadata)
-      item_metadata = update_jsonld_item_id(item_metadata, collection.name) # Update item @ids
+      item_id = MetadataHelper::get_dc_identifier(item_metadata)
+      item_metadata = MetadataHelper::update_jsonld_item_id(item_metadata, collection.name) # Update item @ids
       item_metadata = update_document_ids_in_item(item_metadata, collection.name, item_id) # Update document @ids
       # Update display document and indexable document @ids
       doc_types = ["hcsvlab:display_document", MetadataHelper::DISPLAY_DOCUMENT.to_s, "hcsvlab:indexable_document", MetadataHelper::INDEXABLE_DOCUMENT]
@@ -1075,32 +1079,26 @@ class CollectionsController < ApplicationController
     jsonld_metadata
   end
 
-  # Extracts the value of the dc:identifier from a metadata hash
-  def get_dc_identifier(metadata)
-    dc_id = nil
-    ['dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
-      dc_id = metadata[dc_id_predicate] if metadata.has_key?(dc_id_predicate)
-    end
-    dc_id
-  end
 
-  #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
-  def update_jsonld_collection_id(collection_metadata, collection_name)
-    collection_metadata["@id"] = format_collection_url(collection_name)
-    collection_metadata
-    # MetadataHelper::update_jsonld_collection_id(collection_metadata, collection_name)
-  end
 
-  # Updates the @id of an item in JSON-LD to the Alveo catalog URL for that item
-  def update_jsonld_item_id(item_metadata, collection_name)
-    item_id = get_dc_identifier(item_metadata)
-    item_metadata["@id"] = format_item_url(collection_name, item_id) unless item_id.nil?
-    item_metadata
-  end
+  # #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
+  # def update_jsonld_collection_id(collection_metadata, collection_name)
+  #   collection_metadata["@id"] = format_collection_url(collection_name)
+  #   collection_metadata
+  #   # MetadataHelper::update_jsonld_collection_id(collection_metadata, collection_name)
+  # end
+
+
+  # # Updates the @id of an item in JSON-LD to the Alveo catalog URL for that item
+  # def update_jsonld_item_id(item_metadata, collection_name)
+  #   item_id = get_dc_identifier(item_metadata)
+  #   item_metadata["@id"] = format_item_url(collection_name, item_id) unless item_id.nil?
+  #   item_metadata
+  # end
 
   # Updates the @id of an document in JSON-LD to the Alveo catalog URL for that document
   def update_jsonld_document_id(document_metadata, collection_name, item_name)
-    doc_id = get_dc_identifier(document_metadata)
+    doc_id = MetadataHelper::get_dc_identifier(document_metadata)
     document_metadata["@id"] = format_document_url(collection_name, item_name, doc_id) unless doc_id.nil?
     document_metadata
   end
@@ -1187,7 +1185,7 @@ class CollectionsController < ApplicationController
   # Core functionality common to creating a collection
   #
   def create_collection_core(name, metadata, owner, licence_id=nil, private=true, text='')
-    metadata = update_jsonld_collection_id(
+    metadata = MetadataHelper::update_jsonld_collection_id(
       MetadataHelper::not_empty_collection_metadata!(name, current_user.full_name, metadata), name)
     uri = metadata['@id']
     # KL: if collection exist, update

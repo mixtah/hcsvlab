@@ -2,7 +2,6 @@ require 'find'
 require "#{Rails.root}/lib/rdf-sesame/hcsvlab_server.rb"
 require "#{Rails.root}/app/helpers/metadata_helper"
 
-
 ALLOWED_DOCUMENT_TYPES = ['Text', 'Image', 'Audio', 'Video', 'Other']
 STORE_DOCUMENT_TYPES = ['Text']
 MANIFEST_FILE_NAME = "manifest.json"
@@ -14,9 +13,9 @@ STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env]
 # Ingests a single item, creating both a collection object and manifest if they don't
 # already exist.
 #
-def ingest_one(corpus_dir, rdf_file)
+def ingest_one(user_email, corpus_dir, rdf_file)
   collection_name = extract_manifest_collection(rdf_file)
-  collection = check_and_create_collection(collection_name, corpus_dir, {}, File.basename(rdf_file))
+  collection = check_and_create_collection(user_email, collection_name, corpus_dir, {}, File.basename(rdf_file))
   ingest_rdf_file(corpus_dir, rdf_file, true, collection)
 end
 
@@ -120,7 +119,8 @@ def delete_object_from_solr(object_id)
   logger.info "Deindexing item: #{object_id}"
   #ToDo: refactor this workaround into a proper test mock/stub
   if Rails.env.test?
-    Solr_Worker.new.on_message("delete #{object_id}")
+    json = {:cmd => "delete", :arg => "#{object_id}"}
+    Solr_Worker.new.on_message(JSON.generate(json).to_s)
   else
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
     packet = {:cmd => "delete", :arg => object_id}
@@ -129,7 +129,7 @@ def delete_object_from_solr(object_id)
   end
 end
 
-def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, glob="*-{metadata,ann}.rdf")
+def check_and_create_collection(user_email, collection_name, corpus_dir, json_metadata={}, glob="*-{metadata,ann}.rdf")
 
   # KL
   # if collection_name == "ice" && File.basename(corpus_dir)!="ice" #ice has different directory structure
@@ -155,13 +155,13 @@ def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, g
     is_new = true
     logger.info "Creating collection #{collection_name}"
     # create_collection_from_file(coll_metadata, collection_name)
-    json_metadata = update_jsonld_collection_id(json_metadata, collection_name)
-    collection = update_collection_metadata_from_json(collection_name, json_metadata)
+    json_metadata = MetadataHelper::update_jsonld_collection_id(json_metadata, collection_name)
+    collection = MetadataHelper::update_collection_metadata_from_json(collection_name, json_metadata)
 
     # collection = Collection.find_by_name(collection_name)
 
     # set collection owner
-    collection.owner = current_user
+    collection.owner = User.find_by_email(user_email)
   else
     # Update RDF file path but don't save yet.
     # KL
@@ -174,6 +174,8 @@ def check_and_create_collection(collection_name, corpus_dir, json_metadata={}, g
   collection.save
   collection
 end
+
+
 
 def paradisec_collection_setup(collection, is_new)
   collection_name = collection.name

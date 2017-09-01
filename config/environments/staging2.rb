@@ -3,8 +3,8 @@ HcsvlabWeb::Application.configure do
   # replace this with your tracker code
   GA.tracker = "UA-49039039-4"
 
-  # TODO: set your own correct URL for action mailer
-  config.action_mailer.default_url_options = { :host => 'alveo-staging2.sol1.net' }
+  # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
+  Rails.application.routes.default_url_options[:host] = 'alveo-staging2.sol1.net'
 
   config.galaxy_url = 'http://alveo-galaxy-staging.sol1.net/root'
 

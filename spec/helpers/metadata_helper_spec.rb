@@ -3,14 +3,14 @@ require "#{Rails.root}/app/models/collection.rb"
 require "#{Rails.root}/app/models/collection_property.rb"
 require "csv"
 
-
 RSpec.describe MetadataHelper, :type => :helper do
+
+  include Rails.application.routes.url_helpers
 
   describe "metadata_helper test" do
 
     before :each do
-      # @collection = create(:collection)
-
+      @request.host = Rails.application.routes.default_url_options[:host]
       @collection_name = "mycollection"
       @json_str = %({
 "@context":
@@ -37,7 +37,8 @@ RSpec.describe MetadataHelper, :type => :helper do
    "schema":"http://schema.org/",
    "xsd":"http://www.w3.org/2001/XMLSchema#",
    "marcrel":"http://www.loc.gov/loc.terms/relators/",
-   "dcterms":"purl:dc/terms/"},
+   "dcterms":"purl:dc/terms/",
+   "cld":"purl:cld/terms/"},
  "@id":"http://localhost:3000/catalog/mycollection",
  "@type":"dcmitype:Collection",
  "dcterms:abstract":"my collection abstract",
@@ -46,7 +47,6 @@ RSpec.describe MetadataHelper, :type => :helper do
  "dcterms:language":"english",
  "dcterms:licence":"MIT",
  "dcterms:title":"myCollectionTitle",
- "dcterms:itemType":["abc", "123"],
  "marcrel:OWN":"karl",
  "olac:history_of_linguistics":
   "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language."
@@ -121,10 +121,12 @@ RSpec.describe MetadataHelper, :type => :helper do
 
 
     it "should persist new collection (graph) metadata" do
-      # collection_name = "mycollection"
       collection = Collection.new
       collection.name = @collection_name
       collection.uri = collection_url(@collection_name)
+
+      pp "collection.uri=#{collection.uri}"
+
       collection.text = "once upon a time, there was a king"
       collection.private = false
       collection.save
@@ -345,37 +347,37 @@ RSpec.describe MetadataHelper, :type => :helper do
       end
     end
 
-    describe "remove duplicated items" do
-      it "should list duplicated item_id" do
-        in_file = "/tmp/duplicated_item_1.csv"
-
-        dup_id_list = []
-        pool = {}
-        count = 0
-        CSV.foreach(in_file) do |row|
-          item_id = row[0]
-          handle = row[1]
-
-          if pool.key?(handle)
-            # csv already order by id desc
-            dup_id_list << item_id
-            count +=1
-            puts "#{count}: found duplicated: item_id[#{item_id}, #{pool[handle]}], handle[#{handle}]"
-          else
-            pool[handle] = item_id
-          end
-
-        end
-
-        File.open("/tmp/dup_item_id.txt", "w+") do |f|
-          f.puts(dup_id_list)
-        end
-
-        puts "total duplicated item amount [#{dup_id_list.size}]"
-
-      end
-
-    end
+    # describe "remove duplicated items" do
+    #   it "should list duplicated item_id" do
+    #     in_file = "/tmp/duplicated_item_1.csv"
+    #
+    #     dup_id_list = []
+    #     pool = {}
+    #     count = 0
+    #     CSV.foreach(in_file) do |row|
+    #       item_id = row[0]
+    #       handle = row[1]
+    #
+    #       if pool.key?(handle)
+    #         # csv already order by id desc
+    #         dup_id_list << item_id
+    #         count +=1
+    #         puts "#{count}: found duplicated: item_id[#{item_id}, #{pool[handle]}], handle[#{handle}]"
+    #       else
+    #         pool[handle] = item_id
+    #       end
+    #
+    #     end
+    #
+    #     File.open("/tmp/dup_item_id.txt", "w+") do |f|
+    #       f.puts(dup_id_list)
+    #     end
+    #
+    #     puts "total duplicated item amount [#{dup_id_list.size}]"
+    #
+    #   end
+    #
+    # end
 
   end
 end

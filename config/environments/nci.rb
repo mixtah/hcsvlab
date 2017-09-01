@@ -3,7 +3,8 @@ HcsvlabWeb::Application.configure do
   # replace this with your tracker code
   GA.tracker = "UA-49039039-5"
 
-  config.action_mailer.default_url_options = { :host => 'app.alveo.edu.au' }
+  # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
+  Rails.application.routes.default_url_options[:host] = 'app.alveo.edu.au'
 
   config.galaxy_url = 'http://130.56.244.157:8081/root'
 

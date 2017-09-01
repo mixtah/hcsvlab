@@ -3,6 +3,7 @@ require 'rdf/turtle'
 require 'json'
 require 'json/ld'
 require 'json-ld/json_ld_helper'
+require Rails.root.join('app/helpers/url_helper')
 
 # DC and DCTERMS Namespaces
 # http://wiki.dublincore.org/index.php/FAQ/DC_and_DCTERMS_Namespaces
@@ -298,10 +299,16 @@ module MetadataHelper
       #   new collection
       collection = Collection.new
       collection.name = collection_name
-      unless graph.nil?
+
+      begin
+        collection.uri = nil
         collection.uri = graph.statements.first.subject.to_s
-      else
-        collection.uri = collection_url(collection_name)
+      rescue Exception => e
+        logger.warn "update_collection_metadata_from_json: cant retrieve uri[#{e.message}]"
+      ensure
+        if collection.uri.nil?
+          collection.uri = UrlGenerator.new.collection_url(collection_name)
+        end
       end
 
       collection.save!
@@ -483,4 +490,27 @@ module MetadataHelper
   def self::searchable_fields
     ItemMetadataFieldNameMapping.order('lower(user_friendly_name)').select([:rdf_name, :user_friendly_name])
   end
+
+  #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
+  def self::update_jsonld_collection_id(collection_metadata, collection_name)
+    collection_metadata["@id"] = UrlGenerator.new.collection_url(collection_name)
+    collection_metadata
+  end
+
+  # Updates the @id of an item in JSON-LD to the Alveo catalog URL for that item
+  def self::update_jsonld_item_id(item_metadata, collection_name)
+    item_id = get_dc_identifier(item_metadata)
+    item_metadata["@id"] = UrlGenerator.new.item_url(collection_name, item_id) unless item_id.nil?
+    item_metadata
+  end
+
+  # Extracts the value of the dc:identifier from a metadata hash
+  def self::get_dc_identifier(metadata)
+    dc_id = nil
+    ['dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
+      dc_id = metadata[dc_id_predicate] if metadata.has_key?(dc_id_predicate)
+    end
+    dc_id
+  end
+
 end
