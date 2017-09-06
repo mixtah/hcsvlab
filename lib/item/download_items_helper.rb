@@ -190,10 +190,11 @@ module Item::DownloadItemsHelper
     #
     # Retrieve filenames from documents.file_path thru items
     #
-    def get_filenames_from_item(item_handles)
-      logger.debug "get_filenames_from_item: item_handles[#{item_handles}]"
+    def get_filenames_from_item(item_handles, document_filter)
+      logger.debug "get_filenames_from_item: item_handles[#{item_handles}], document_filter[#{document_filter}]"
 
       rlt = []
+      filenames = []
 
       item_handles.each do |handle|
         item = Item.find_by_handle(handle)
@@ -202,9 +203,13 @@ module Item::DownloadItemsHelper
           docs = Document.find_all_by_item_id(item.id)
 
           docs.each do |doc|
-            rlt << doc.file_path
+            filenames << doc.file_path
           end
         end
+      end
+
+      Item::DownloadItemsHelper.filter_item_files(filenames, document_filter).each do |file|
+        rlt << file
       end
 
       logger.debug "get_filenames_from_item: rlt[#{rlt}]"
@@ -221,7 +226,7 @@ module Item::DownloadItemsHelper
           digest_filename = Digest::MD5.hexdigest(result[:valids].inspect.to_s) + "_" + Time.now.getutc.to_i.to_s
 
           # retrieve filenames from documents.file_path by item
-          filenames = get_filenames_from_item(item_handles)
+          filenames = get_filenames_from_item(item_handles, document_filter)
 
           # Set download_tmp_dir as an absolute path if it starts with "/"
           # or otherwise relative to Rails.root
