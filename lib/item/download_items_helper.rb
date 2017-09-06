@@ -225,9 +225,8 @@ module Item::DownloadItemsHelper
 
           # Set download_tmp_dir as an absolute path if it starts with "/"
           # or otherwise relative to Rails.root
-          if APP_CONFIG['download_tmp_dir'][0] == "/"
-            tmp_dir = APP_CONFIG['download_tmp_dir']
-          else
+          tmp_dir = APP_CONFIG['download_tmp_dir']
+          if !tmp_dir.start_with?("/")
             tmp_dir = Rails.root.join(APP_CONFIG['download_tmp_dir'])
           end
 
