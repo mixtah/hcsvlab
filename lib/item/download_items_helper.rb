@@ -187,6 +187,31 @@ module Item::DownloadItemsHelper
       rlt
     end
 
+    #
+    # Retrieve filenames from documents.file_path thru items
+    #
+    def get_filenames_from_item(item_handles)
+      logger.debug "get_filenames_from_item: item_handles[#{item_handles}]"
+
+      rlt = []
+
+      item_handles.each do |handle|
+        item = Item.find_by_handle(handle)
+
+        if !item.nil?
+          docs = Document.find_all_by_item_id(item.id)
+
+          docs.each do |doc|
+            rlt << doc.file_path
+          end
+        end
+      end
+
+      logger.debug "get_filenames_from_item: rlt[#{rlt}]"
+
+      rlt
+    end
+
     def zip_as_flat(item_handles, document_filter)
       rlt = nil
 
@@ -195,27 +220,10 @@ module Item::DownloadItemsHelper
           result = verify_items_permissions_and_extract_metadata(item_handles, document_filter)
           digest_filename = Digest::MD5.hexdigest(result[:valids].inspect.to_s) + "_" + Time.now.getutc.to_i.to_s
 
-          fileNamesByItem = get_filenames_from_item_results(result)
+          # retrieve filenames from documents.file_path by item
+          filenames = get_filenames_from_item(item_handles)
 
-          filenames = []
-          fileNamesByItem.each_value do |value|
-            Item::DownloadItemsHelper.filter_item_files(value[:files], document_filter).each do |file|
-
-              arr = []
-
-              # The name of the file as it will appear in the zip archive
-              arr[0] = File.basename(file)
-
-              # The original file, including the path to find it
-              arr[1] = file.to_s
-
-              filenames << arr
-            end
-          end
-
-          # logger.debug "zip_as_flat: filenames=#{filenames}"
-
-          # Set download_tmp_dir as an absolute path if it starts with "/" 
+          # Set download_tmp_dir as an absolute path if it starts with "/"
           # or otherwise relative to Rails.root
           if APP_CONFIG['download_tmp_dir'][0] == "/"
             tmp_dir = APP_CONFIG['download_tmp_dir']
