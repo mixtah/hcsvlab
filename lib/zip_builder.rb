@@ -6,16 +6,17 @@ class ZipBuilder
     file_size = 0
 
     Zip::ZipFile.open(zip_path, Zip::ZipFile::CREATE) do |zipfile|
-      file_details.each do |file_details|
-        name = file_details[0]
-        path_to_file = file_details[1]
+      file_details.each do |file|
+        file_path = file
+        basename = File.basename(file_path)
+
         # Takes two arguments:
-        # - The name of the file as it will appear in the archive
+        # - The basename of the file as it will appear in the archive
         # - The original file, including the path to find it
 
-        file_size += File.size(path_to_file)
+        file_size += File.size(file_path)
 
-        zipfile.add(name, path_to_file)
+        zipfile.add(basename, file_path)
       end
     end
 
