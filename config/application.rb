@@ -85,15 +85,5 @@ module HcsvlabWeb
     # If set to false we'll skip enforcing available locales altogether (old behaviour).
     config.i18n.enforce_available_locales = false
 
-    # doorkeep customizing views
-    config.to_prepare do
-
-      # include only the ApplicationHelper module
-      # Doorkeeper::ApplicationController.helper ApplicationHelper
-
-      # include all helpers from your application
-      Doorkeeper::ApplicationController.helper HcsvlabWeb::Application.helpers
-
-    end
   end
 end
