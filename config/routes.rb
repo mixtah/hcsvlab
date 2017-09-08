@@ -28,6 +28,8 @@ HcsvlabWeb::Application.routes.draw do
   get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
 
+  get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "item"
+
   # for header navbar
   get "discover", :to => 'catalog#index', :as => 'header_discover'
 
