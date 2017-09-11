@@ -1,6 +1,7 @@
 HcsvlabWeb::Application.configure do
 
   # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
+  config.action_mailer.default_url_options = { :host => 'localhost:3000' }
   Rails.application.routes.default_url_options[:host] = 'localhost:3000'
   
   config.galaxy_url = 'http://localhost:8081/root'
