@@ -27,8 +27,6 @@ if (ARGV.length != 3)
 end
 #HOST = "http://localhost:3000"
 #KEY = "zneSSswB4eHLo8Wnjqr6"
-#HOST = "http://alveo-staging2.intersect.org.au/"
-#KEY = "sU6iXn9zfvVc3HxM5mLX"
 
 ITEM_LISTS = "/item_lists"
 HOST = ARGV[0].to_s

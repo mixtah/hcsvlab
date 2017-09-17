@@ -1,0 +1,59 @@
+
+= render partial: 'display_breadcrumb', locals: {nav_links: {'collections' => collections_path, "#{@collection.name}" => nil}}
+
+.container-fluid
+  .row-fluid
+    .page-header
+      %h2=  @collection.name
+
+  = form_tag({controller: 'collections', action: 'update_collection'}, method: 'put', :id => 'update_collection_form') do
+
+    = render 'display_basic_metadata'
+
+    %hr
+
+    = render 'display_additional_metadata'
+
+    = hidden_field_tag :approval_required, 'public'
+
+    %hr
+
+    .row-fluid
+      = label_tag :collection_abstract, 'Collection Abstract:'
+      = text_area_tag :collection_abstract, @collection_abstract, :rows => '5', :style => 'height: 100%; width: 100%;'
+
+    .row-fluid
+      = label_tag :collection_text, 'Collection Description:'
+      = text_area_tag :collection_text, @collection.text, :style => 'height: 100%; width: 100%;'
+
+    = submit_tag 'hidden', :style => "display:none"
+
+  .row-fluid
+    = render 'display_attachment'
+
+  .form-actions
+    = submit_tag 'Update', :class => "btn btn-primary", :id => 'update_collection_btn'
+    = submit_tag 'Reset',  :class => "btn btn-warning", :id => 'reset_collection_btn'
+    = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+
+
+= render 'shared/nectar_attribution'
+
+:javascript
+  $(document).ready(function() {
+    var formId = 'update_collection_form';
+
+    $("#update_collection_btn").click(function() {
+      $('#' + formId).submit();
+    });
+
+    $("#reset_collection_btn").click(function() {
+      $('#' + formId)[0].reset();
+    });
+
+    var simplemde = new SimpleMDE({
+      element: $("#collection_text")[0]
+    });
+
+  });
+

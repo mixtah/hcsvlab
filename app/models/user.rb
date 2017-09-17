@@ -3,7 +3,7 @@ class User < ActiveRecord::Base
   include Hydra::User
 # Connects this user object to Blacklights Bookmarks.
   include Blacklight::User
-  # Include devise modules
+# Include devise modules
   devise :database_authenticatable, :registerable, :lockable, :recoverable, :trackable, :validatable, :timeoutable, :token_authenticatable, :aaf_rc_authenticatable
 
   belongs_to :role
@@ -18,8 +18,8 @@ class User < ActiveRecord::Base
   has_many :licences, inverse_of: :owner, foreign_key: :owner_id
   has_many :document_audits
 
-  # Setup accessible attributes (status/approved flags should NEVER be accessible by mass assignment)
-  attr_accessible :email, :password, :password_confirmation, :first_name, :last_name
+# Setup accessible attributes (status/approved flags should NEVER be accessible by mass assignment)
+  attr_accessible :email, :password, :password_confirmation, :first_name, :last_name, :status
 
   validates_presence_of :first_name
   validates_presence_of :last_name
@@ -37,13 +37,26 @@ class User < ActiveRecord::Base
   before_validation :initialize_status
 
   scope :pending_approval, where(:status => 'U').order(:email)
+
   scope :approved, where(:status => 'A').order(:email)
   scope :deactivated_or_approved, where("status = 'D' or status = 'A' ").order(:email)
   scope :approved_superusers, joins(:role).merge(User.approved).merge(Role.superuser_roles)
   scope :approved_researchers, joins(:role).merge(User.approved).merge(Role.researcher_roles)
 
-  # Override Devise active for authentication method so that users must be approved before being allowed to log in
-  # https://github.com/plataformatec/devise/wiki/How-To:-Require-admin-to-activate-account-before-sign_in
+  after_initialize do |user|
+    # The after_initialize callback will be called whenever an Active Record object is
+    # instantiated, either by directly using new or when a record is loaded from the database.
+    # It can be useful to avoid the need to directly override your Active Record initialize
+    # method.
+    #
+    # http://guides.rubyonrails.org/active_record_callbacks.html#after-initialize-and-after-find
+    if user.id.nil?
+      user.status = 'U'
+    end
+  end
+
+# Override Devise active for authentication method so that users must be approved before being allowed to log in
+# https://github.com/plataformatec/devise/wiki/How-To:-Require-admin-to-activate-account-before-sign_in
   def active_for_authentication?
     super && approved?
   end
@@ -63,12 +76,12 @@ class User < ActiveRecord::Base
     raise Exception.new('Unauthorized') unless approved?
   end
 
-  # Override Devise method so that user is actually notified right after the third failed attempt.
+# Override Devise method so that user is actually notified right after the third failed attempt.
   def attempts_exceeded?
     self.failed_attempts >= self.class.maximum_attempts
   end
 
-  # Overrride Devise method so we can check if account is active before allowing them to get a password reset email
+# Overrride Devise method so we can check if account is active before allowing them to get a password reset email
   def send_reset_password_instructions
     if approved?
       generate_reset_password_token!
@@ -80,9 +93,9 @@ class User < ActiveRecord::Base
     end
   end
 
-  # Custom method overriding update_with_password so that we always require a password on the update password action
-  # Devise expects the update user and update password to be the same screen so accepts a blank password as indicating that
-  # the user doesn't want to change it
+# Custom method overriding update_with_password so that we always require a password on the update password action
+# Devise expects the update user and update password to be the same screen so accepts a blank password as indicating that
+# the user doesn't want to change it
   def update_password(params={})
     current_password = params.delete(:current_password)
 
@@ -98,13 +111,13 @@ class User < ActiveRecord::Base
     result
   end
 
-  # Generates and sets user password
+# Generates and sets user password
   def generate_temp_password
     password = KeePass::Password.generate('uldsA{5}', :remove_lookalikes => true)
     self.reset_password!(password, password)
   end
 
-  # Override devise method that resets a forgotten password, so we can clear locks on reset
+# Override devise method that resets a forgotten password, so we can clear locks on reset
   def reset_password!(new_password, new_password_confirmation)
     self.password = new_password
     self.password_confirmation = new_password_confirmation
@@ -129,6 +142,12 @@ class User < ActiveRecord::Base
 
   def rejected?
     self.status == 'R'
+  end
+
+  # To judge whether current user is visitor
+  # Visitor has no user id
+  def is_visitor?
+    return self.id.nil?
   end
 
   def deactivate
@@ -195,26 +214,46 @@ class User < ActiveRecord::Base
   end
 
   def groups
-    sql = """
-      SELECT c.name || '-' || ula_cl.access_type AS group_name
-      FROM collections c INNER JOIN
-        (SELECT cl.id as collection_list_id, ula.access_type as access_type
-        FROM collection_lists cl INNER JOIN user_licence_agreements ula
-        ON cl.name=ula.name WHERE ula.collection_type='collection_list' AND ula.user_id=#{self.id}) ula_cl
-      ON c.collection_list_id=ula_cl.collection_list_id
-      UNION
-      SELECT c.name || '-' || ula.access_type as group_name
-      FROM user_licence_agreements ula
-      INNER JOIN collections c
-      ON ula.name=c.name
-      WHERE ula.collection_type='collection' AND ula.user_id=#{self.id};
-    """
+    if is_visitor?
+      # visitor, no user id
+      sql = "" "
+        SELECT c.name || '-' || ula_cl.access_type AS group_name
+        FROM collections c INNER JOIN
+          (SELECT cl.id as collection_list_id, ula.access_type as access_type
+          FROM collection_lists cl INNER JOIN user_licence_agreements ula
+          ON cl.name=ula.name WHERE ula.collection_type='collection_list') ula_cl
+        ON c.collection_list_id=ula_cl.collection_list_id
+        UNION
+        SELECT c.name || '-' || ula.access_type as group_name
+        FROM user_licence_agreements ula
+        INNER JOIN collections c
+        ON ula.name=c.name
+        WHERE ula.collection_type='collection';
+      " ""
+    else
+      # logged in user with user id
+      sql = "" "
+        SELECT c.name || '-' || ula_cl.access_type AS group_name
+        FROM collections c INNER JOIN
+          (SELECT cl.id as collection_list_id, ula.access_type as access_type
+          FROM collection_lists cl INNER JOIN user_licence_agreements ula
+          ON cl.name=ula.name WHERE ula.collection_type='collection_list' AND ula.user_id=#{self.id}) ula_cl
+        ON c.collection_list_id=ula_cl.collection_list_id
+        UNION
+        SELECT c.name || '-' || ula.access_type as group_name
+        FROM user_licence_agreements ula
+        INNER JOIN collections c
+        ON ula.name=c.name
+        WHERE ula.collection_type='collection' AND ula.user_id=#{self.id};
+      " ""
+    end
+
     ActiveRecord::Base.connection.execute(sql).field_values('group_name')
   end
 
-  #
-  # Adds the permission level defined by 'accessType' to the given 'collection' or 'collection_list'
-  #
+#
+# Adds the permission level defined by 'accessType' to the given 'collection' or 'collection_list'
+#
   def add_agreement_to_collection(collection, accessType, type='collection')
     ula = UserLicenceAgreement.new
     ula.access_type = accessType
@@ -225,18 +264,24 @@ class User < ActiveRecord::Base
     ula.save
   end
 
-  #
-  # Does this user have the given permission level (defined by 'accessType')
-  # for the given 'collection'. If 'exact' is true, then it must be exactly
-  # that permission, if false then look for that permission or better.
-  #
-  # TODO refactor this
+#
+# Does this user have the given permission level (defined by 'accessType')
+# for the given 'collection'. If 'exact' is true, then it must be exactly
+# that permission, if false then look for that permission or better.
+#
+# TODO refactor this
 
   def has_agreement_to_collection?(collection, access_type, exact=false)
     # if the user is the owner of the collection, then he/she does have access.
-    if collection.owner_id.eql?(self.id)
-      return true
+    # think about visitor with nil id
+    unless self.id.nil?
+      if collection.owner_id.eql?(self.id)
+        return true
+      end
+    else
+      return false
     end
+
 
     access_types = UserLicenceAgreement::type_or_higher(access_type) unless exact
 
@@ -248,37 +293,42 @@ class User < ActiveRecord::Base
     end
   end
 
+# think about visitor with nil id
   def has_requested_collection?(id)
-    user_licence_requests.where(:request_id => id.to_s).count > 0
+    user_licence_requests.where(:request_id => id.to_s).count > 0 unless id.nil?
   end
 
+# think about visitor with nil id
   def requested_collection(id)
-    user_licence_requests.find_by_request_id(id.to_s)
+    user_licence_requests.find_by_request_id(id.to_s) unless id.nil?
   end
 
-  #
-  # Removes the permission level defined by 'accessType' to the given 'collection'
-  #
+#
+# Removes the permission level defined by 'accessType' to the given 'collection'
+#
   def remove_agreement_to_collection(collection, access_type)
     self.user_licence_agreements.where(name: collection.name, collection_type: 'collection', access_type: access_type).delete_all
   end
 
+# think about visitor with nil id
   def accept_licence_request(id)
-    if has_requested_collection?(id)
-      requested_collection(id).destroy
+    unless id.nil?
+      if has_requested_collection?(id)
+        requested_collection(id).destroy
+      end
     end
   end
 
-  # ===========================================================================
-  # Licence management
-  # ===========================================================================
+# ===========================================================================
+# Licence management
+# ===========================================================================
 
-  #
-  # Return all my licensing information. The form of this is an array of
-  # Hashes. Each Hash contains a Collection or CollectionList and the
-  # information for it. Returns an empty Array (rather than nil) if there is no
-  # licensing information.
-  #
+#
+# Return all my licensing information. The form of this is an array of
+# Hashes. Each Hash contains a Collection or CollectionList and the
+# information for it. Returns an empty Array (rather than nil) if there is no
+# licensing information.
+#
   def get_all_licence_info(include_own = false)
     result = []
 
@@ -406,12 +456,17 @@ class User < ActiveRecord::Base
     return true
   end
 
-  # end of Licence Management
-  # -------------------------
+# end of Licence Management
+# -------------------------
 
   private
 
   def initialize_status
+    # initialised status as 'U'
     self.status = "U" unless self.status
+  end
+
+  def User::reset_pk_seq
+    ActiveRecord::Base.connection.reset_pk_sequence!(User.table_name)
   end
 end

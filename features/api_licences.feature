@@ -6,18 +6,18 @@ Feature: Accessing, assigning licences via API
     Given I have the usual roles and permissions
     And I have users
       | email                        | first_name | last_name |
-      | admin@intersect.org.au       | Admin      | One       |
-      | researcher1@intersect.org.au | Researcher | One       |
-      | data_owner@intersect.org.au  | Data_Owner | One       |
-    And "admin@intersect.org.au" has role "admin"
-    And "admin@intersect.org.au" has an api token
-    And "data_owner@intersect.org.au" has role "data owner"
-    And "data_owner@intersect.org.au" has an api token
-    And "researcher1@intersect.org.au" has role "researcher"
-    And "researcher1@intersect.org.au" has an api token
+      | admin@alveo.edu.au       | Admin      | One       |
+      | researcher1@alveo.edu.au | Researcher | One       |
+      | data_owner@alveo.edu.au  | Data_Owner | One       |
+    And "admin@alveo.edu.au" has role "admin"
+    And "admin@alveo.edu.au" has an api token
+    And "data_owner@alveo.edu.au" has role "data owner"
+    And "data_owner@alveo.edu.au" has an api token
+    And "researcher1@alveo.edu.au" has role "researcher"
+    And "researcher1@alveo.edu.au" has an api token
 
   Scenario: Researcher can't access licences
-    Given I make a JSON request for the licences page with the API token for "researcher1@intersect.org.au"
+    Given I make a JSON request for the licences page with the API token for "researcher1@alveo.edu.au"
     Then I should get a 403 response code
     And the JSON response should be:
     """
@@ -29,11 +29,11 @@ Feature: Accessing, assigning licences via API
     Then I should get a 200 response code
   Examples:
     | user                        |
-    | data_owner@intersect.org.au |
-    | admin@intersect.org.au      |
+    | data_owner@alveo.edu.au |
+    | admin@alveo.edu.au      |
 
   Scenario: No licences
-    Given I make a JSON request for the licences page with the API token for "data_owner@intersect.org.au"
+    Given I make a JSON request for the licences page with the API token for "data_owner@alveo.edu.au"
     Then I should get a 200 response code
     And the JSON response should be:
     """
@@ -43,7 +43,7 @@ Feature: Accessing, assigning licences via API
   Scenario: Get licences via API
     Given I have licence "Creative Commons" with id 100
     And I have licence "AusNC Terms of Use" with id 101
-    And I make a JSON request for the licences page with the API token for "admin@intersect.org.au"
+    And I make a JSON request for the licences page with the API token for "admin@alveo.edu.au"
     Then I should get a 200 response code
     And the JSON response should be:
     """
@@ -51,7 +51,7 @@ Feature: Accessing, assigning licences via API
     """
 
   Scenario: Assigning an invalid licence in collection creation
-    Given I make a JSON post request for the collections page with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I make a JSON post request for the collections page with the API token for "data_owner@alveo.edu.au" with JSON params
       | name | collection_metadata | licence_id |
       | Test | {"@context": "http://example.org/schema/json-ld", "alveo:metadata": {"@id": "http://collection.test", "@type": "dcmitype:Collection", "dc:creator": "Pam Peters", "dc:rights": "All rights reserved to Data Owner", "dc:subject": "English Language", "dc:title": "A test collection", "marcrel:OWN": "Data Owner"}} | 5 |
     Then I should get a 400 response code
@@ -62,7 +62,7 @@ Feature: Accessing, assigning licences via API
 
   Scenario: Assigning a licence in collection creation
     Given I have licence "Creative Commons" with id 8
-    And I make a JSON post request for the collections page with the API token for "data_owner@intersect.org.au" with JSON params
+    And I make a JSON post request for the collections page with the API token for "data_owner@alveo.edu.au" with JSON params
       | name | collection_metadata | licence_id |
       | Test | {"@context": "http://example.org/schema/json-ld", "alveo:metadata": {"@id": "http://collection.test", "@type": "dcmitype:Collection", "dc:creator": "Pam Peters", "dc:rights": "All rights reserved to Data Owner", "dc:subject": "English Language", "dc:title": "A test collection", "marcrel:OWN": "Data Owner"}} | 8 |
     Then I should get a 200 response code

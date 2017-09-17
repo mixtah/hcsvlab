@@ -13,18 +13,18 @@ qa:
   <<: *rabbitmq_common
 qa2:
   <<: *rabbitmq_common
-  :host: alveo-qa-mq.intersect.org.au
+  :host: alveo-qa-mq.alveo.edu.au
 nci:
   <<: *rabbitmq_common
 staging:
   <<: *rabbitmq_common
 staging2:
   <<: *rabbitmq_common
-  :host: alveo-qa-mq.intersect.org.au
+  :host: alveo-qa-mq.alveo.edu.au
 production:
   <<: *rabbitmq_common
-  :host: alveo-qa-mq.intersect.org.au
+  :host: alveo-qa-mq.alveo.edu.au
 trove:
   <<: *rabbitmq_common
-  :host: alveo-mq.intersect.org.au
+  :host: alveo-mq.alveo.edu.au
 

@@ -1,12 +1,42 @@
-= render 'display_collections'
-.span9
-  - if params[:id]
-    = render :file => '/collections/show'
-  - else
-    %h2 Select a collection to view general information about that collection
-    %p In order to access the data for a particular collection, you will need to agree to the licence for that collection.
-    - if can? :web_create_collection, Collection
-      %br
-      = link_to "Create New Collection", web_create_collection_path, :id => 'Create New Collection', :class => "btn"
-= render 'shared/nectar_attribution'
-= render 'shared/modal_waiting_panel'
+
+.span2
+.span8
+  %h1 Alveo Virtual Laboratory
+
+  .row-fluid
+    %p.lead
+      The Alveo Virtual Lab provides access to collections of speech and language data with a rich API to support data processing.
+
+    %p
+      This page shows the different collections currently available on Alveo.
+      To access data from a collection, you must first register as an Alveo user
+      (
+      %a{:href => "http://alveo.edu.au/help/getting-access-to-alveo-and-galaxy/accessing-alveo/"}> help me register
+      ).
+    %p
+      You will then be able to view the licence terms for the collection and agree to them
+      (
+      %a{:href => "/account/licence_agreements"}> about licence terms
+      ).
+      In some cases specific permission is required.
+    %p
+
+  %h2 Collections
+
+  = render 'display_collections'
+
+  %p
+    New collections can be uploaded by researchers and shared with the community (
+    %a{:href => "http://alveo.edu.au/tutorials/creating-collections-and-uploading-data/"}> help with uploading
+    ).
+
+  .row-fluid
+    - if params[:id]
+      = render :file => '/collections/show'
+    - else
+      - if can? :web_create_collection, Collection
+        %br
+        = link_to "Create New Collection", web_create_collection_path, :id => 'Create New Collection', :class => "btn"
+
+  = render 'shared/nectar_attribution'
+  = render 'shared/modal_waiting_panel'

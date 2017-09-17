@@ -1,22 +1,37 @@
 %h2 Create Collection
+
 = form_tag({controller: 'collections', action: 'web_create_collection'}, method: 'post', :id => 'create_collection_form') do
-  = label_tag :collection_name, 'Collection Name:'
-  = text_field_tag :collection_name, @collection_name, required: true
-  = label_tag :collection_title, 'Collection Title:'
-  = text_field_tag :collection_title, @collection_title, required: true
-  = label_tag :collection_owner, 'Collection Owner:'
-  = text_field_tag :collection_owner, @collection_owner, required: true
-  = label_tag :collection_abstract, 'Collection Abstract:'
-  = text_area_tag :collection_abstract, @collection_abstract, required: true
-  = label_tag :approval_required, 'Privacy: (Approval required for collection access)'
-  = hidden_field_tag :approval_required, 'public'
-  = check_box_tag :approval_required, 'private', @approval_required == 'private'
-  = label_tag :licence_id, 'Licence'
-  = select_tag :licence_id, options_for_select(@licences.map {|l| [l.name, l.id]}), include_blank: true
+
+  = render 'display_basic_metadata'
+
   = render 'display_additional_metadata'
+
+  %hr
+
+  .row-fluid
+    = label_tag :collection_abstract, 'Collection Abstract:'
+    = text_area_tag :collection_abstract, @collection_abstract, :rows => '5', :style => 'height: 100%; width: 100%;', placeholder: "This is the simple abstract for the collection, within 255 letters."
+
+  .row-fluid
+    = label_tag :collection_text, 'Collection Description:'
+    = text_area_tag :collection_text, @collection_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide'
 
   .form-actions
     = submit_tag 'Create', :class => "btn btn-primary"
+    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-warning"
     = link_to 'Cancel', collections_path, :class => "btn"
 
 = render 'shared/nectar_attribution'
+
+:javascript
+  $(document).ready(function() {
+    $("#language_select").select2({
+      width: 'resolve',
+      minimumInputLength: 2
+    })
+
+    var simplemde = new SimpleMDE({ element: $("#collection_text")[0] });
+
+  });
+
+

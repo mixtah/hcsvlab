@@ -19,7 +19,22 @@
 /.idea
 /coverage
 
+# Ignore local development collection storage
+dev/**
+
+# Ignore local public files
 public/assets/**
+public/collections/**
+public/uploads/**
+
+# Ignore activemq, which can be installed manually
+apache-activemq-5.8.0/**
+
+# Ignore submodule jetty
+jetty/**
+
+# Ignore test directory
+test/**
 
 *.swp
 

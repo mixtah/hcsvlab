@@ -4,10 +4,10 @@ Feature: Creating Documents
 
   Background:
     Given I have the usual roles and permissions
-    And I have a user "admin@intersect.org.au" with role "admin"
-    And I have a user "data_owner@intersect.org.au" with role "data owner"
-    And "data_owner@intersect.org.au" has an api token
-    And I have a user "researcher@intersect.org.au" with role "researcher"
+    And I have a user "admin@alveo.edu.au" with role "admin"
+    And I have a user "data_owner@alveo.edu.au" with role "data owner"
+    And "data_owner@alveo.edu.au" has an api token
+    And I have a user "researcher@alveo.edu.au" with role "researcher"
     And I have languages
       | code  | name      |
       | eng   | English   |
@@ -18,8 +18,8 @@ Feature: Creating Documents
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
-    And I am logged in as "data_owner@intersect.org.au"
+      | cooee      | data_owner@alveo.edu.au |
+    And I am logged in as "data_owner@alveo.edu.au"
     When I am on the catalog page for "cooee:1-001"
     Then I should see link "Add New Document" to "/add-document/cooee/1-001"
 
@@ -27,21 +27,21 @@ Feature: Creating Documents
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
+      | cooee      | data_owner@alveo.edu.au |
     And I am logged in as "<user>"
     When I am on the catalog page for "cooee:1-001"
     Then I should not see link "Add New Item" to "/add-document/cooee/1-001"
   Examples:
     | user |
-    | admin@intersect.org.au      |
-    | researcher@intersect.org.au |
+    | admin@alveo.edu.au      |
+    | researcher@alveo.edu.au |
 
   Scenario: Verify add document button goes to new document form page and shows item name
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
-    And I am logged in as "data_owner@intersect.org.au"
+      | cooee      | data_owner@alveo.edu.au |
+    And I am logged in as "data_owner@alveo.edu.au"
     When I am on the catalog page for "cooee:1-001"
     When I follow element with id "add_new_document"
     Then I should be on the add document page for "cooee:1-001"
@@ -51,21 +51,21 @@ Feature: Creating Documents
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
+      | cooee      | data_owner@alveo.edu.au |
     And I am logged in as "<user>"
     When I am on the add document page for "cooee:1-001"
     Then I should see "You are not authorised to access this page."
   Examples:
     | user |
-    | admin@intersect.org.au      |
-    | researcher@intersect.org.au |
+    | admin@alveo.edu.au      |
+    | researcher@alveo.edu.au |
 
   Scenario: Verify add document page has expected form fields
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
-    And I am logged in as "data_owner@intersect.org.au"
+      | cooee      | data_owner@alveo.edu.au |
+    And I am logged in as "data_owner@alveo.edu.au"
     When I am on the add document page for "cooee:1-001"
     Then I should see "Add Document"
     And I should see "Please select a file:"
@@ -85,8 +85,8 @@ Feature: Creating Documents
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
-    And I am logged in as "data_owner@intersect.org.au"
+      | cooee      | data_owner@alveo.edu.au |
+    And I am logged in as "data_owner@alveo.edu.au"
     When I am on the add document page for "cooee:1-001"
     Then I should not see "Name: Value: "
 
@@ -95,8 +95,8 @@ Feature: Creating Documents
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
-    And I am logged in as "data_owner@intersect.org.au"
+      | cooee      | data_owner@alveo.edu.au |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "cooee:1-001"
     When I click "Add Metadata Field"
     Then the "additional_key[]" field should contain ""
@@ -106,8 +106,8 @@ Feature: Creating Documents
     Given I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
-    And I am logged in as "data_owner@intersect.org.au"
+      | cooee      | data_owner@alveo.edu.au |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "cooee:1-001"
     And I press "Create"
     Then I should be on the add document page for "cooee:1-001"
@@ -115,11 +115,11 @@ Feature: Creating Documents
 
   @create_collection
   Scenario: Verify required language field has default value selected
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
-      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     When I attach the file "test/samples/api/sample1.txt" to "document_file"
     And I press "Create"
@@ -127,11 +127,11 @@ Feature: Creating Documents
 
   @create_collection
   Scenario: Create a document and verify it exists in the filesystem, database and Sesame
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
-      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     And I attach the file "test/samples/api/sample1.txt" to "document_file"
     And I press "Create"
@@ -143,11 +143,11 @@ Feature: Creating Documents
 
   @create_collection
   Scenario Outline: Verify a document with spaces in its filename cannot be created
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    When I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    When I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
-      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     And I attach the file "test/samples/api/<file>" to "document_file"
     And I press "Create"
@@ -160,11 +160,11 @@ Feature: Creating Documents
 
   @create_collection
   Scenario: Create a document with just the required fields
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    When I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    When I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
-      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     And I attach the file "test/samples/api/sample1.txt" to "document_file"
     And I press "Create"
@@ -177,11 +177,11 @@ Feature: Creating Documents
 
   @javascript @create_collection
   Scenario Outline: Create a document with a set of additional metadata
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
-      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     And I attach the file "test/samples/api/sample1.txt" to "document_file"
     #Todo: get select2 selection working in cucumber test
@@ -203,11 +203,11 @@ Feature: Creating Documents
 
   @javascript @create_collection
   Scenario Outline: Verify providing an empty metadata field returns an error response
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
-      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+      | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     And I attach the file "test/samples/api/sample1.txt" to "document_file"
     When I click "Add Metadata Field"
@@ -223,11 +223,11 @@ Feature: Creating Documents
 
   @javascript @create_collection
   Scenario: Verify form is re-populated with previous input if an error occurs
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@intersect.org.au" with JSON params
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I make a JSON post request for the collection page for id "Test" with the API token for "data_owner@alveo.edu.au" with JSON params
       | items |
       | [ { "documents": [ { "identifier": "document1.txt", "content": "A Test." } ], "metadata": { "@context": { "ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/", "corpus": "http://ns.ausnc.org.au/corpora/", "dc": "http://purl.org/dc/terms/", "dcterms": "http://purl.org/dc/terms/", "foaf": "http://xmlns.com/foaf/0.1/", "hcsvlab": "http://hcsvlab.org/vocabulary/" }, "@graph": [ { "@id": "item1", "@type": "ausnc:AusNCObject", "ausnc:document": [ { "@id": "document1.txt", "@type": "foaf:Document", "dcterms:identifier": "document1.txt", "dcterms:title": "document1#Text", "dcterms:type": "Text" } ], "dcterms:identifier": "item1", "hcsvlab:display_document": { "@id": "document1.txt" }, "hcsvlab:indexable_document": { "@id": "document1.txt" } } ] } } ] |
-    And I am logged in as "data_owner@intersect.org.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add document page for "test:item1"
     And I attach the file "test/samples/api/sample1.txt" to "document_file"
     When I click "Add Metadata Field"

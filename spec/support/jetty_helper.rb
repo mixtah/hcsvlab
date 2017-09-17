@@ -25,7 +25,10 @@ def clear_jetty
   repositories = server.repositories
   repositories.each_key do |repositoryName|
     if (!"SYSTEM".eql? repositoryName)
-      server.delete(repositories[repositoryName].path)
+      if repositoryName.start_with? "test_"
+        # only delete test repo
+        server.delete(repositories[repositoryName].path)
+      end
     end
   end
 end
@@ -34,7 +37,7 @@ end
 #
 #
 def ingest_test_collections
-  data_owner = FactoryGirl.create(:user, :email => 'data_owner@intersect.org.au', :password => "Pas$w0rd", :status => 'A')
+  data_owner = FactoryGirl.create(:user, :email => 'data_owner@alveo.edu.au', :password => "Pas$w0rd", :status => 'A')
   data_owner.role = Role.find_or_create_by_name(Role::DATA_OWNER_ROLE)
   data_owner.save!
   qa_collections_folder = "#{Rails.root}/test/samples/test_collections"
@@ -48,8 +51,9 @@ def ingest_test_collections
       rake.init
       rake.load_rakefile
       rdf_files.each do |rdf_file|
-        pid = ingest_one(File.dirname(rdf_file), rdf_file)
-        solr_worker.on_message("index #{pid}")
+        pid = ingest_one(data_owner.email, dataFile.dirname(rdf_file), rdf_file)
+        json = {:cmd => "index", :arg => "#{pid}"}
+        solr_worker.on_message(JSON.generate(json).to_s)
       end
     end
   end

@@ -4,17 +4,17 @@ Feature: Creating Items
 
   Background:
     Given I have the usual roles and permissions
-    And I have a user "admin@intersect.org.au" with role "admin"
-    And I have a user "data_owner@intersect.org.au" with role "data owner"
-    And "data_owner@intersect.org.au" has an api token
-    And I have a user "researcher@intersect.org.au" with role "researcher"
+    And I have a user "admin@alveo.edu.au" with role "admin"
+    And I have a user "data_owner@alveo.edu.au" with role "data owner"
+    And "data_owner@alveo.edu.au" has an api token
+    And I have a user "researcher@alveo.edu.au" with role "researcher"
     And I ingest "cooee:1-001"
     And Collections ownership is
       | collection | owner_email                 |
-      | cooee      | data_owner@intersect.org.au |
+      | cooee      | data_owner@alveo.edu.au |
 
   Scenario: Verify add item button is visible for collection owner
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     When I am on the collection page for "cooee"
     Then I should see link "Add New Item" to "/add-item/cooee"
 
@@ -24,11 +24,11 @@ Feature: Creating Items
     Then I should not see link "Add New Item" to "/add-item/cooee"
     Examples:
     | user |
-    | admin@intersect.org.au      |
-    | researcher@intersect.org.au |
+    | admin@alveo.edu.au      |
+    | researcher@alveo.edu.au |
 
   Scenario: Verify add item button goes to new item form page
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the collection page for "cooee"
     When I follow element with id "add_new_item"
     Then I should be on the add item page for "cooee"
@@ -39,11 +39,11 @@ Feature: Creating Items
     Then I should see "You are not authorised to access this page."
     Examples:
     | user |
-    | admin@intersect.org.au      |
-    | researcher@intersect.org.au |
+    | admin@alveo.edu.au      |
+    | researcher@alveo.edu.au |
 
   Scenario: Verify add item page has expected form fields
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     When I am on the add item page for "cooee"
     Then I should see "Create Item"
     And I should see "Item Name:"
@@ -60,20 +60,20 @@ Feature: Creating Items
     And I should see button "Create"
 
   Scenario: Verify add metadata name/value fields not visible by default
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     When I am on the add item page for "cooee"
     Then I should not see "Name: Value: "
 
   @javascript
   Scenario: Verify add metadata name/value fields are visible after clicking add metadata field button
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "cooee"
     When I click "Add Metadata Field"
     Then the "additional_key[]" field should contain ""
     And the "additional_value[]" field should contain ""
 
   Scenario Outline: Verify item name and title are required
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "cooee"
     When I fill in "item_name" with "<name>"
     And I fill in "item_title" with "<title>"
@@ -86,7 +86,7 @@ Feature: Creating Items
     | test |       | Required field 'item title' is missing |
 
   Scenario: Verify that an item name needs to be unique within a collection
-    Given I am logged in as "data_owner@intersect.org.au"
+    Given I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "cooee"
     When I fill in "item_name" with "1-001"
     And I fill in "item_title" with "Duplicate Item"
@@ -96,8 +96,8 @@ Feature: Creating Items
 
   @create_collection
   Scenario Outline: Create an item with just the required fields
-    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@intersect.org.au"
-    And I am logged in as "data_owner@intersect.org.au"
+    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@alveo.edu.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "<collection_name>"
     When I fill in "item_name" with "<name>"
     And I fill in "item_title" with "<title>"
@@ -114,8 +114,8 @@ Feature: Creating Items
 
   @create_collection
   Scenario Outline: Create an item with just the required fields and view that item
-    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@intersect.org.au"
-    And I am logged in as "data_owner@intersect.org.au"
+    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@alveo.edu.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "<collection_name>"
     And I fill in "item_name" with "<name>"
     And I fill in "item_title" with "<title>"
@@ -139,8 +139,8 @@ Feature: Creating Items
 
   @create_collection
   Scenario Outline: Verify creating an item sanitises the item name
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I am logged in as "data_owner@intersect.org.au"
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "test"
     And I fill in "item_name" with "<name>"
     And I fill in "item_title" with "test"
@@ -166,8 +166,8 @@ Feature: Creating Items
 
   @javascript @create_collection
   Scenario Outline: Create an item with a set of additional metadata
-    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@intersect.org.au"
-    And I am logged in as "data_owner@intersect.org.au"
+    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@alveo.edu.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "<collection_name>"
     And I click "Add Metadata Field"
     When I fill in "item_name" with "test"
@@ -194,8 +194,8 @@ Feature: Creating Items
 
   @javascript @create_collection
   Scenario Outline: Verify providing an empty metadata field returns an error response
-    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@intersect.org.au"
-    And I am logged in as "data_owner@intersect.org.au"
+    Given I ingest a new collection "<collection_name>" through the api with the API token for "data_owner@alveo.edu.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "<collection_name>"
     And I click "Add Metadata Field"
     When I fill in "item_name" with "test"
@@ -212,8 +212,8 @@ Feature: Creating Items
 
   @javascript @create_collection
   Scenario: Verify form is re-populated with previous input if an error occurs
-    Given I ingest a new collection "test" through the api with the API token for "data_owner@intersect.org.au"
-    And I am logged in as "data_owner@intersect.org.au"
+    Given I ingest a new collection "test" through the api with the API token for "data_owner@alveo.edu.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the add item page for "test"
     And I click "Add Metadata Field"
     When I fill in "item_name" with "test"

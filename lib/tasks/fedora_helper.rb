@@ -1,39 +1,40 @@
 require 'find'
 require "#{Rails.root}/lib/rdf-sesame/hcsvlab_server.rb"
-
+require "#{Rails.root}/app/helpers/metadata_helper"
 
 ALLOWED_DOCUMENT_TYPES = ['Text', 'Image', 'Audio', 'Video', 'Other']
 STORE_DOCUMENT_TYPES = ['Text']
 MANIFEST_FILE_NAME = "manifest.json"
 
 SESAME_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/sesame.yml")[Rails.env] unless defined? SESAME_CONFIG
+STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
 #
 # Ingests a single item, creating both a collection object and manifest if they don't
-# already exist. NOTE: the id variable should only be passed in for use in automated tests!
+# already exist.
 #
-def ingest_one(corpus_dir, rdf_file)
-  check_and_create_manifest(corpus_dir)
-  manifest = JSON.parse(IO.read(File.join(corpus_dir, MANIFEST_FILE_NAME)))
-
-  collection_name = manifest["collection_name"]
-  collection = check_and_create_collection(collection_name, corpus_dir)
-
-  ingest_rdf_file(corpus_dir, rdf_file, true, manifest, collection)
+def ingest_one(user_email, corpus_dir, rdf_file)
+  collection_name = extract_manifest_collection(rdf_file)
+  collection = check_and_create_collection(user_email, collection_name, corpus_dir, {}, File.basename(rdf_file))
+  ingest_rdf_file(corpus_dir, rdf_file, true, collection)
 end
 
-def ingest_rdf_file(corpus_dir, rdf_file, annotations, manifest, collection)
+def ingest_rdf_file(corpus_dir, rdf_file, annotations, collection)
   unless rdf_file.to_s =~ /metadata/ # HCSVLAB-441
     raise ArgumentError, "#{rdf_file} does not appear to be a metadata file - at least, its name doesn't say 'metadata'"
   end
   logger.info "Ingesting item: #{rdf_file}"
 
-  item, update = create_item_from_file(corpus_dir, rdf_file, manifest, collection)
+  filename, item_info = extract_manifest_info(rdf_file)
+  item, update = create_item_from_file(corpus_dir, rdf_file, collection, item_info)
+
+  server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
+  repository = server.repository(collection.name)
+  repository.insert_from_rdf_files(rdf_file)
 
   if update
     look_for_annotations(item, rdf_file) if annotations
-
-    look_for_documents(item, corpus_dir, rdf_file, manifest)
+    look_for_documents(item, corpus_dir, rdf_file, item_info)
 
     item.save!
   end
@@ -41,13 +42,12 @@ def ingest_rdf_file(corpus_dir, rdf_file, annotations, manifest, collection)
   item.id
 end
 
-def create_item_from_file(corpus_dir, rdf_file, manifest, collection)
-  item_info = manifest["files"][File.basename(rdf_file)]
-  raise ArgumentError, "Error with file during manifest creation - #{rdf_file}" if !item_info["error"].nil?
+def create_item_from_file(corpus_dir, rdf_file, collection, item_info)
   identifier = item_info["id"]
   uri = item_info["uri"]
-  collection_name = manifest["collection_name"]
-  handle = "#{collection_name}:#{identifier}"
+
+  # collection_name = manifest["collection_name"]
+  handle = "#{collection.name}:#{identifier}"
 
   existing_item = Item.find_by_handle(handle)
 
@@ -65,8 +65,9 @@ def create_item_from_file(corpus_dir, rdf_file, manifest, collection)
     item.uri = uri
     item.collection = collection
     item.save!
+
     unless Rails.env.test?
-      stomp_client = Stomp::Client.open "stomp://localhost:61613"
+      stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       reindex_item_to_solr(item.id, stomp_client)
       stomp_client.close
     end
@@ -80,9 +81,30 @@ def create_item_from_file(corpus_dir, rdf_file, manifest, collection)
   end
 end
 
+def add_and_index_document_in_sesame(item_id, document_json_ld)
+  logger.info "add_and_index_document_in_sesame: start - item_id[#{item_id}], document_json_ld[#{document_json_ld}]"
+
+  unless Rails.env.test?
+
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+    packet = {
+      :cmd => "update_item_in_sesame_with_link",
+      :arg => {
+        :item_id => item_id,
+        :document_json_ld => document_json_ld
+      }
+    }
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
+    stomp_client.close
+  end
+end
+
+# stomp_client is passed in because this method may be called repeatedly on one connection
+# e.g. rake tasks
 def reindex_item_to_solr(item_id, stomp_client)
   logger.info "Reindexing item: #{item_id}"
-  stomp_client.publish('/queue/alveo.solr.worker', "index #{item_id}")
+  packet = {:cmd => "index", :arg => item_id}
+  stomp_client.publish('alveo.solr.worker', packet.to_json)
 end
 
 def delete_item_from_solr(item_id)
@@ -97,48 +119,63 @@ def delete_object_from_solr(object_id)
   logger.info "Deindexing item: #{object_id}"
   #ToDo: refactor this workaround into a proper test mock/stub
   if Rails.env.test?
-    Solr_Worker.new.on_message("delete #{object_id}")
+    json = {:cmd => "delete", :arg => "#{object_id}"}
+    Solr_Worker.new.on_message(JSON.generate(json).to_s)
   else
-    stomp_client = Stomp::Client.open "stomp://localhost:61613"
-    stomp_client.publish('alveo.solr.worker', "delete #{object_id}")
+    stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+    packet = {:cmd => "delete", :arg => object_id}
+    stomp_client.publish('alveo.solr.worker', packet.to_json)
     stomp_client.close
   end
 end
 
-def check_and_create_collection(collection_name, corpus_dir)
+def check_and_create_collection(user_email, collection_name, corpus_dir, json_metadata={}, glob="*-{metadata,ann}.rdf")
 
-  if collection_name == "ice" && File.basename(corpus_dir)!="ice" #ice has different directory structure
-    dir = File.expand_path("../../..", corpus_dir)
-  else
-    dir = File.expand_path("..", corpus_dir)
-  end
-
-  if Dir.entries(dir).include?(collection_name + ".n3")
-    coll_metadata = dir + "/" + collection_name + ".n3"
-  else
-    raise ArgumentError, "No collection metadata file found - #{dir}/#{collection_name}.n3. Stopping ingest."
-  end
+  # KL
+  # if collection_name == "ice" && File.basename(corpus_dir)!="ice" #ice has different directory structure
+  #   dir = File.expand_path("../../..", corpus_dir)
+  # else
+  #   dir = File.expand_path("..", corpus_dir)
+  # end
+  #
+  # # KL: replace .n3 file with db
+  # if Dir.entries(dir).include?(collection_name + ".n3")
+  #   coll_metadata = dir + "/" + collection_name + ".n3"
+  # else
+  #   raise ArgumentError, "No collection metadata file found - #{dir}/#{collection_name}.n3. Stopping ingest."
+  # end
 
   collection = Collection.find_by_name(collection_name)
 
+  # Tip: if the collection doesn't exist, it's created by
+  # update_rdf_graph via update_collection_metadata_from_json
+  # 
   is_new = false
   if collection.nil?
     is_new = true
     logger.info "Creating collection #{collection_name}"
-    create_collection_from_file(coll_metadata, collection_name)
-    collection = Collection.find_by_name(collection_name)
+    # create_collection_from_file(coll_metadata, collection_name)
+    json_metadata = MetadataHelper::update_jsonld_collection_id(json_metadata, collection_name)
+    collection = MetadataHelper::update_collection_metadata_from_json(collection_name, json_metadata)
+
+    # collection = Collection.find_by_name(collection_name)
+
+    # set collection owner
+    collection.owner = User.find_by_email(user_email)
   else
     # Update RDF file path but don't save yet.
-    collection.rdf_file_path = coll_metadata
+    # KL
+    # collection.rdf_file_path = coll_metadata
   end
 
-  paradisec_collection_setup(collection, is_new)
-
-  populate_triple_store(corpus_dir, collection_name, "*-{metadata,ann}.rdf")
+  # paradisec_collection_setup(collection, is_new)
+  populate_triple_store(corpus_dir, collection_name, glob)
 
   collection.save
   collection
 end
+
+
 
 def paradisec_collection_setup(collection, is_new)
   collection_name = collection.name
@@ -176,11 +213,12 @@ end
 
 def create_collection_from_file(collection_file, collection_name)
   coll = Collection.new
+  coll.name = collection_name
 
   coll.rdf_file_path = collection_file
   graph = coll.rdf_graph
   coll.uri = graph.statements.first.subject.to_s
-  coll.name = collection_name
+
 
   if Collection.find_by_uri(coll.uri).present?
     # There is already such a collection in the system
@@ -194,8 +232,8 @@ def create_collection_from_file(collection_file, collection_name)
   logger.info "Collection '#{coll.name}' Metadata = #{coll.id}" unless Rails.env.test?
 end
 
-def look_for_documents(item, corpus_dir, rdf_file, manifest)
-  docs = manifest["files"][File.basename(rdf_file)]["docs"]
+def look_for_documents(item, corpus_dir, rdf_file, item_info)
+  start = Time.now
 
   # Create a primary text in the Item for primary text documents
   begin
@@ -221,7 +259,7 @@ def look_for_documents(item, corpus_dir, rdf_file, manifest)
     Rails.logger.error "Could not connect to triplestore - #{SESAME_CONFIG["url"].to_s}"
   end
 
-  docs.each do |result|
+  item_info["docs"].each do |result|
     identifier = result["identifier"]
     source = result["source"]
     path = URI.decode(URI(source).path)
@@ -248,6 +286,8 @@ def look_for_documents(item, corpus_dir, rdf_file, manifest)
     end
   end
 
+  endTime = Time.now
+  logger.debug("Time for look_for_documents: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
 end
 
 def update_document(document, item, file_name, identifier, source, type, corpus_dir)
@@ -316,39 +356,11 @@ end
 
 #
 # Create collection manifest if one doesn't already exist
-#
+# Deprecated: old ingest route. TODO update tests
 def check_and_create_manifest(corpus_dir)
   if !File.exists? File.join(corpus_dir, MANIFEST_FILE_NAME)
     create_collection_manifest(corpus_dir)
   end
-end
-
-#
-# Updates an existing collection manifest for a directory with the info for new rdf files
-#
-def update_collection_manifest(corpus_dir, rdf_files)
-  logger.info("Updating collection manifest for #{corpus_dir}")
-  overall_start = Time.now
-  failures = []
-
-  manifest_file = File.join(corpus_dir, MANIFEST_FILE_NAME)
-  manifest_hash = JSON.parse(IO.read(manifest_file))
-
-  rdf_files.each do |rdf_file|
-    filename, manifest_entry = extract_manifest_info(rdf_file)
-    manifest_hash["files"][filename] = manifest_entry
-    if !manifest_entry["error"].nil?
-      failures << filename
-    end
-  end
-
-  File.open(manifest_file, 'w') do |file|
-    file.puts(manifest_hash.to_json)
-  end
-
-  endTime = Time.now
-  logger.debug("Time for updating manifest for #{corpus_dir}: (#{'%.1f' % ((endTime.to_f - overall_start.to_f)*1000)}ms)")
-  logger.debug("Failures: #{failures.to_s}") if failures.size > 0
 end
 
 #
@@ -387,6 +399,8 @@ end
 # query the given rdf file to find the collection name
 #
 def extract_manifest_collection(rdf_file)
+  extract_start = Time.now
+
   graph = RDF::Graph.load(rdf_file, :format => :ttl, :validate => true)
   query = RDF::Query.new({
                              :item => {
@@ -400,6 +414,9 @@ def extract_manifest_collection(rdf_file)
   if query.execute(graph).any? { |r| r.collection == "http://ns.austalk.edu.au/corpus" }
     collection_name = "austalk"
   end
+
+  endTime = Time.now
+  logger.debug("Time to extract info from #{rdf_file} (#{'%.1f' % ((endTime.to_f - extract_start.to_f)*1000)}ms)")
 
   collection_name
 end
@@ -439,82 +456,6 @@ def extract_manifest_info(rdf_file)
 
   return filename, hash
 end
-
-def ingest_corpus(corpus_dir, num_spec=:all, shuffle=false, annotations=true)
-
-  label = "Ingesting...\n"
-  label += "   corpus:      #{corpus_dir}\n"
-  label += "   amount:      #{num_spec}\n"
-  label += "   random:      #{shuffle}\n"
-  label += "   annotations: #{annotations}"
-  puts label unless Rails.env.test?
-
-  check_and_create_manifest(corpus_dir)
-
-  overall_start = Time.now
-
-  manifest_file = File.open(File.join(corpus_dir, MANIFEST_FILE_NAME))
-  manifest = JSON.parse(manifest_file.read)
-  manifest_file.close
-
-  collection_name = manifest["collection_name"]
-  begin
-    collection = check_and_create_collection(collection_name, corpus_dir)
-  rescue ArgumentError => e
-    logger.error(e.message)
-    puts e.message
-    return
-  end
-
-  rdf_files = Dir.glob(corpus_dir + '/*-metadata.rdf')
-
-  if num_spec == :all
-    num = rdf_files.size
-  elsif num_spec.is_a? String
-    if num_spec.end_with?('%')
-      # The argument is a percentage
-      num_spec = num_spec.slice(0, num_spec.size-1) # drop the % sign
-      percentage = num_spec.to_f
-      if percentage == 0 || percentage > 100
-        puts "   Percentage should be a number between 0 and 100"
-        exit 1
-      end
-      num = ((rdf_files.size * percentage)/100).to_i
-      num = 1 if num < 1
-    else
-      # The argument is just a number. Well, it should be.
-      num = num_spec.to_i
-      if num == 0 || num > rdf_files.size
-        puts "   Amount should be a number between 0 and the number of RDF files in the corpus (#{rdf_files.size})"
-        exit 1
-      end
-    end
-  end
-
-  logger.info "Ingesting #{num} file#{(num==1) ? '' : 's'} of #{rdf_files.size}"
-  errors = {}
-  successes = {}
-
-  rdf_files.shuffle! if shuffle
-  rdf_files = rdf_files.slice(0, num)
-
-  rdf_files.each do |rdf_file|
-    begin
-      pid = ingest_rdf_file(corpus_dir, rdf_file, annotations, manifest, collection)
-
-      successes[rdf_file] = pid
-    rescue => e
-      logger.error "Error! #{e.message}\n#{e.backtrace}"
-      errors[rdf_file] = e.message
-    end
-  end
-
-  report_results(label, corpus_dir, successes, errors)
-  end_time = Time.now
-  logger.info("Time for ingesting #{corpus_dir}: (#{'%.1f' % ((end_time.to_f - overall_start.to_f)*1000)}ms)")
-
-end
-
 
 def check_corpus(corpus_dir)
 
@@ -656,7 +597,6 @@ def report_check_results(size, corpus_dir, errors, handles)
   end
 end
 
-
 def parse_boolean(string, default=false)
   return default if string.blank? # nil.blank? returns true, so this is also a nil guard.
   return false if string =~ (/(false|f|no|n|0)$/i)
@@ -675,14 +615,16 @@ def setup_collection_list(list_name, licence, *collection_names)
   logger.warn("Didn't create CollectionList #{list_name}") if list.nil?
 end
 
-def send_solr_message(command, objectID)
-  info("Fedora_Worker", "sending instruction to Solr_Worker: #{command} #{objectID}")
-  publish :solr_worker, "#{command} #{objectID}"
-  debug("Fedora_Worker", "Cache size: #{@@cache.size}")
-  @@cache.each_pair { |key, value|
-    debug("Fedora_Worker", "   @cache[#{key}] = #{value}")
-  }
-end
+# Appears to be unused
+# 
+# def send_solr_message(command, objectID)
+#   info("Fedora_Worker", "sending instruction to Solr_Worker: #{command} #{objectID}")
+#   publish :solr_worker, "#{command} #{objectID}"
+#   debug("Fedora_Worker", "Cache size: #{@@cache.size}")
+#   @@cache.each_pair { |key, value|
+#     debug("Fedora_Worker", "   @cache[#{key}] = #{value}")
+#   }
+# end
 
 #
 # Store all metadata and annotations from the given directory in the triplestore
@@ -716,17 +658,25 @@ end
 #
 def populate_triple_store(corpus_dir, collection_name, glob)
   logger.info "Start ingesting files matching #{glob} in #{corpus_dir}"
+  start = Time.now
 
   server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
 
   # First we will create the repository for the collection, in case it does not exists
+  # This returns false if the repo already exists (costs about 4ms)
   server.create_repository(RDF::Sesame::HcsvlabServer::NATIVE_STORE_TYPE, collection_name, "Metadata and Annotations for #{collection_name} collection")
-
+  
   # Create a instance of the repository where we are going to store the metadata
   repository = server.repository(collection_name)
 
+  # KL - deprecated features
   # Now will store every RDF file
-  repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
+  # if !corpus_dir.nil? && !glob.nil?
+  #   repository.insert_from_rdf_files("#{corpus_dir}/**/#{glob}")
+  # end
+
+  endTime = Time.now
+  logger.debug("Time for populate_triple_store: (#{'%.1f' % ((endTime.to_f - start.to_f)*1000)}ms)")
 
   logger.info "Finished ingesting files matching #{glob} in #{corpus_dir}"
 end

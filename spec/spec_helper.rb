@@ -1,8 +1,13 @@
 require 'simplecov'
 require 'simplecov-rcov'
+require 'devise'
+require 'rspec/json_expectations'
+
+# disable code coverage
+ENV["NO_COVERAGE"] = 'true'
 
 SimpleCov.formatter = SimpleCov::Formatter::RcovFormatter
-SimpleCov.start 'rails'
+SimpleCov.start :rails unless ENV["NO_COVERAGE"]
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 ENV["RAILS_ENV"] ||= 'test'
@@ -14,6 +19,10 @@ require 'rspec/rails'
 Dir[Rails.root.join("spec/support/**/*.rb")].each {|f| require f}
 
 RSpec.configure do |config|
+
+  # For Devise <= 4.1.0
+  config.include Devise::TestHelpers, :type => :controller
+
   # ## Mock Framework
   #
   # If you prefer to use mocha, flexmock or RR, uncomment the appropriate line:
@@ -21,6 +30,8 @@ RSpec.configure do |config|
   # config.mock_with :mocha
   # config.mock_with :flexmock
   # config.mock_with :rr
+
+  config.include FactoryGirl::Syntax::Methods
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_path = "#{::Rails.root}/spec/fixtures"
@@ -72,6 +83,7 @@ RSpec.configure do |config|
     clear_jetty
   end
 end
+
 class Warden::SessionSerializer
   def serialize(record)
     record

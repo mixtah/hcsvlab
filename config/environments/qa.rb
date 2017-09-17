@@ -3,10 +3,10 @@ HcsvlabWeb::Application.configure do
   # replace this with your tracker code
   GA.tracker = "UA-49039039-1"
 
-  # TODO: set your own correct URL for action mailer
-  config.action_mailer.default_url_options = { :host => 'alveo-qa.intersect.org.au' }
+  # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
+  Rails.application.routes.default_url_options[:host] = 'alveo-qa.sol1.net'
 
-  config.galaxy_url = 'http://alveo-qa.intersect.org.au:8081/root'
+  config.galaxy_url = 'http://alveo-qa.sol1.net:8081/root'
 
   # Base directory where user contributed annotations will be stored
   config.user_annotations_location = "/data/contributed_annotations/"

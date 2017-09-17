@@ -9,6 +9,7 @@ namespace :sesame do
   #
   # Ingest one collection metadata and annotations, given as an argument
   #
+  desc "Ingest one collection's metadata and annotations"
   task :ingest => :environment do
 
     dir = ENV['dir'] unless ENV['dir'].nil?
@@ -30,8 +31,9 @@ namespace :sesame do
   end
 
   #
-  # Clear and Remove each repository in Sesame
+  # Clear and remove each repository in Sesame
   #
+  desc "Delete all repositories in Sesame"
   task :clear => :environment do
     # Clear Sesame
     server = RDF::Sesame::Server.new(SESAME_CONFIG["url"].to_s)
@@ -42,6 +44,5 @@ namespace :sesame do
       end
     end
   end
-
 
 end

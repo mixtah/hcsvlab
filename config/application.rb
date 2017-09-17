@@ -15,12 +15,15 @@ module HcsvlabWeb
     config.autoload_paths += %W( #{config.root}/lib )
     config.autoload_paths += Dir["#{config.root}/lib/rdf/**/"]
     config.generators do |g|
-      g.stylesheets false
-      g.test_framework :rspec
+      g.test_framework :rspec,
+                       stylesheets: false,
+                       fixtures: true,
+                       helper_specs: true,
+                       controller_specs: true,
+                       view_specs: false,
+                       routing_specs: false,
+                       request_specs: false
       g.fixture_replacement :factory_girl, :dir => "spec/factories"
-      g.view_specs false
-      g.routing_specs false
-      g.request_specs false
     end
 
     # Settings in config/environments/* take precedence over those specified here.
@@ -81,5 +84,16 @@ module HcsvlabWeb
     # The default is set to nil which will display a deprecation error.
     # If set to false we'll skip enforcing available locales altogether (old behaviour).
     config.i18n.enforce_available_locales = false
+
+    # doorkeep customizing views
+    config.to_prepare do
+
+      # include only the ApplicationHelper module
+      # Doorkeeper::ApplicationController.helper ApplicationHelper
+
+      # include all helpers from your application
+      Doorkeeper::ApplicationController.helper HcsvlabWeb::Application.helpers
+
+    end
   end
 end

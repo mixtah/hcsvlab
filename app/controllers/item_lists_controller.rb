@@ -46,14 +46,14 @@ class ItemListsController < ApplicationController
       format.html {
         @response = @item_list.get_items(params[:page], params[:per_page])
         @document_list = @response["response"]["docs"]
-        file_types = ItemList.joins(:items => :documents).where("item_lists.id = ?", @item_list.id).pluck("documents.file_name").map{|f| File.extname(f)}
+        file_types = ItemList.joins(:items => :documents).where("item_lists.id = ?", @item_list.id).pluck("documents.file_name").map { |f| File.extname(f) }
         @doc_filetypes = Hash.new(0)
-        file_types.each {|name| @doc_filetypes[name] += 1}
+        file_types.each { |name| @doc_filetypes[name] += 1 }
 
         authorised_item_handles = @item_list.get_authorised_item_handles
         if @response['response']['numFound'] > authorised_item_handles.size
-          all_collections = @item_list.get_item_handles.collect { |item| item.split(":")[0]}.uniq
-          collections_with_permission = authorised_item_handles.collect { |item| item.split(":")[0]}.uniq
+          all_collections = @item_list.get_item_handles.collect { |item| item.split(":")[0] }.uniq
+          collections_with_permission = authorised_item_handles.collect { |item| item.split(":")[0] }.uniq
           @missing_collections = (all_collections - collections_with_permission).join(", ")
           @message = "You only have access to #{authorised_item_handles.size} out of #{@response['response']['numFound']} Items in this shared Item List."
         end
@@ -91,18 +91,26 @@ class ItemListsController < ApplicationController
           flash[:error] = "Zip download is limited to #{download_max_files} files"
           redirect_to @item_list and return
         end
-        download_as_zip(@item_list.get_item_handles, "#{@item_list.name}.zip", doc_filter)
-      }
-      format.warc {
-        if @item_list.get_item_handles.length == 0
-          flash[:error] = "No items in the item list you are trying to download"
-          redirect_to @item_list and return
-        end
 
-        download_as_warc(@item_list.get_item_handles, "#{@item_list.name}.warc")
+        # file structure
+        file_structure = params[:file_structure].nil? ? 'flat' : params[:file_structure]
+
+        download_as_zip(@item_list.get_item_handles, "#{@item_list.name}.zip", doc_filter, file_structure)
+
       }
+      # format.warc {
+      #   if @item_list.get_item_handles.length == 0
+      #     flash[:error] = "No items in the item list you are trying to download"
+      #     redirect_to @item_list and return
+      #   end
+      #
+      #   download_as_warc(@item_list.get_item_handles, "#{@item_list.name}.warc")
+      # }
     end
   end
+
+
+
 
   def aspera_transfer_spec
     respond_to do |format|

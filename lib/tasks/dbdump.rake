@@ -12,7 +12,7 @@ begin
       db_backup backup_dir
     end
 
-    desc "Backup the database"
+    desc "Trim database backups"
     task :trim_backups => :environment do
       backup_dir = Rails.root.join 'db_dumps'
       at_most = 5

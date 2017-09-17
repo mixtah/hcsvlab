@@ -9,3 +9,5 @@ require File.dirname(__FILE__) + '/seed_helper.rb'
 
 create_roles_and_permissions
 seed_languages
+seed_licences
+seed_metadata_field_name_mapping

@@ -25,7 +25,7 @@ end
 Given /^I have a user "([^"]*)" with role "([^"]*)"$/ do |email, role|
   user = FactoryGirl.create(:user, :email => email, :password => "Pas$w0rd", :status => 'A')
   role = Role.where(:name => role).first
-  user.role_id = role.id
+  user.role_id = role.ida
   user.save!
 end
 
@@ -88,3 +88,17 @@ Given(/^I have (\d+) (active|deactivated) users with role "(.*?)"$/) do |count, 
     user.save!
   end
 end
+
+Given /^I am a guest \(not signed in yet\)$/ do
+  set_html_request
+end
+
+When(/^I visit the system website \(\/\)$/) do
+  visit path_to('the home page')
+end
+
+Then(/^I should see the collection page$/) do
+  # visit path_to('the catalog page')
+  page.should have_content('Select a collection to view general information about that collection')
+end
+

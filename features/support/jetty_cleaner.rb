@@ -38,7 +38,8 @@ end
 
 Before do |scenario|
   clear_jetty
-  if scenario.instance_of?(Cucumber::Ast::Scenario)
+  # if scenario.instance_of?(Cucumber::Ast::Scenario)
+  if scenario.instance_of?(Cucumber::Core::Ast::Scenario)
     if scenario.feature_tags.tags.collect(&:name).include?("@ingest_qa_collections")
       ingest_test_collections
     end

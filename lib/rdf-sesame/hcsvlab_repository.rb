@@ -22,7 +22,7 @@ module RDF::Sesame
   #   repository = server.repository(:SYSTEM)
   #
   # @see RDF::Sesame
-  # @see http://www.openrdf.org/doc/sesame2/system/ch08.html
+  # @see http://www.rubydoc.info/github/ruby-rdf/rdf-sesame/RDF/Sesame/Repository
   class HcsvlabRepository < RDF::Sesame::Repository
 
     #

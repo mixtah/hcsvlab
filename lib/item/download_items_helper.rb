@@ -1,108 +1,57 @@
 module Item::DownloadItemsHelper
   require Rails.root.join('lib/api/node_api')
 
+
   DEFAULT_DOCUMENT_FILTER = '*'
   EXAMPLE_DOCUMENT_FILTER = '*-raw.txt'
 
-  def generate_aspera_transfer_spec(item_list, document_filter=DEFAULT_DOCUMENT_FILTER)
-    if item_list.items.empty?
-      render :json => {message: 'No items were found to download'}.to_json and return
-    end
-
-    # create directory for storing the temporary files generated for item metadata and item log
-    metadata_dir = File.join(Rails.application.config.aspera_temp_dir, SecureRandom.uuid)
-    FileUtils.rm_rf metadata_dir if Dir.exists?(metadata_dir)
-    Dir.mkdir(metadata_dir)
-
-    transfer_spec = DownloadItemsInFormat.new(current_user, current_ability).create_aspera_transfer_spec(item_list, metadata_dir, document_filter)
-
-    if transfer_spec
-      render :json => {transfer_spec: transfer_spec}.to_json
-    else
-      render :json => {message: 'Unexpected error occurred'}.to_json
-    end
-  rescue => e
-    Rails.logger.error(e.message + "\n " + e.backtrace.join("\n "))
-
-    FileUtils.rm_rf metadata_dir if metadata_dir && Dir.exists?(metadata_dir)
-
-    render :json => {error: "Internal Server Error"}.to_json, :status => 500
+  def get_files_by_items(item_handles, document_filter=DEFAULT_DOCUMENT_FILTER)
+    logger.debug "get_files_by_items: start item_handles=#{item_handles}, document_filter=#{document_filter}"
+    DownloadItemsInFormat.new(current_user, current_ability).get_files(item_handles, document_filter)
+    logger.debug "get_files_by_items: end"
   end
 
-  def download_as_zip(itemHandles, file_name, document_filter=DEFAULT_DOCUMENT_FILTER)
+  #
+  # Download documents as zip
+  #
+  # file_structure: flat or bagit
+  #
+  def download_as_zip(itemHandles, file_name, document_filter=DEFAULT_DOCUMENT_FILTER, file_structure='flat')
     begin
       cookies.delete("download_finished")
 
       bench_start = Time.now
 
       # Creates a ZIP file containing the documents and item's metadata
-      zip_path = DownloadItemsInFormat.new(current_user, current_ability).create_and_retrieve_zip_path(itemHandles, document_filter)
+      zip_path = DownloadItemsInFormat.new(current_user, current_ability).create_and_retrieve_zip_path(itemHandles, document_filter, file_structure)
 
-      # Sends the zipped file
-      send_data IO.read(zip_path), :type => 'application/zip',
-                :disposition => 'attachment',
-                :filename => file_name
-
-      Rails.logger.debug("Time for downloading metadata and documents for #{itemHandles.length} items: (#{'%.1f' % ((Time.now.to_f - bench_start.to_f)*1000)}ms)")
-      cookies["download_finished"] = {value:"true", expires: 1.minute.from_now}
-      return
-
-    rescue Exception => e
-      Rails.logger.error(e.message + "\n " + e.backtrace.join("\n "))
-    ensure
-      # Ensure zipped file is removed
-      FileUtils.rm zip_path if !zip_path.nil?
-    end
-    respond_to do |format|
-      format.html {
-        flash[:error] = "Sorry, an unexpected error occur."
-        redirect_to @item_list and return
-      }
-      format.any { render :json => {:error => "Internal Server Error"}.to_json, :status => 500 }
-    end
-  end
-
-
-  def download_as_warc(itemHandles, file_name)
-    begin
-      cookies.delete("download_finished")
+      logger.debug("download_as_zip: Time for generating zip as #{file_structure} for #{itemHandles.length} items: (#{'%.1f' % ((Time.now.to_f - bench_start.to_f)*1000)}ms)")
 
       bench_start = Time.now
 
-      dont_show = Set.new(Item.development_only_fields)
-
-      # Creates a WARC file containing the documents and item's metadata
-      archive_path = DownloadItemsInFormat.new(current_user, current_ability).createAndRetrieveWarcPath(itemHandles, request.original_url) do |aDoc|
-        @document = aDoc
-        itemMetadata = {}
-        keys = aDoc.keys
-        aDoc.keys.each { |key|
-          itemMetadata[key] = aDoc[key].join(', ') unless dont_show.include?(key)
-        }
-        itemMetadata
-      end
-
-      # Sends the archive file
-      send_data IO.read(archive_path), :type => 'application/warc',
+      send_file zip_path, :type => 'application/zip',
                 :disposition => 'attachment',
                 :filename => file_name
 
-      Rails.logger.debug("Time for downloading metadata and documents for #{itemHandles.length} items: (#{'%.1f' % ((Time.now.to_f - bench_start.to_f)*1000)}ms)")
-      cookies["download_finished"] = {value:"true", expires: 1.minute.from_now}
+      Rails.logger.debug("download_as_zip: Time for downloading zip: (#{'%.1f' % ((Time.now.to_f - bench_start.to_f)*1000)}ms)")
+
+      cookies["download_finished"] = {value: "true", expires: 1.minute.from_now}
+
       return
 
     rescue Exception => e
-      Rails.logger.error(e.message + "\n " + e.backtrace.join("\n "))
+
+      Rails.logger.error(e.inspect + "\n " + e.backtrace.join("\n "))
     ensure
-      # Ensure archive file is removed
-      FileUtils.rm archive_path if !archive_path.nil?
+      # Ensure zipped file is removed
+      # FileUtils.rm zip_path if !zip_path.nil?
     end
     respond_to do |format|
       format.html {
         flash[:error] = "Sorry, an unexpected error occur."
         redirect_to @item_list and return
       }
-      format.any { render :json => {:error => "Internal Server Error"}.to_json, :status => 500 }
+      format.any {render :json => {:error => "Internal Server Error"}.to_json, :status => 500}
     end
   end
 
@@ -120,6 +69,70 @@ module Item::DownloadItemsHelper
       end
       filtered_filenames
     end
+  end
+
+  #
+  # Clean tmp download dir
+  #
+  def self.tmp_dir_cleaning
+    logger.debug "tmp_dir_cleaning: start"
+
+    # collect tmp file names
+    filenames = Dir[File.join(APP_CONFIG['download_tmp_dir'], "*")].select {|f| File.file?(f)}
+    logger.debug filenames
+    filenames.each do |filename|
+      if filter_expired_tmp_files(filename)
+        #   match, can delete
+        File.delete(filename)
+        logger.debug "tmp_dir_cleaning: #{filename} deleted"
+      end
+    end
+
+    logger.debug "tmp_dir_cleaning: end"
+  end
+
+  # Filter file by:
+  #
+  # 1. filename - if filename contains timestamp info (xxx_[timestamp].tmp)
+  # 2. else, check file creation time (File.mtime)
+  #
+  # @param [String] filename
+  # @param [String] expired_time (hours)
+  # @return true if filename match (expired), otherwise false
+  #
+  def self.filter_expired_tmp_files(filename, expired_time=APP_CONFIG['download_expired_time'])
+    logger.debug "filter_expired_tmp_files: start filename=#{filename}, expired_time=#{expired_time}"
+    rlt = false
+
+    unless filename.nil?
+      # check filename
+      timestamp = nil
+      if match = filename.match(/.+_(\d+)\.tmp$/)
+        timestamp = match.captures.first
+      end
+
+      i_timestamp = -1
+
+      begin
+        if timestamp.nil?
+          #   can't extract timestamp info from filename, so extract from file creation time
+          i_timestamp = File.mtime(filename).to_i
+        else
+          i_timestamp = timestamp.to_i
+        end
+
+        if (Time.now.getutc.to_i - i_timestamp) > expired_time.to_i*60*60
+          rlt = true
+        end
+
+      rescue Exception => e
+        logger.error e.message
+      end
+    end
+
+    logger.debug "filter_expired_tmp_files: end rlt=#{rlt}"
+    return rlt
+
   end
 
   class DownloadItemsInFormat
@@ -147,314 +160,110 @@ module Item::DownloadItemsHelper
       @current_ability = current_ability
     end
 
+    def get_files(item_handles, document_filter)
+      result = verify_items_permissions_and_extract_metadata(item_handles, document_filter)
 
-    def create_aspera_transfer_spec(item_list, metadata_dir, document_filter)
-      get_aspera_transfer_spec_for_documents_and_metadata(item_list, metadata_dir, document_filter)
-    end
+      filenames_by_item = get_filenames_from_item_results(result)
 
-    #
-    #
-    #
-    def createAndRetrieveWarcPath(itemHandles, url, &block)
-      get_warc_with_documents_and_metadata(itemHandles, url, &block)
-    end
+      filenames = []
+      filenames_by_item.each_value do |value|
+        Item::DownloadItemsHelper.filter_item_files(value[:files], document_filter).each do |file|
+          # The original file, including the path to find it
+          filenames << file.to_s
 
-        #
-    # Creates a ZIP file containing all the documents and metadata for the items listed in 'itemHandles'.
-    # The returned format respect the BagIt format (http://en.wikipedia.org/wiki/BagIt)
-    #
-    def create_and_retrieve_zip_path(item_handles, document_filter)
-      if item_handles.present?
-        begin
-          result = verify_items_permissions_and_extract_metadata(item_handles)
-
-          fileNamesByItem = get_filenames_from_item_results(result)
-          digest_filename = Digest::MD5.hexdigest(result[:valids].inspect.to_s)
-          bagit_path = "#{Rails.root.join("tmp", "#{digest_filename}_tmp")}"
-          Dir.mkdir bagit_path
-
-          # make a new bag at base_path
-          bag = BagIt::Bag.new bagit_path
-
-          # add items metadata to the bag
-          add_items_metadata_to_the_bag_powered(result[:metadata], bag)
-
-          remote_tmpdir = Dir.mktmpdir
-
-          # add items documents to the bag
-          add_items_documents_to_the_bag(fileNamesByItem, bag, document_filter, remote_tmpdir)
-
-          # Add Log File
-          bag.add_file("log.json") do |io|
-            io.puts generate_json_log(result[:valids], result[:invalids])
-          end
-
-          # generate the manifest and tagmanifest files
-          bag.manifest!
-
-          zip_path = "#{Rails.root.join("tmp", "#{digest_filename}.tmp")}"
-          zip_file = File.new(zip_path, 'a+')
-          ZipBuilder.build_zip(zip_file, Dir["#{bagit_path}/*"])
-
-          zip_path
-        ensure
-          zip_file.close if !zip_file.nil?
-          FileUtils.rm_rf bagit_path if !bagit_path.nil?
-          FileUtils.remove_entry_secure remote_tmpdir
+          # TODO: if remote, fetch to tmp
         end
       end
+
+      filenames
+    end
+
+    def create_and_retrieve_zip_path(item_handles, document_filter, file_structure)
+      logger.debug "create_and_retrieve_zip_path: start item_handles[#{item_handles}], document_filter[#{document_filter}], file_structure[#{file_structure}]"
+      rlt = zip_as_flat(item_handles, document_filter)
+
+      logger.debug "create_and_retrieve_zip_path: end #{rlt}"
+
+      rlt
+    end
+
+    #
+    # Retrieve filenames from documents.file_path thru items
+    #
+    def get_filenames_from_item(item_handles, document_filter)
+      logger.debug "get_filenames_from_item: item_handles[#{item_handles}], document_filter[#{document_filter}]"
+
+      rlt = []
+      filenames = []
+
+      item_handles.each do |handle|
+        item = Item.find_by_handle(handle)
+
+        if !item.nil?
+          docs = Document.find_all_by_item_id(item.id)
+
+          docs.each do |doc|
+            filenames << doc.file_path
+          end
+        end
+      end
+
+      Item::DownloadItemsHelper.filter_item_files(filenames, document_filter).each do |file|
+        rlt << file
+      end
+
+      logger.debug "get_filenames_from_item: rlt[#{rlt}]"
+
+      rlt
+    end
+
+    def zip_as_flat(item_handles, document_filter)
+      rlt = nil
+
+      if item_handles.present?
+        begin
+          result = verify_items_permissions_and_extract_metadata(item_handles, document_filter)
+          digest_filename = Digest::MD5.hexdigest(result[:valids].inspect.to_s) + "_" + Time.now.getutc.to_i.to_s
+
+          # retrieve filenames from documents.file_path by item
+          filenames = get_filenames_from_item(item_handles, document_filter)
+
+          # Set download_tmp_dir as an absolute path if it starts with "/"
+          # or otherwise relative to Rails.root
+          tmp_dir = APP_CONFIG['download_tmp_dir']
+          if !tmp_dir.start_with?("/")
+            tmp_dir = Rails.root.join(APP_CONFIG['download_tmp_dir'])
+          end
+
+          FileUtils.mkdir_p(tmp_dir) unless File.directory?(tmp_dir)
+          zip_path = File.join(tmp_dir, "#{digest_filename}.tmp")
+
+          ZipBuilder.build_simple_zip_from_files(zip_path, filenames)
+
+          rlt = zip_path
+        rescue Exception => e
+          logger.error "zip_as_flat: #{e.message}"
+        end
+      end
+
+      rlt
     end
 
     private
-
-    def get_aspera_transfer_spec_for_documents_and_metadata(item_list, transfer_dir, document_filter)
-      item_handles = item_list.get_item_handles
-      return nil if item_handles.empty?
-
-      result = verify_items_permissions_and_extract_metadata(item_handles)
-
-      # get item files and create metadata files and log files
-      item_files = get_items_files(result, document_filter)
-      metadata_files = create_items_metadata_files(result, transfer_dir)
-      log_file = create_items_log_file(result, transfer_dir)
-      
-      request_aspera_transfer_spec(item_list.name, [item_files, metadata_files, log_file].flatten)
-    end
 
     def get_items_files(result, document_filter)
       filenames = get_filenames_from_item_results(result)
       filenames.map do |key, value|
         dir = value[:handle]
         files = Item::DownloadItemsHelper.filter_item_files(value[:files], document_filter)
-        files.map { |file| { dir: dir, file: file } }
+        files.map {|file| {dir: dir, file: file}}
       end.flatten
     end
 
-    def create_items_metadata_files(result, transfer_dir)
-      items_metadata = result[:metadata]
-      items_metadata.map do |key, value|
-        metadata = value[:metadata]
-        handle = metadata['metadata']['handle'].gsub(":", "_")
-        file = File.join(transfer_dir, "#{handle}/#{handle}-metadata.json")
-
-        # write metadata to file
-        FileUtils.mkdir_p File.dirname(file)
-        File.open(file , 'w+') do |f|
-          f.write(metadata.to_json)
-        end
-
-        { dir: handle, file: file }
-      end
-    end
-
-    def create_items_log_file(result, transfer_dir)
-      file = File.join(transfer_dir, 'log.json')
-      File.open(file, 'w+') do |f|
-        f.write(generate_json_log(result[:valids], result[:invalids]))
-      end
-      { dir: '.', file: file }
-    end
-
-    def request_aspera_transfer_spec(items_dir, requested_files)
-      source_paths = requested_files.map {|file| { source: File.join(aspera_base_dir, file[:file]), destination: "/#{items_dir}/#{file[:dir]}/#{File.basename(file[:file])}" }}
-      download_request = {
-        transfer_requests: [
-          transfer_request: {
-            source_root: '',
-            paths: source_paths
-          }
-        ]
-      }
-      node_api = NodeAPI.new(aspera_nodeapi_config)
-      result = node_api.download_setup(download_request)
-      transfer_spec = result['transfer_specs'][0]['transfer_spec']
-      transfer_spec['authentication'] = 'token'
-      transfer_spec
-    end
-
-    def aspera_nodeapi_config
-      Rails.application.config.aspera_nodeapi_config
-    end
-
-    def aspera_base_dir
-      Rails.application.config.aspera_base_dir
-    end
-
-    #
-    # Creates a WARC file containing all the documents and metadata for the items listed in 'itemHandles'.
-    #
-    def get_warc_with_documents_and_metadata(item_handles, url, &block)
-      if item_handles.present?
-        begin
-          result = verify_items_permissions_and_extract_metadata(item_handles)
-
-          fileNamesByItem = get_filenames_from_item_results(result)
-
-          digest_filename = Digest::MD5.hexdigest(result[:valids].inspect.to_s)
-          archive_path = "#{Rails.root.join("tmp", "#{digest_filename}.warc")}"
-          logger.debug "WARC path is #{archive_path}"
-          warc = WARCWriter.new(archive_path)
-
-          warc.add_warcinfo(url, url)
-
-          base_url = url.sub(/item_lists.*/, "")
-
-          # add items metadata to the archive
-          add_items_metadata_to_the_warc(fileNamesByItem, warc, base_url, &block)
-
-          # add items documents to the archive
-          add_items_documents_to_the_warc(fileNamesByItem, warc, base_url)
-
-          # Add Log File
-          warc.add_record_from_string({}, generate_json_log(result[:valids], result[:invalids]))
-
-          archive_path
-        ensure
-          warc.close
-        end
-
-      end
-    end
-
-    #
-    # =========================================================================
-    # Constructing a WARC file
-    # =========================================================================
-    #
-
-    #
-    # This method will add all the documents listed in 'fileNamesByItem' to the WARC
-    #
-    # fileNamesByItem = Hash structure containing the items id as key and the list of files as value
-    #                   Example:
-    #                           {"hcsvlab:1003"=>{handle: "handle1", files:["full_path1, full_path2, .."]} ,
-    #                            "hcsvlab:1034"=>{handle: "handle2", files:["full_path4, full_path5, .."]}}
-    # warc = A WARCWriter which has been opened for write.
-    #
-    def add_items_documents_to_the_warc(fileNamesByItem, warc, base_url)
-
-      fileNamesByItem.each_pair do |itemId, info|
-        filenames = info[:files]
-        metadata  = info[:metadata] || {}
-
-        indexable_text_document = (filenames.select {|f| f.include? "-plain.txt"}).empty? ? "" : (filenames.select {|f| f.include? "-plain.txt"})[0]
-        collectionName = info[:handle].split(':').first
-        itemIdentifier = info[:handle].split(':').last
-        if File.exist?(indexable_text_document)
-          title = indexable_text_document.split('/').last
-          warc.add_record_from_file(metadata.merge({"WARC-Type" => "response", "WARC-Record-ID" => "#{base_url}catalog/#{collectionName}/#{itemIdentifier}/document/#{title}"}), indexable_text_document)
-        elsif indexable_text_document.blank?
-          logger.warn("No primary (plaintext) document found for Item #{itemId}")
-          warc.add_record_metadata(metadata.merge({"WARC-Type" => "response", "WARC-Record-ID" => "#{base_url}catalog/#{collectionName}/#{itemIdentifier}"}))
-        else
-          logger.warn("Document file #{indexable_text_document} does not exist (part of Item #{itemId}")
-          warc.add_record_metadata(metadata.merge({"WARC-Type" => "response", "WARC-Record-ID" => "#{base_url}catalog/#{collectionName}/#{itemIdentifier}"}))
-        end
-      end
-    end
-
-    #
-    # This method will add each item metadata for the items listed in 'fileNamesByItem' into
-    # fileNamesByItem under the [:metadata] key.
-    # It will also modify the parameter 'fileNamesByItem' to set the item handle
-    #
-    # fileNamesByItem = Hash structure containing the items id as key and the list of files as value
-    #                   Example:
-    #                           {"hcsvlab:1003"=>{handle: "handle1", files:["full_path1, full_path2, .."]} ,
-    #                            "hcsvlab:1034"=>{handle: "handle2", files:["full_path4, full_path5, .."]}}
-    # warc = A WARCWriter which has been opened for write.
-    #
-    def add_items_metadata_to_the_warc(fileNamesByItem, warc, base_url, batch_group = 50, &block)
-      itemsId = fileNamesByItem.keys
-      itemsId.in_groups_of(batch_group, false) do |groupOfItemsId|
-        # create disjunction condition with the items Ids
-        condition = groupOfItemsId.map{|itemId| "id:\"#{itemId.gsub(":", "\:")}\""}.join(" OR ")
-
-        params = {}
-        params[:q] = condition
-        params[:rows] = FIXNUM_MAX
-
-        (response, document_list) = get_search_results params
-        document_list.each do |aDoc|
-          handle = aDoc['handle']
-          itemId = aDoc['id']
-          fileNamesByItem[itemId][:handle] = handle
-
-          # Render the view as JSON
-          itemMetadata = block.call aDoc
-          fileNamesByItem[itemId][:metadata] = itemMetadata
-        end
-      end
-    end
-    #
-    # End of Constructing a WARC file
-    # -------------------------------------------------------------------------
-    #
-
-
-    #
-    # =========================================================================
-    # Constructing a 'BagIt' format bag
-    # =========================================================================
-    #
-
-    #
-    # This method will add all the documents listed in 'fileNamesByItem' to the 'bag'
-    #
-    # fileNamesByItem = Hash structure containing the items id as key and the list of files as value
-    #                   Example:
-    #                           {"hcsvlab:1003"=>{handle: "handle1", files:["full_path1, full_path2, .."]} ,
-    #                            "hcsvlab:1034"=>{handle: "handle2", files:["full_path4, full_path5, .."]}}
-    # bag = BagIt::Bag object
-    #
-    def add_items_documents_to_the_bag(fileNamesByItem, bag, document_filter, remote_tmpdir)
-      fileNamesByItem.each_pair do |itemId, info|
-        file_uris = info[:files]
-        handle = (info[:handle].nil?)? itemId.gsub(":", "_") : info[:handle]
-
-        file_uris = Item::DownloadItemsHelper.filter_item_files(file_uris, document_filter)
-              
-        file_uris.each do |file_uri|
-          uri = RDF::URI.new(file_uri)
-          filename = File.basename(uri.path)
-          filepath = file_uri
-
-          # Write remote files to a local cache
-          if uri.scheme and uri.scheme.starts_with? 'http'
-            filepath = File.join(remote_tmpdir, filename)
-            File.open(filepath, 'w') { |file|
-              contents = open(uri).read
-              contents = contents.force_encoding(Encoding::UTF_8)
-              file.write(contents)
-            }
-          end
-          bag.add_file_link("#{handle}/#{filename}", filepath)
-
-        end
-
-      end
-    end
-
     #
     #
     #
-    def add_items_metadata_to_the_bag_powered(metadata, bag)
-      metadata.each_pair do |key, value|
-        # Render the view as JSON
-        itemMetadata = value[:metadata]
-        handle = itemMetadata['metadata']['handle'].gsub(":", "_")
-
-        bag.add_file("#{handle}/#{handle}-metadata.json") do |io|
-          io.puts itemMetadata.to_json
-        end
-
-      end
-    end
-
-    #
-    #
-    #
-    def verify_items_permissions_and_extract_metadata(item_handles, batch_group=2500)
+    def verify_items_permissions_and_extract_metadata(item_handles, document_filter, batch_group=2500)
       valids = []
       invalids = []
       metadata = {}
@@ -462,6 +271,9 @@ module Item::DownloadItemsHelper
       licence_ids = UserLicenceAgreement.where(user_id: @current_user.id).pluck('distinct licence_id')
       t = Collection.arel_table
       collection_ids = Collection.where(t[:licence_id].in(licence_ids).or(t[:owner_id].eq(current_user.id))).pluck(:id)
+
+      bench_start = Time.now
+      audit_info = []
 
       item_handles.in_groups_of(batch_group, false) do |item_handle_group|
         query = Item.indexed.where(collection_id: collection_ids, handle: item_handle_group).select([:id, :handle, :json_metadata])
@@ -478,15 +290,24 @@ module Item::DownloadItemsHelper
             json.delete('documentsLocations')
           else
             files = []
-            json['ausnc:document'].each{ |doc|
-              files << doc['dc:source']
+            json['ausnc:document'].each {|doc|
+              files << doc['dcterms:source']
             }
             metadata[item.id][:files] = files
-            json['metadata'] = { 'handle' =>item.handle}
+            json['metadata'] = {'handle' => item.handle}
           end
           metadata[item.id][:metadata] = json
           item.documents.each do |doc|
-            DocumentAudit.create(document: doc, user: current_user)
+            # DocumentAudit.create(document: doc, user: current_user)
+
+            # only handle filtered document
+            filtered_file = Item::DownloadItemsHelper.filter_item_files(Array.[](doc.file_name), document_filter)
+            if filtered_file.size > 0
+              arr = []
+              arr[0] = doc.id
+              arr[1] = current_user.id
+              audit_info << arr
+            end
           end
         end
 
@@ -494,9 +315,20 @@ module Item::DownloadItemsHelper
 
       end
 
+      DocumentAudit.batch_create(audit_info)
+
+      bench_end = Time.now
+
+      logger.debug "verify_items_permissions_and_extract_metadata: total document_audit: #{audit_info.size}, elasped: #{'%.1f' % ((bench_end.to_f - bench_start.to_f)*1000)}ms"
+
       {valids: valids, invalids: invalids, metadata: metadata}
     end
 
+
+    # filenames_by_item = Hash structure containing the items id as key and the list of files as value
+    # Example:
+    #   {"hcsvlab:1003"=>{handle: "handle1", files:["full_path1, full_path2, .."]} ,
+    #   "hcsvlab:1034"=>{handle: "handle2", files:["full_path4, full_path5, .."]}}
     def get_filenames_from_item_results(result)
       metadata = result[:metadata]
 
@@ -508,14 +340,6 @@ module Item::DownloadItemsHelper
       end
 
       fileNamesByItem
-    end
-
-    def generate_json_log(valids, invalids)
-      json_log = {}
-      json_log[:successful] = valids.length
-      json_log[:unsuccessful] = invalids.length
-      json_log[:unsuccessful_items] = invalids
-      json_log.to_json
     end
 
     #
@@ -531,7 +355,7 @@ module Item::DownloadItemsHelper
     def get_solr_connection
       if @@solr_config.nil?
         @@solr_config = Blacklight.solr_config
-        @@solr        = RSolr.connect(@@solr_config)
+        @@solr = RSolr.connect(@@solr_config)
       end
     end
 

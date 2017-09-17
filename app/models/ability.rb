@@ -9,7 +9,7 @@ class Ability
   def initialize(user)
 
     # From Hydra::Ability.initialize
-    @current_user = user || User.new # guest user (not logged in)
+    @current_user = user || User.new # visitor (not logged in)
     @user = @current_user # just in case someone was using this in an override. Just don't.
     @session = session
     @cache = Hydra::PermissionsCache.new
@@ -31,7 +31,10 @@ class Ability
 
     alias_action :aspera_transfer_spec, :to => :read
 
-    return if user.nil? || ! defined?(user.role)
+    # KL: allow visitor to continue, so don't need to check user role
+    # return if user.nil? || ! defined?(user.role)
+    return if user.nil?
+
     #return unless user.role
 
     ############################################################
@@ -41,6 +44,7 @@ class Ability
     is_superuser = user.is_superuser?
     is_data_owner = user.is_data_owner?
     is_researcher = user.is_researcher?
+
     user_id = user.id
 
     if is_superuser
@@ -51,8 +55,12 @@ class Ability
       can :reject, User
       can :approve, User
     end
-    can :accept_licence_terms, User
-    can :send_licence_request, User
+
+    if user.role
+      can :accept_licence_terms, User
+      can :send_licence_request, User
+    end
+
 
     ############################################################
     ##          PERMISSIONS OVER BLACKLIGHT CATALOG           ##
@@ -68,53 +76,75 @@ class Ability
     elsif is_researcher
       can :read, Blacklight::Catalog
       cannot :manage, Licence
+    else
+      # visitor
+      can :read, Blacklight::Catalog
     end
 
     ############################################################
     ##          PERMISSIONS OVER ITEM LIST                    ##
     ############################################################
 
-    can :manage, ItemList, :user_id => user_id
-    can :read, ItemList, shared: true
-    can :frequency_search, ItemList, shared: true
-    can :concordance_search, ItemList, shared: true
+    if is_superuser || is_data_owner || is_researcher
+      # role
+      can :manage, ItemList, :user_id => user_id
+      can :read, ItemList, shared: true
+      can :frequency_search, ItemList, shared: true
+      can :concordance_search, ItemList, shared: true
+    else
+      # visitor
+      can :read, ItemList, shared: true
+    end
+
 
     ############################################################
     ##          PERMISSIONS OVER COLLECTIONS                  ##
     ############################################################
-    can :add_licence_to_collection, Collection, owner_id: user_id
+    if is_superuser || is_data_owner || is_researcher
+      can :add_licence_to_collection, Collection, owner_id: user_id
 
-    can :change_collection_privacy, Collection, owner_id: user_id
+      can :change_collection_privacy, Collection, owner_id: user_id
 
-    can :revoke_access, Collection, owner_id: user_id
+      can :revoke_access, Collection, owner_id: user_id
 
-    can :delete_item_via_web_app, Collection, owner_id: user_id
+      can :delete_item_via_web_app, Collection, owner_id: user_id
 
-    can :delete_document_via_web_app, Collection, owner_id: user_id
+      can :delete_document_via_web_app, Collection, owner_id: user_id
 
-    can :web_add_item, Collection, owner_id: user_id
+      can :web_add_item, Collection, owner_id: user_id
 
-    can :web_add_document, Collection, owner_id: user_id
+      can :web_add_document, Collection, owner_id: user_id
 
-    # User can discover a collection only if he/she is the owner or if he/she was granted
-    # with discover, read or edit access to that collection
-    can :discover, Collection
-    # User can read a collection only if he/she is the owner or if he/she was granted
-    # with read or edit access to that collection
-    can :read, Collection
+      # User can discover a collection only if he/she is the owner or if he/she was granted
+      # with discover, read or edit access to that collection
+      can :discover, Collection
+      # User can read a collection only if he/she is the owner or if he/she was granted
+      # with read or edit access to that collection
+      can :read, Collection
+    else
+      #   visitor
+      can :read, Collection
+    end
 
     # User can edit a collection only if he/she is the owner or if he/she was granted
     # with edit access to that collection
-    #can :edit, Collection do |aCollection|
+    # can :edit, Collection do |aCollection|
     #  (user.id.eql? aCollection.owner_id) or
     #      ((user.groups & aCollection.edit_groups).length > 0)
     #end
 
-    if is_data_owner or is_superuser
+    if is_data_owner || is_superuser
       can :create, Collection
       can :web_create_collection, Collection
+      can :edit_collection, Collection
+      can :update_collection, Collection
     else
       cannot :create, Collection
+    end
+
+    #  Only superuser can delete collection
+    if is_superuser
+      can :delete_collection, Collection
     end
 
     ############################################################
