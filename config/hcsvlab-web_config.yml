@@ -10,14 +10,13 @@ defaults: &defaults
   # tmp file expired time - hours
   download_expired_time: 24
 
-
 development:
   <<: *defaults
-  download_tmp_dir: tmp/hcsvlab_download
+  download_tmp_dir: /data/hcsvlab_download
 
 test:
   <<: *defaults
-  download_tmp_dir: tmp/hcsvlab_download
+  download_tmp_dir: /data/hcsvlab_download
 
 production:
   password_reset_email_sender: steve.cassidy@mq.edu.au
