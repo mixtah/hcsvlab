@@ -475,7 +475,12 @@ module MetadataHelper
 
   #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
   def self::update_jsonld_collection_id(collection_metadata, collection_name)
-    collection_metadata["@id"] = UrlGenerator.new.collection_url(collection_name)
+
+    # TODO: replace hard-code with proper config
+    id = UrlGenerator.new.collection_url(collection_name).sub("http://app.alveo.edu.au", "https://app.alveo.edu.au")
+
+    collection_metadata["@id"] = id
+
     collection_metadata
   end
 

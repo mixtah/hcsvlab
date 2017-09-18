@@ -12,8 +12,8 @@
 # e.g.,
 # {
 #   "speakers": [
-#       "http://app.alveo.edu.au/speakers/austalk/1_116",
-#       "http://app.alveo.edu.au/speakers/austalk/1_117"
+#       "https://app.alveo.edu.au/speakers/austalk/1_116",
+#       "https://app.alveo.edu.au/speakers/austalk/1_117"
 #   ]
 # }
 

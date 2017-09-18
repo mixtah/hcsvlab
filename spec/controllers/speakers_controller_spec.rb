@@ -54,8 +54,8 @@ describe SpeakersController, :type => :controller do
         #
         # expect(json).to include_json(
         #   speakers: [
-        #     "http://app.alveo.edu.au/speakers/#{@collection.name}/1_116",
-        #     "http://app.alveo.edu.au/speakers/#{@collection.name}/1_117"
+        #     "https://app.alveo.edu.au/speakers/#{@collection.name}/1_116",
+        #     "https://app.alveo.edu.au/speakers/#{@collection.name}/1_117"
         #   ]
         # )
         pending '...'
