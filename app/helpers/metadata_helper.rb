@@ -477,7 +477,14 @@ module MetadataHelper
   def self::update_jsonld_collection_id(collection_metadata, collection_name)
 
     # TODO: replace hard-code with proper config
-    id = UrlGenerator.new.collection_url(collection_name).sub("http://app.alveo.edu.au", "https://app.alveo.edu.au")
+    id = UrlGenerator.new.collection_url(collection_name)
+    if (id.start_with?("http://app.alveo.edu.au"))
+      id.sub!("http://app.alveo.edu.au", "https://app.alveo.edu.au")
+    end
+
+    if (id.start_with?("http://staging.alveo.edu.au"))
+      id.sub!("http://staging.alveo.edu.au", "https://staging.alveo.edu.au")
+    end
 
     collection_metadata["@id"] = id
 
