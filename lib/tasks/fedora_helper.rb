@@ -13,7 +13,7 @@ STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env]
 # Ingests a single item, creating both a collection object and manifest if they don't
 # already exist.
 #
-def ingest_one(user_email, corpus_dir, rdf_file)
+def ingest_one(corpus_dir, rdf_file, user_email=nil)
   collection_name = extract_manifest_collection(rdf_file)
   collection = check_and_create_collection(user_email, collection_name, corpus_dir, {}, File.basename(rdf_file))
   ingest_rdf_file(corpus_dir, rdf_file, true, collection)
@@ -161,6 +161,7 @@ def check_and_create_collection(user_email, collection_name, corpus_dir, json_me
     # collection = Collection.find_by_name(collection_name)
 
     # set collection owner
+    user_email ||= APP_CONFIG['default_data_owner']
     collection.owner = User.find_by_email(user_email)
   else
     # Update RDF file path but don't save yet.

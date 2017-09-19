@@ -12,6 +12,7 @@ defaults: &defaults
 
 development:
   <<: *defaults
+  default_data_owner: data_owner@alveo.edu.au
   download_tmp_dir: /data/hcsvlab_download
 
 test:

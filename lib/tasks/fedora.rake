@@ -8,16 +8,9 @@ namespace :fedora do
   # Ingest one metadata file, given as an argument
   #
   desc "Ingest one metadata file"
-  task :ingest_one, [:user_email, :corpus_rdf] => :environment do |t, args|
-    user_email = args.user_email
+  task :ingest_one, [:corpus_rdf] => :environment do |t, args|
     corpus_rdf = args.corpus_rdf
-    if (user_email.nil?) || (corpus_rdf.nil?) || (!File.exists?(corpus_rdf))
-      puts "Usage: rake fedora:ingest_one[<user_email> <corpus rdf file>]"
-      exit 1
-    end
-
-    logger.info "rake fedora:ingest_one[#{user_email}, #{corpus_rdf}]"
-    ingest_one(user_email, File.dirname(corpus_rdf), corpus_rdf)
+    ingest_one(File.dirname(corpus_rdf), corpus_rdf)
   end
 
   #
