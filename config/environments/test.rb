@@ -1,8 +1,9 @@
 HcsvlabWeb::Application.configure do
 
-  # TODO: set your own correct URL for action mailer
+# This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
   config.action_mailer.default_url_options = { :host => 'localhost:3000' }
-  
+  Rails.application.routes.default_url_options[:host] = 'localhost:3000'
+
   config.galaxy_url = 'http://localhost:8080/root'
 
   # Base directory where user contributed annotations will be stored

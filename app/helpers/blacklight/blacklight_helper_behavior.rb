@@ -523,8 +523,14 @@ module Blacklight::BlacklightHelperBehavior
   def get_type_format(document, is_cooee)
     type = nil
     if is_cooee
-      if document.has_key?(MetadataHelper::TYPE.to_s + "_tesim")
-        document[MetadataHelper::TYPE.to_s + "_tesim"].each { |t| type = t unless t == "Original" or t == "Raw" }
+      field = MetadataHelper::TYPE.to_s + "_tesim"
+      if document.has_key?(field)
+        document[field].each { |t| type = t unless t == "Original" or t == "Raw" }
+      else
+        field = "DC_type_facet"
+        if document.has_key?(field)
+          document[field].each { |t| type = t unless t == "Original" or t == "Raw" }
+        end
       end
       if type.nil?
         type_format = '%s'
@@ -534,6 +540,7 @@ module Blacklight::BlacklightHelperBehavior
     else
       type_format = '%s'
     end
+
     type_format
   end
 

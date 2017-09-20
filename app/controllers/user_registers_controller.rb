@@ -2,7 +2,15 @@ class UserRegistersController < Devise::RegistrationsController
   # based on https://github.com/plataformatec/devise/blob/v2.0.4/app/controllers/devise/registrations_controller.rb
 
   # prepend_before_filter :authenticate_scope!, except: [:create, :new]
-  before_filter :authenticate_user!, except: [:create, :new]
+  before_filter :authenticate_scope!, except: [:create, :new]
+
+  def index
+    default_api_response(:index)
+  end
+
+  def edit
+    default_api_response(:edit)
+  end
     
   def profile
 
@@ -66,6 +74,7 @@ class UserRegistersController < Devise::RegistrationsController
   end
 
   def licence_agreements
+    default_api_response(:licence_agreements)
   end
 
   
@@ -132,6 +141,29 @@ class UserRegistersController < Devise::RegistrationsController
     current_user.authentication_token = nil
     current_user.save!
     redirect_to :back, :notice => "Your API token has been deleted."
+  end
+
+  private
+
+  #
+  # default response to api request
+  #
+  def default_api_response(action)
+    token_user = current_user
+
+    if token_user.nil?
+      #   need to check oauth2
+      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+    end
+
+    respond_to do |format|
+      format.html {render action}
+
+      format.json do
+        content = render_to_string(partial: 'shared/tag', :formats => [:html], :layout => false)
+        render :json => {:"API version" => content.strip}.to_json, :status => 200
+      end
+    end
   end
 
 end

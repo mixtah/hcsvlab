@@ -2,7 +2,7 @@
 -  liClass = activepath_fuzzy?([admin_index_path, account_path, saved_searches_path, search_history_path, issue_reports_path])
 %li.dropdown{ class: liClass }
   - if current_user
-    %a.dropdown-toggle{"data-toggle" => "dropdown", :href => "#"}
+    %a.dropdown-toggle{"data-toggle" => "dropdown", :href => "#", :id => 'user_util'}
       = current_user.email
       %b.caret
   - else
@@ -62,29 +62,32 @@
         $('#zc_copy_token').removeClass("hovered");
       });
     }
-  });
 
-  $('#api_token_submenu a, #api_token_submenu').hover(function (e) {
-    if($('#global-zeroclipboard-html-bridge').is(':hover')){
-      $('#zc_copy_token').addClass("hovered");
-      $('#zc_copy_token').closest('.dropdown-submenu').children('a').addClass('hovered');
-      $('#zc_copy_token').closest('.dropdown-submenu').addClass('open');
-    } else {
-      $('#zc_copy_token').removeClass("hovered");
-      $('#zc_copy_token').closest('.dropdown-submenu').children('a').removeClass('hovered');
-    }
-  });
-
-  $('.dropdown-menu li a').mouseover(function (e) {
-    e.stopPropagation();
-    $(this).parent().parent().find('li').each(function () {
-      $(this).removeClass('open');
+    $('.dropdown-menu li a').mouseover(function (e) {
+      e.stopPropagation();
+      $(this).parent().parent().find('li').each(function () {
+        $(this).removeClass('open');
+      });
+      $(this).parent().addClass('open');
     });
-    $(this).parent().addClass('open');
+
+    // $('.dropdown-toggle').click(function (e) {
+    //   $(this).parent().find('li').each(function () {
+    //     $(this).removeClass('open');
+    //   });
+    // });
   });
 
-  $('.dropdown-toggle').click(function (e) {
-    $(this).parent().find('li').each(function () {
-      $(this).removeClass('open');
-    });
-  });
+  // $('#api_token_submenu a, #api_token_submenu').hover(function (e) {
+  //   if($('#global-zeroclipboard-html-bridge').is(':hover')){
+  //     $('#zc_copy_token').addClass("hovered");
+  //     $('#zc_copy_token').closest('.dropdown-submenu').children('a').addClass('hovered');
+  //     $('#zc_copy_token').closest('.dropdown-submenu').addClass('open');
+  //   } else {
+  //     $('#zc_copy_token').removeClass("hovered");
+  //     $('#zc_copy_token').closest('.dropdown-submenu').children('a').removeClass('hovered');
+  //   }
+  // });
+
+
+

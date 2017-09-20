@@ -25,7 +25,10 @@ def clear_jetty
   repositories = server.repositories
   repositories.each_key do |repositoryName|
     if (!"SYSTEM".eql? repositoryName)
-      server.delete(repositories[repositoryName].path)
+      if repositoryName.start_with? "test_"
+        # only delete test repo
+        server.delete(repositories[repositoryName].path)
+      end
     end
   end
 end
@@ -48,8 +51,9 @@ def ingest_test_collections
       rake.init
       rake.load_rakefile
       rdf_files.each do |rdf_file|
-        pid = ingest_one(File.dirname(rdf_file), rdf_file)
-        solr_worker.on_message("index #{pid}")
+        pid = ingest_one(dataFile.dirname(rdf_file), rdf_file, data_owner.email)
+        json = {:cmd => "index", :arg => "#{pid}"}
+        solr_worker.on_message(JSON.generate(json).to_s)
       end
     end
   end

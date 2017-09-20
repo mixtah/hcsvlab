@@ -1,7 +1,8 @@
 HcsvlabWeb::Application.configure do
 
-  # TODO: set your own correct URL for action mailer
+  # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
   config.action_mailer.default_url_options = { :host => 'localhost:3000' }
+  Rails.application.routes.default_url_options[:host] = 'localhost:3000'
   
   config.galaxy_url = 'http://localhost:8081/root'
 
@@ -9,7 +10,7 @@ HcsvlabWeb::Application.configure do
   config.user_annotations_location = "/data/contributed_annotations/"
 
   # Base directory where api created collections will be stored
-  config.api_collections_location = "#{Rails.root}/dev/collections"
+  config.api_collections_location = "/data/collections/"
 
   # Settings specified here will take precedence over those in config/application.rb
 
@@ -20,7 +21,7 @@ HcsvlabWeb::Application.configure do
 
   # Log error messages when you accidentally call methods on nil.
   config.whiny_nils = true
-  # config.log_level = :info
+  config.log_level = :debug
 
   # Show full error reports and disable caching
   config.consider_all_requests_local       = true

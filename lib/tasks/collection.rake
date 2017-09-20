@@ -4,6 +4,7 @@ namespace :collection do
   #
   # Change the owner of a single collection
   #
+  desc "Change the owner of a collection"
   task :change_owner, [:collection_name, :owner_email] => :environment do |task, args|
 
     collection_name = args.collection_name

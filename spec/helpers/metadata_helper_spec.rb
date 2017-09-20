@@ -1,15 +1,16 @@
 require 'spec_helper'
 require "#{Rails.root}/app/models/collection.rb"
 require "#{Rails.root}/app/models/collection_property.rb"
-
+require "csv"
 
 RSpec.describe MetadataHelper, :type => :helper do
+
+  include Rails.application.routes.url_helpers
 
   describe "metadata_helper test" do
 
     before :each do
-      # @collection = create(:collection)
-
+      @request.host = Rails.application.routes.default_url_options[:host]
       @collection_name = "mycollection"
       @json_str = %({
 "@context":
@@ -36,7 +37,8 @@ RSpec.describe MetadataHelper, :type => :helper do
    "schema":"http://schema.org/",
    "xsd":"http://www.w3.org/2001/XMLSchema#",
    "marcrel":"http://www.loc.gov/loc.terms/relators/",
-   "dcterms":"purl:dc/terms/"},
+   "dcterms":"purl:dc/terms/",
+   "cld":"purl:cld/terms/"},
  "@id":"http://localhost:3000/catalog/mycollection",
  "@type":"dcmitype:Collection",
  "dcterms:abstract":"my collection abstract",
@@ -87,6 +89,8 @@ RSpec.describe MetadataHelper, :type => :helper do
     marcrel:OWN "karl" .
       )
       @graph = RDF::Graph.new << RDF::Turtle::Reader.new(@graph_str)
+
+
     end
 
     it 'corpus_dir_by_name' do
@@ -116,11 +120,13 @@ RSpec.describe MetadataHelper, :type => :helper do
     end
 
 
-    it "should persist new collection (graph) metadata"  do
-      # collection_name = "mycollection"
+    it "should persist new collection (graph) metadata" do
       collection = Collection.new
       collection.name = @collection_name
       collection.uri = collection_url(@collection_name)
+
+      pp "collection.uri=#{collection.uri}"
+
       collection.text = "once upon a time, there was a king"
       collection.private = false
       collection.save
@@ -139,6 +145,32 @@ RSpec.describe MetadataHelper, :type => :helper do
 
     end
 
+    it "handle multi-value property" do
+      @json.each do |property, value|
+        if value.is_a? (Array)
+          printf "#{value} is Array\n"
+          # value_arr = []
+          # value_arr = JSON.parse(value)
+          value.each do |v|
+            printf "#{v}\n"
+          end
+        end
+      end
+
+      str = "123"
+      tmp_arr = ["abc"]
+      str_arr = []
+      str_arr << str
+      str_arr += tmp_arr
+
+      prop = {}
+      prop["k1"] = (str_arr << str)
+      prop["k2"] = (Array.new([str]) << "456" << "789")
+
+
+      printf "prop = #{prop}"
+    end
+
     describe "should update existing collection param" do
       it "update existing param" do
         collection = create(:collection)
@@ -151,7 +183,7 @@ RSpec.describe MetadataHelper, :type => :helper do
       end
     end
 
-    describe "should update existing collection (graph) metadata"  do
+    describe "should update existing collection (graph) metadata" do
       it "update existing property" do
 
         collection = Collection.new
@@ -238,24 +270,23 @@ RSpec.describe MetadataHelper, :type => :helper do
 
         # diff = JsonCompare.get_diff(ori_json, actual_json)
 
-        expect(JsonCompare.get_diff(ori_json, actual_json)).to include(:remove => {property_name=>property_value})
+        expect(JsonCompare.get_diff(ori_json, actual_json)).to include(:remove => {property_name => property_value})
       end
-
 
     end
 
     describe "should complete collection metadata" do
-      it "complete specified fields", :focus => true do
+      it "complete specified fields" do
 
         collection_name = 'heal the world'
         full_name = "Michael Jackson"
         metadata = {
-          MetadataHelper::DC_LANGUAGE.to_s => ''  # empty field
+          MetadataHelper::LANGUAGE.to_s => '' # empty field
         }
 
         metadata_fields = {
           MetadataHelper::TITLE.to_s => collection_name,
-          MetadataHelper::DC_LANGUAGE.to_s => 'eng - English',
+          MetadataHelper::LANGUAGE.to_s => 'eng - English',
           MetadataHelper::CREATED.to_s => DateTime.now.strftime("%d/%m/%Y"),
           MetadataHelper::CREATOR.to_s => full_name,
           MetadataHelper::LICENCE.to_s => 'Creative Commons v3.0 BY'
@@ -270,5 +301,106 @@ RSpec.describe MetadataHelper, :type => :helper do
 
       end
     end
+
+    describe "should convert from json-ld to rdf(n3) properly" do
+      it "should convert austalk speaker json-ld properly", :focus => true do
+        json_str = %(
+{"@context": {"ausnc": "http://ns.ausnc.org.au/schemas/ausnc_md_model/",
+              "austalk": "http://ns.austalk.edu.au/",
+              "corpus": "http://ns.ausnc.org.au/corpora/",
+              "dcterms": "http://purl.org/dc/terms/",
+              "foaf": "http://xmlns.com/foaf/0.1/",
+              "hcsvlab": "http://alveo.edu.au/vocabulary/",
+              "olac": "http://www.language-archives.org/OLAC/1.1/",
+              "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+              "schema": "http://schema.org/",
+              "xsd": "http://www.w3.org/2001/XMLSchema#"},
+
+ "dcterms:identifier": "sp8"
+}
+        )
+
+        json = JSON.parse(json_str)
+
+        # puts "json[#{json}]"
+
+        context = {"@context" => JsonLdHelper::default_context}
+        # # json = JSON::LD::API.compact(json, context['@context']).except("@context")
+        json = JSON::LD::API.compact(json, context['@context'])
+        #
+        # puts "json[#{json}]"
+
+        graph = MetadataHelper::json_to_rdf_graph(json)
+
+        # puts "graph[#{graph.dump(:ttl, :standard_prefixes => true)}]"
+
+        # context = JsonLdHelper::default_context
+        # puts JsonLdHelper::default_rdf_prefix
+        input = JSON.parse %(
+        {
+          "@id": "abc",
+          "@type": "foaf:Person"
+        })
+        rlt = JSON::LD::API.compact(input, context['@context'])
+
+        puts rlt
+      end
+    end
+
+    describe "remove duplicated items" do
+      it "is one-time-off to generate SQL script" do
+        in_file = "/tmp/duplicated_items.csv"
+
+        dup_id_list = []
+        pool = {}
+        count = 0
+        CSV.foreach(in_file) do |row|
+          handle = row[0]
+          item_id = row[1]
+
+          if pool.key?(handle)
+            # csv already order by id desc
+            dup_id_list << item_id
+            count +=1
+            puts "#{count}: found duplicated: item_id[#{item_id}, #{pool[handle]}], handle[#{handle}]"
+          else
+            pool[handle] = item_id
+          end
+
+        end
+
+        batch_size = 1024
+        ids = dup_id_list.each_slice(batch_size).to_a
+
+        # generate sql to remove duplicated items
+        timestamp = "select now();\n"
+
+        File.open("/tmp/remove_dup_items.sql", "w+") do |f|
+          f.puts(timestamp)
+
+          ids.each do |sub_ids|
+            sql = "delete from items where id in (#{sub_ids.join(',')});\n"
+            sql += timestamp
+            f.puts(sql)
+          end
+        end
+
+        # generate sql to remove related documents
+        File.open("/tmp/remove_dup_docs.sql", "w+") do |f|
+          f.puts(timestamp)
+
+          ids.each do |sub_ids|
+            sql = "delete from documents where item_id in (#{sub_ids.join(',')});\n"
+            sql += timestamp
+            f.puts(sql)
+          end
+        end
+
+        puts "total duplicated item amount [#{dup_id_list.size}]"
+
+      end
+
+    end
+
   end
 end

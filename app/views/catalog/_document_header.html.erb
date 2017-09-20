@@ -18,9 +18,14 @@
     <%= field = MetadataHelper::short_form(MetadataHelper::TITLE) + "_tesim"
         if document.has_key?(field)
           format_value(document[field])
-          #link_to_document document, :label=>field.to_sym, :counter => (document_counter + 1 + @response.params[:start].to_i)
         else
-          ""
+          # compatible with legacy "DC_" data
+          field = "DC_title_tesim"
+          if document.has_key?(field)
+            format_value(document[field])
+          else
+            ""
+          end
         end
     %>
   </td>
@@ -28,9 +33,14 @@
     <%= field = MetadataHelper::short_form(MetadataHelper::CREATED) + "_tesim"
         if document.has_key?(field)
           format_value(document[field])
-          #link_to_document document, :label=>field.to_sym, :counter => (document_counter + 1 + @response.params[:start].to_i)
         else
-          ""
+          # compatible with legacy "DC_" data
+          field = "DC_created_tesim"
+          if document.has_key?(field)
+            format_value(document[field])
+          else
+            ""
+          end
         end
     %>
   </td>
@@ -38,9 +48,14 @@
     <%= field = MetadataHelper::short_form(MetadataHelper::TYPE)
         if document.has_key?(field)
           format_duplicates(document[field])
-          #link_literal_to_document document, format_duplicates(document[field]), :counter => (document_counter + 1 + @response.params[:start].to_i)
         else
-          ""
+          # compatible with legacy "DC_" data
+          field = "DC_type_facet"
+          if document.has_key?(field)
+            format_duplicates(document[field])
+          else
+            ""
+          end
         end
     %>
   </td>

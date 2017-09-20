@@ -90,8 +90,6 @@ class Collection < ActiveRecord::Base
   # ---------------------------------------------------------------------------
   #
 
-  # TODO: collection_enhancement
-  # file => ref
   def rdf_graph
     # raise "Could not find collection metadata file" unless File.exist?(self.rdf_file_path)
     # RDF::Graph.load(self.rdf_file_path, :format => :ttl, :validate => true)

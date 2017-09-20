@@ -6,9 +6,9 @@ describe User do
   end
 
   describe "Initialization" do
-    it 'should have initialized status as "G"', :focus => true do
+    it 'should have initialized status as "U"', :focus => true do
       user = User.new
-      expect(user.status).to eq "G"
+      expect(user.status).to eq "U"
     end
   end
 

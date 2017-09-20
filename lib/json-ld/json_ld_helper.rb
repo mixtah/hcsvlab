@@ -79,14 +79,32 @@ public
     }
     hash = {}
     predefined_properties.each_pair { |key, value| hash[key] = value }
+
     Hash[*vocab_hash.sort.flatten].each_pair { |key, value| hash[key] = value }
 
     # KL
     hash["marcrel"] = {"@id" => "http://www.loc.gov/loc.terms/relators/"}
     hash["dcterms"] = {"@id" => "http://purl.org/dc/terms/"}
     hash["dc"]      = {"@id" => "http://purl.org/dc/elements/1.1/"}
+    hash["cld"]     = {"@id" => "http://purl.org/cld/terms/"}
 
     hash
+  end
+
+  #
+  # Returns a string containing the values of a default Alveo RDF (turtle) prefix
+  #
+  def self::default_rdf_prefix
+
+    rlt = ""
+
+    context = default_context
+
+    context.each do |k, v|
+      rlt += "@prefix #{k}: <#{v["@id"]}> . \n"
+    end
+
+    rlt
   end
 
   private

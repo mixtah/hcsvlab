@@ -1,24 +1,8 @@
 
 
-- if @collections.empty? && @collection_lists.empty?
+- if @collections.empty?
   %li
     %h5 Empty
-- unless @collection_lists.empty?
-  - @collection_lists.each do |list|
-    %h3
-      #{list.name}
-      %span.badge #{list.collections.size}
-    %table.table.table-hover
-    %thead
-      %tr
-        %th Collection
-        %th Abstract
-    %tbody
-      - list.collections.order(:name).each do |collection|
-        %tr
-          %td
-            %a{:href => "#{collection_path(collection.name)}"} #{collection.name}
-          %td #{MetadataHelper::load_metadata_from_collection(collection.name)[MetadataHelper::PFX_ABSTRACT]}
 
 - unless @collections.empty?
   %table.table.table-hover
