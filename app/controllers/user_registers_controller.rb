@@ -72,20 +72,31 @@ class UserRegistersController < Devise::RegistrationsController
   end
 
   def licence_agreements
-    default_api_response(:licence_agreements)
   end
 
   #
-  # Call download_token to response with file as details
+  # Response user's detail as file
   #
   def download_details
-    
-    download_token
+
+    token_user = current_resource_owner
+
+    file = Tempfile.new("newfile")
+    hash = {}
+    hash[:base_url] = root_url
+    hash[:first_name] = token_user.first_name
+    hash[:last_name] = token_user.last_name
+    hash[:email] = token_user.email
+    hash[:status] = token_user.status
+    hash[:cacheDir] = "wrassp_cache"
+    file.puts(hash.to_json)
+    file.close
+    send_file file.path, :filename => "#{PROJECT_PREFIX_NAME}.config", :disposition => "attachment"
         
   end
 
   #
-  # Response config as file
+  # Response api key (token) as file
   #
   def download_token
 
@@ -94,7 +105,6 @@ class UserRegistersController < Devise::RegistrationsController
     file = Tempfile.new("newfile")
     hash = {}
     hash[:base_url] = root_url
-    # hash[:apiKey] = current_user.authentication_token
     hash[:apiKey] = token_user.authentication_token
     hash[:cacheDir] = "wrassp_cache"
     file.puts(hash.to_json)
