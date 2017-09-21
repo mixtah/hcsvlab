@@ -1,15 +1,13 @@
 class UserRegistersController < Devise::RegistrationsController
   # based on https://github.com/plataformatec/devise/blob/v2.0.4/app/controllers/devise/registrations_controller.rb
 
-  # prepend_before_filter :authenticate_scope!, except: [:create, :new]
-  before_filter :authenticate_scope!, except: [:create, :new]
+  before_filter :authenticate_user!, except: [:create, :new]
 
   def index
-    default_api_response(:index)
+    respond_with download_details
   end
 
   def edit
-    default_api_response(:edit)
   end
     
   def profile
@@ -77,49 +75,21 @@ class UserRegistersController < Devise::RegistrationsController
     default_api_response(:licence_agreements)
   end
 
-  
-  
+  #
+  # Call download_token to response with file as details
+  #
   def download_details
     
-    token_user = current_user
-    
-    if token_user.nil?
-      #   need to check oauth2
-      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
-    end
-        
-    file = Tempfile.new("newfile")
-    hash = {}
-    hash[:base_url] = root_url
-    hash[:first_name] = token_user.first_name
-    hash[:last_name] = token_user.last_name
-    hash[:email] = token_user.email
-    hash[:status] = token_user.status
-    hash[:cacheDir] = "wrassp_cache"
-    file.puts(hash.to_json)
-    file.close
-    send_file file.path, :filename => "#{PROJECT_PREFIX_NAME}.config", :disposition => "attachment"
+    download_token
         
   end
-  
+
+  #
+  # Response config as file
+  #
   def download_token
-    # if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
-    #   current_user.reset_authentication_token!
-    # end
 
-    # KL: oauth2
-    token_user = current_user
-
-    if token_user.nil?
-      #   need to check oauth2
-      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
-    end
-
-    if token_user.authentication_token.nil? #generate auth token if one doesn't already exist
-      token_user.reset_authentication_token!
-    end
-
-
+    token_user = current_resource_owner
 
     file = Tempfile.new("newfile")
     hash = {}
@@ -132,6 +102,20 @@ class UserRegistersController < Devise::RegistrationsController
     send_file file.path, :filename => "#{PROJECT_PREFIX_NAME}.config", :disposition => "attachment"
   end
 
+  #
+  # If user login from OAuth2, current_user (from Devise) would be nil. Still we can retrieve
+  # user info from Doorkeeper's token.
+  #
+  def current_resource_owner
+    rlt = current_user
+
+    if rlt.nil?
+      rlt = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+    end
+
+    rlt
+  end
+
   def generate_token
     current_user.reset_authentication_token!
     redirect_to :back, :notice => "Your new API token has been generated."
@@ -141,29 +125,6 @@ class UserRegistersController < Devise::RegistrationsController
     current_user.authentication_token = nil
     current_user.save!
     redirect_to :back, :notice => "Your API token has been deleted."
-  end
-
-  private
-
-  #
-  # default response to api request
-  #
-  def default_api_response(action)
-    token_user = current_user
-
-    if token_user.nil?
-      #   need to check oauth2
-      token_user = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
-    end
-
-    respond_to do |format|
-      format.html {render action}
-
-      format.json do
-        content = render_to_string(partial: 'shared/tag', :formats => [:html], :layout => false)
-        render :json => {:"API version" => content.strip}.to_json, :status => 200
-      end
-    end
   end
 
 end

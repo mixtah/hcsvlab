@@ -18,7 +18,13 @@ class CatalogController < ApplicationController
   # Set catalog tab as current selected
   set_tab :catalog
 
-  before_filter :authenticate_user!, :except => [:annotation_context, :searchable_fields]
+
+  # FYR: https://github.com/doorkeeper-gem/doorkeeper/issues/690
+  # authenticate_user! should except sparqlQuery (Endpoint of OAuth2)
+  before_filter :authenticate_user!, :except => [:annotation_context, :searchable_fields, :sparqlQuery]
+
+  # doorkeeper_authorize! should protect sparqlQuery (Endpoint)
+  before_filter :doorkeeper_authorize!, only: [:sparqlQuery]
 
   include Blacklight::Catalog
   include Hydra::Controller::ControllerBehavior
@@ -789,8 +795,13 @@ class CatalogController < ApplicationController
   def sparqlQuery
     request.format = 'json'
 
+    current_resource_owner = current_user
+    if current_resource_owner.nil?
+      current_resource_owner = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+    end
+
     search = UserSearch.new(:search_time => Time.now, :search_type => SearchType::TRIPLESTORE_SEARCH)
-    search.user = current_user
+    search.user = current_resource_owner
     search.save
 
     # First will validate the parameters. 'collection' and 'query' are both required
@@ -822,7 +833,7 @@ class CatalogController < ApplicationController
 
     if collection.present?
       #Verify if the user has at least read access to the collection
-      if !(current_user.has_agreement_to_collection?(collection, UserLicenceAgreement::READ_ACCESS_TYPE, false))
+      if !(current_resource_owner.has_agreement_to_collection?(collection, UserLicenceAgreement::READ_ACCESS_TYPE, false))
         authorization_error(Exception.new("You are not authorized to access this resource."))
         return
       end
