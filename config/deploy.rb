@@ -158,6 +158,10 @@ namespace :deploy do
 
     run "rm -f #{release_path}/db_dumps"
     run "ln -s #{shared_path}/db_dumps #{release_path}/db_dumps"
+
+  #   symlink for collection_attachments directory
+    run "rm -f #{release_path}/public/collections"
+    run "ln -s #{shared_path}/collections #{release_path}/public/collections"
   end
 
   # Load the schema

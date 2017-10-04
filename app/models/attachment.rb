@@ -96,7 +96,6 @@ class Attachment < ActiveRecord::Base
 
   def store_dir
     logger.debug "Attachment:store_dir collection_id=#{self.collection_id}"
-    # MetadataHelper::corpus_dir_by_name(Collection.find(self.collection_id).name)
     Rails.root.join("public", "collections", self.collection_id.to_s)
   end
 

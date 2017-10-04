@@ -27,13 +27,6 @@ module SpeakersHelper
     logger.debug "find_speaker_by_collection start: collection_name=#{collection_name}"
     rlt = []
 
-    # if collection_name != 'no_speaker'
-    #   rlt = [
-    #     "http://app.alveo.edu.au/speakers/#{collection_name}/1_116",
-    #     "http://app.alveo.edu.au/speakers/#{collection_name}/1_117"
-    #   ]
-    # end
-
     repo = SpeakersHelper.repo(SESAME_CONFIG["url"].to_s, collection_name)
 
     raise Exception.new("Repository [#{collection_name}] not found in sesame server[#{SESAME_CONFIG['url'].to_s}]") if (repo.nil?)

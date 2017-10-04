@@ -1,6 +1,7 @@
 HcsvlabWeb::Application.configure do
 
   # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
+  config.action_mailer.default_url_options = { :host => 'localhost:3000' }
   Rails.application.routes.default_url_options[:host] = 'localhost:3000'
   
   config.galaxy_url = 'http://localhost:8081/root'
@@ -20,7 +21,7 @@ HcsvlabWeb::Application.configure do
 
   # Log error messages when you accidentally call methods on nil.
   config.whiny_nils = true
-  # config.log_level = :info
+  config.log_level = :debug
 
   # Show full error reports and disable caching
   config.consider_all_requests_local       = true

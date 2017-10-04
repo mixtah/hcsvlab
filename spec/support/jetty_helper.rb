@@ -51,7 +51,7 @@ def ingest_test_collections
       rake.init
       rake.load_rakefile
       rdf_files.each do |rdf_file|
-        pid = ingest_one(data_owner.email, dataFile.dirname(rdf_file), rdf_file)
+        pid = ingest_one(dataFile.dirname(rdf_file), rdf_file, data_owner.email)
         json = {:cmd => "index", :arg => "#{pid}"}
         solr_worker.on_message(JSON.generate(json).to_s)
       end

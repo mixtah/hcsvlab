@@ -4,6 +4,7 @@ HcsvlabWeb::Application.configure do
   GA.tracker = "UA-49039039-3"
 
   # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
+  config.action_mailer.default_url_options = { :host => 'staging.alveo.edu.au' }
   Rails.application.routes.default_url_options[:host] = 'staging.alveo.edu.au'
 
   config.galaxy_url = 'http://staging.alveo.edu.au/root'
@@ -45,7 +46,7 @@ HcsvlabWeb::Application.configure do
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for nginx
 
   # See everything in the log (default is :info)
-  # config.log_level = :debug
+  config.log_level = :info
 
   # Prepend all log lines with the following tags
   # config.log_tags = [ :subdomain, :uuid ]

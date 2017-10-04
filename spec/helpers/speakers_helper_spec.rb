@@ -122,7 +122,7 @@ RSpec.describe SpeakersHelper, :type => :helper do
     it "minimal example with reference to external context" do
       input = JSON.parse %(
       {
-        "@context": "http://app.alveo.edu.au/schema/speaker-context",
+        "@context": "https://app.alveo.edu.au/schema/speaker-context",
         "identifier": "1_116",
         "birthYear": 1967,
         "gender": "male",
