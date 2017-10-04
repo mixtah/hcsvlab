@@ -88,6 +88,7 @@ class UserRegistersController < Devise::RegistrationsController
     hash[:last_name] = token_user.last_name
     hash[:email] = token_user.email
     hash[:status] = token_user.status
+    hash[:apiKey] = token_user.authentication_token
     hash[:cacheDir] = "wrassp_cache"
     file.puts(hash.to_json)
     file.close
