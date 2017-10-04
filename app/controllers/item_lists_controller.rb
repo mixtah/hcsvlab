@@ -35,8 +35,6 @@ class ItemListsController < ApplicationController
   #
   #
   def show
-    current_resource_owner = get_current_resource_owner
-    
     if session[:profiler]
       @profiler = session[:profiler]
       session.delete(:profiler)
@@ -60,8 +58,8 @@ class ItemListsController < ApplicationController
           @message = "You only have access to #{authorised_item_handles.size} out of #{@response['response']['numFound']} Items in this shared Item List."
         end
 
-        if current_resource_owner.authentication_token.nil? #generate auth token if one doesn't already exist
-          current_resource_owner.reset_authentication_token!
+        if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
+          current_user.reset_authentication_token!
         end
 
         render :index
@@ -131,7 +129,7 @@ class ItemListsController < ApplicationController
     if request.format == 'json' and request.post?
       name = params[:name]
       if (!name.nil? and !name.blank? and !(name.length > 255)) and (!params[:items].nil? and params[:items].is_a? Array)
-        @item_list = current_resource_owner.item_lists.find_or_initialize_by_name(name)
+        @item_list = current_user.item_lists.find_or_initialize_by_name(name)
         inject_user_and_ability_to_item_list
         is_new_item_list = @item_list.new_record?
         @item_list.save!
@@ -155,7 +153,7 @@ class ItemListsController < ApplicationController
       end
     else
       name = params[:item_list][:name]
-      @item_list = current_resource_owner.item_lists.find_or_initialize_by_name(name)
+      @item_list = current_user.item_lists.find_or_initialize_by_name(name)
       inject_user_and_ability_to_item_list
       if @item_list.new_record?
         if params[:all_items] == 'true'
@@ -214,12 +212,10 @@ class ItemListsController < ApplicationController
   # This method with update and rename the item list
   #
   def update
-    current_resource_owner = get_current_resource_owner
-    
     if request.format == 'json' and request.put?
       @item_list = ItemList.find(params[:id])
       name = params[:name]
-      item_lists = current_resource_owner.item_lists.find_by_name(name)
+      item_lists = current_user.item_lists.find_by_name(name)
 
       if (!name.nil? and !name.blank? and !(name.length > 255)) and (item_lists.nil? or @item_list.name == name)
         @item_list.name = name
@@ -238,7 +234,7 @@ class ItemListsController < ApplicationController
 
     else
       name = params[:item_list][:name]
-      item_lists = current_resource_owner.item_lists.find_by_name(name)
+      item_lists = current_user.item_lists.find_by_name(name)
       if item_lists.nil? or @item_list.name.eql?(name)
         if @item_list.update_attributes(params[:item_list])
           flash[:notice] = 'Item list renamed successfully'
@@ -391,7 +387,7 @@ class ItemListsController < ApplicationController
   #
   def inject_user_and_ability_to_item_list
     if @item_list
-      @item_list.set_current_user(current_resource_owner)
+      @item_list.set_current_user(current_user)
       @item_list.set_current_ability(current_ability)
     end
   end
@@ -400,27 +396,7 @@ class ItemListsController < ApplicationController
   # This method will set the current user owned item list and also the shared ones
   #
   def retrieve_item_lists
-    current_resource_owner = get_current_resource_owner
-    @user_item_lists = current_resource_owner.item_lists.order("lower(name)")
-    @shared_item_lists = ItemList.order("lower(name)").where('shared = ? AND user_id != ?', true, current_resource_owner.id)
+    @user_item_lists = current_user.item_lists.order("lower(name)")
+    @shared_item_lists = ItemList.order("lower(name)").where('shared = ? AND user_id != ?', true, current_user.id)
   end
-  
-  #
-  # If user login from OAuth2, current_user (from Devise) would be nil. Still we can retrieve
-  # user info from Doorkeeper's token.
-  #
-  def get_current_resource_owner
-    rlt = current_user
-
-    if rlt.nil?
-      rlt = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
-    end
-    
-    if rlt.nil?
-      current_user
-    else
-      rlt
-    end
-  end
-
 end
