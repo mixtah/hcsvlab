@@ -5,7 +5,9 @@ Doorkeeper.configure do
   # This block will be called to check whether the resource owner is authenticated or not.
   resource_owner_authenticator do
     # KL: to enable OAuth2 feature
-    current_user || begin
+    if user_signed_in?
+      current_user
+    else
       # OAuth2 passed, but not signed in yet
 
       # after user login successfully, can return to previous url
@@ -14,6 +16,7 @@ Doorkeeper.configure do
       # redirect user to login page
       redirect_to(oauth2_sign_in_url, :notice => "Authentication - Please sign in to proceed.")
     end
+
   end
 
   # If you want to restrict access to the web interface for adding oauth authorized applications, you need to declare the block below.
