@@ -6,7 +6,6 @@ require Rails.root.join('app/helpers/metadata_helper')
 # require 'metadata_helper'
 require 'fileutils'
 
-
 class CollectionsController < ApplicationController
 
   STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
@@ -278,6 +277,76 @@ class CollectionsController < ApplicationController
         redirect_to catalog_path(collection: @collection.name, itemId: item_name), notice: msg
       rescue ResponseError => e
         flash[:error] = e.message
+      end
+    end
+  end
+
+  def web_upload_zip
+    @collection = Collection.find_by_name(params[:id])
+    authorize! :web_add_item, @collection
+
+    
+    if request.post?
+      begin
+        uploaded_io = params[:zip_file]
+        upload_dir = File.join(Rails.application.config.upload_location, Time.now.to_f.to_s)
+
+        # Save the uploaded file into our upload dir
+        FileUtils.mkdir_p(upload_dir)
+        File.open(File.join(upload_dir, uploaded_io.original_filename), 'wb') do |file|
+          file.write(uploaded_io.read)
+        end
+
+        # Save the metadata to a json file to the same dir
+        metadata = []
+        if params.has_key?(:additional_key) && params.has_key?(:additional_value)
+          metadata = params[:additional_key].zip(params[:additional_value])
+        end
+
+        metadata_filename = "metadata.json"
+
+        File.open(File.join(upload_dir, metadata_filename), 'wb') do |file|
+          file.write(metadata.to_json)
+        end
+
+        stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+        
+        packet = {
+          :cmd => "import_zip",
+          :arg => {
+            :directory => upload_dir,
+            :zip_file => uploaded_io.original_filename,
+            :metadata_file => metadata_filename
+          }
+        }
+    
+        stomp_client.publish('alveo.solr.worker', packet.to_json)
+        stomp_client.close
+
+        msg = "Your zip file has been uploaded. It will be processed shortly."
+        redirect_to web_upload_zip_path(collection: @collection.name), notice: msg
+      rescue ResponseError => e
+        flash[:error] = e.message
+      end
+    else
+
+      # Default metadata to fill form
+      if !params.has_key?(:additional_key) && !params.has_key?(:additional_value)
+        params[:additional_key] = [
+          'ausnc:mode',
+          'ausnc:speech_style',
+          'ausnc:interactivity',
+          'ausnc:communication_context',
+          'ausnc:audience',
+        ]
+        params[:additional_value] = [
+          'spoken',
+          'scripted',
+          'dialog',
+          'face_to_face',
+          'individual',
+        ]
+        @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
       end
     end
   end

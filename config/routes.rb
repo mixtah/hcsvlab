@@ -84,9 +84,11 @@ HcsvlabWeb::Application.routes.draw do
   post 'catalog/download_items', :to => 'catalog#download_items', :as => 'catalog_download_items_api'
   #get 'catalog/download_annotation/:id', :to => 'catalog#download_annotation', :as => 'catalog_download_annotation'
 
-
   get "add-item/:id", :to => 'collections#web_add_item', :as => 'web_add_item'
   post "add-item/:id", :to => 'collections#web_add_item'
+
+  get "upload-zip/:id", :to => 'collections#web_upload_zip', :as => 'web_upload_zip'
+  post "upload-zip/:id", :to => 'collections#web_upload_zip'
 
   get "add-document/:collection/:itemId", :to => 'collections#web_add_document', :as => 'web_add_document'
   post "add-document/:collection/:itemId", :to => 'collections#web_add_document'

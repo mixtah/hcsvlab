@@ -18,6 +18,9 @@
               %br
               = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn btn-primary"
 
+            - if can? :web_add_item, @collection
+              = link_to "Upload zip", web_upload_zip_path, :id => 'upload_zip', :class => "btn btn-primary"
+
             - if can? :edit_collection, @collection
               = link_to "Edit Collection", edit_collection_path, id: 'edit_collection', :class => "btn btn-primary"
 

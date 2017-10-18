@@ -1,9 +1,12 @@
 require 'linkeddata'
 require 'xmlsimple'
+
 require "#{Rails.root}/app/helpers/blacklight/catalog_helper_behavior.rb"
 require "#{Rails.root}/app/helpers/blacklight/blacklight_helper_behavior"
 require "#{Rails.root}/lib/rdf-sesame/hcsvlab_server.rb"
+require "#{Rails.root}/lib/zip_importer"
 
+# Import RDF vocabularies
 Dir.glob("#{Rails.root}/lib/rdf/**/*.rb") {|f| require f}
 
 #
@@ -64,7 +67,6 @@ class Solr_Worker < ApplicationProcessor
     info("Solr_Worker", "packet: #{packet.inspect}")
 
     command = packet["cmd"]
-    
 
     case command
       when "index"
@@ -111,6 +113,15 @@ class Solr_Worker < ApplicationProcessor
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
         end
+      
+      when "import_zip"
+        begin
+          args = packet["arg"]
+          import_zip(args['directory'], args['zip_file'], args['metadata_file'])
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
     else
       error("Solr_Worker", "unknown instruction: #{command}")
       return
@@ -119,6 +130,16 @@ class Solr_Worker < ApplicationProcessor
   end
 
 private
+
+  def import_zip(dir, zip_file, metadata_file)
+    logger.debug("Importing zip upload: #{dir} | #{zip_file} | #{metadata_file}")
+
+    # zip_path = File.join(dir, zip_file)
+    # metadata_path = File.join(dir, metadata_file)
+
+    importer = ZipImporter.new(dir, zip_file, metadata_file)
+    importer.import
+  end
 
   #
   # =============================================================================
