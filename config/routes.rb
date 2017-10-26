@@ -44,19 +44,20 @@ HcsvlabWeb::Application.routes.draw do
   delete 'catalog-delete/:id', :to => 'collections#delete_collection', :as => 'delete_collection'
   get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'
   post 'catalog-create', :to => 'collections#web_create_collection'
+  
+  resources :imports
 
   # collection attachment
   resources :collections do
     # without collection_id can't proceed, so must include that
     resources :attachments, only: [:index, :new, :create]
+    resources :imports
   end
   get 'collections/:collection_id/attachments', :to => 'attachments#index', :as => 'attachments'
   get 'collections/:collection_id/attachments/new', :to => 'attachments#new', :as => 'new_attachment'
   post 'collections/:collection_id/attachments', :to => 'attachments#create', :as => 'create_attachment'
   # can proceed with own attachment id
   resources :attachments, only: [:show, :edit, :update, :destroy]
-
-
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
   post "catalog", :to => 'collections#create', :as => 'collections'
@@ -86,9 +87,6 @@ HcsvlabWeb::Application.routes.draw do
 
   get "add-item/:id", :to => 'collections#web_add_item', :as => 'web_add_item'
   post "add-item/:id", :to => 'collections#web_add_item'
-
-  get "upload-zip/:id", :to => 'collections#web_upload_zip', :as => 'web_upload_zip'
-  post "upload-zip/:id", :to => 'collections#web_upload_zip'
 
   get "add-document/:collection/:itemId", :to => 'collections#web_add_document', :as => 'web_add_document'
   post "add-document/:collection/:itemId", :to => 'collections#web_add_document'

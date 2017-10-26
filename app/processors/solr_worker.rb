@@ -117,7 +117,7 @@ class Solr_Worker < ApplicationProcessor
       when "import_zip"
         begin
           args = packet["arg"]
-          import_zip(args['directory'], args['zip_file'], args['metadata_file'])
+          import_zip(args['import_id'])
         rescue Exception => e
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
@@ -131,14 +131,18 @@ class Solr_Worker < ApplicationProcessor
 
 private
 
-  def import_zip(dir, zip_file, metadata_file)
-    logger.debug("Importing zip upload: #{dir} | #{zip_file} | #{metadata_file}")
+  def import_zip(import_id)
+    @import = Import.find(import_id)
+    logger.debug("Importing zip upload: #{@import.directory} | #{@import.filename}")
 
-    # zip_path = File.join(dir, zip_file)
-    # metadata_path = File.join(dir, metadata_file)
+    options = JSON.parse(@import.options) rescue nil
 
-    importer = ZipImporter.new(dir, zip_file, metadata_file)
-    importer.import
+    # TODO maybe ZipExtractor is a better name
+    zip = AlveoUtil::ZipImporter.new(@import.directory, @import.filename, options)
+    if zip.extract
+      @import.extracted = true
+      @import.save
+    end
   end
 
   #

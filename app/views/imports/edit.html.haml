@@ -1,0 +1,78 @@
+- if @import.extracted?
+  %h2 Import Options
+
+  = form_tag({controller: 'imports', action: 'update'}, class: 'form-horizontal', method: :put) do
+
+    %dl.dl-horizontal.mt-20
+      %dt.p-10 File:
+      %dd.p-10 #{@import.filename}
+      %dt.p-10 Metadata:
+      %dd.p-10 
+        %table.table
+          - @metadata.each do |key,value|
+            %tr
+              %td #{key}
+              %td #{value}
+    
+    %h3
+      Import options
+    
+    %p.my-20
+      %strong
+        Found #{@zip.total_files} documents in #{@zip.items.size} items.
+
+    - if @zip.warnings.size > 0
+      .alert.alert-error.permanent
+        %p
+          %strong
+            Warning:
+        %ul
+          - @zip.warnings.each do |w|
+            %li #{w}
+
+    .control-group
+      = label_tag :option_folders_as_item_names, 'Use folders as item names', :class => "control-label"
+      .controls
+        = check_box_tag :option_folders_as_item_names, true, @options['folders_as_item_names']
+    .control-group
+      = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth', :class => "control-label"
+      .controls
+        = select_tag :option_item_name_at_folder_depth, options_for_select([1,2,3,4,5], @options['item_name_at_folder_depth'])
+      
+    .form-actions
+      = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+      = submit_tag 'Preview options', :class => "btn"
+      = submit_tag 'Confirm import', :class => "btn btn-primary"
+  
+  %p.my-20 Showing the first #{@limit} items.
+
+  %table.table
+    %tr
+      %th Item
+      %th Document
+      %th Filename
+      %th Type
+      %th Size
+    - @docs.first(@limit).each do |item,documents|
+      %tr
+        %th
+          %strong #{item}
+        %td
+        %td
+        %td
+        %td
+        - documents.keys.each do |filename|
+          %tr
+            %td 
+            %td #{@docs[item][filename][:meta]['dcterms:title']}
+            %td #{filename}
+            %td #{@docs[item][filename][:meta]['dcterms:type']}
+            %td #{number_to_human_size @docs[item][filename][:meta]['dcterms:extent']}
+
+  %p.my-20 Showing the first #{@limit} items.
+
+- else
+  %h2 Please wait, extracting..
+  <meta http-equiv="refresh" content="5">
+
+= render 'shared/nectar_attribution'
