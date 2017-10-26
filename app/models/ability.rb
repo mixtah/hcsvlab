@@ -165,6 +165,27 @@ class Ability
     if is_data_owner or is_superuser
       can :read, DocumentAudit
     end
+
+    ############################################################
+    ##          PERMISSIONS OVER CONTRIBUTIONS                ##
+    ############################################################
+    if is_superuser || is_data_owner || is_researcher
+      can :read, Contribution
+    else
+      #   visitor
+      can :read, Contribution
+    end
+
+    if is_superuser || is_data_owner || is_researcher
+      can :create, Contribution
+      can :edit_contribution, Contribution
+      can :update_contribution, Contribution
+    end
+
+    #  Only superuser can delete Contribution
+    if is_superuser
+      can :delete_contribution, Contribution
+    end
   end
 
 end

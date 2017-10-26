@@ -1,0 +1,18 @@
+
+
+- if @contributions.empty?
+  %li
+    %h5 Empty
+
+- unless @contributions.empty?
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Contribution
+        %th Abstract
+    %tbody
+      - @contributions.each do |contrib|
+        %tr
+          %td
+            %a{:href => "#{contrib_show_path(contrib.id)}"} #{contrib.name}
+          %td #{contrib.description}

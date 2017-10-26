@@ -15,6 +15,8 @@ require Rails.root.join('app/helpers/url_helper')
 
 module MetadataHelper
 
+  SESAME_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/sesame.yml")[Rails.env] unless defined? SESAME_CONFIG
+
   mattr_reader :lookup, :prefixes
 
   private
@@ -498,13 +500,30 @@ module MetadataHelper
     item_metadata
   end
 
-  # Extracts the value of the dc:identifier from a metadata hash
+  # Extracts the value of the dc:identifier or dcterms:identifier from a metadata hash
   def self::get_dc_identifier(metadata)
     dc_id = nil
-    ['dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
+    ['dc:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
       dc_id = metadata[dc_id_predicate] if metadata.has_key?(dc_id_predicate)
     end
     dc_id
+  end
+
+  # Retrieve sesame repository by collection
+  #
+  # @param [String] url
+  # @param [String] collection_name
+  # @raise [Exception] if no related repo found
+  # @return [HcsvlabRespository]
+  def self::get_repo_by_collection(collection_name)
+    url = SESAME_CONFIG["url"].to_s
+
+    server = RDF::Sesame::HcsvlabServer.new(url)
+    repo = server.repositories[collection_name]
+
+    raise Exception.new("Repository [#{collection_name}] not found in sesame server[#{url}]") if (repo.nil?)
+
+    repo
   end
 
 end

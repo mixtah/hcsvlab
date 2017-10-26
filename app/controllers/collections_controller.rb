@@ -11,9 +11,7 @@ class CollectionsController < ApplicationController
 
   STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
-  # include MetadataHelper
-
-  # Don't bother updating _sign_in_at fields for every API request 
+  # Don't bother updating _sign_in_at fields for every API request
   prepend_before_filter :skip_trackable # , only: [:add_items_to_collection, :add_document_to_item]
   before_filter :authenticate_user!, except: [:index, :show]
 
@@ -282,6 +280,9 @@ class CollectionsController < ApplicationController
     end
   end
 
+  #
+  # POST "catalog/:collectionId/:itemId"
+  #
   def add_document_to_item
     begin
       collection = validate_collection(params[:collectionId], params[:api_key])
@@ -388,7 +389,6 @@ class CollectionsController < ApplicationController
     end
   end
 
-  # TODO: collection_enhancement
   # def edit_collection
   #   begin
   #     collection = validate_collection(params[:id], params[:api_key])
@@ -616,7 +616,6 @@ class CollectionsController < ApplicationController
   # end
 
   # Writes the collection manifest as JSON and the metadata as .n3 RDF
-  # TODO: collection_enhancement
   def create_metadata_and_manifest(collection_name, collection_rdf, collection_manifest={"collection_name" => collection_name, "files" => {}})
 
     corpus_dir = File.join(Rails.application.config.api_collections_location, collection_name)
@@ -637,13 +636,11 @@ class CollectionsController < ApplicationController
 
   # Creates a combined metadata.rdf file and returns the path of that file.
   # The file name takes the form of 'item1-item2-itemN-metadata.rdf'
-  # TODO: collection_enhancement
   def create_combined_item_rdf(corpus_dir, item_names, item_rdf)
     create_item_rdf(corpus_dir, item_names.join("-"), item_rdf)
   end
 
   # creates an item-metadata.rdf file and returns the path of that file
-  # TODO: collection_enhancement
   def create_item_rdf(corpus_dir, item_name, item_rdf)
     filename = File.join(corpus_dir, item_name + '-metadata.rdf')
     create_file(filename, item_rdf)
@@ -666,7 +663,6 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads a document given as json content
-  # TODO: collection_enhancement
   def upload_document_using_json(corpus_dir, file_basename, json_content)
     absolute_filename = File.join(corpus_dir, file_basename)
     Rails.logger.debug("Writing uploaded document contents to new file #{absolute_filename}")
@@ -675,7 +671,6 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads a document given as a http multipart uploaded file or responds with an error if appropriate
-  # TODO: collection_enhancement
   def upload_document_using_multipart(corpus_dir, file_basename, file, collection_name)
     absolute_filename = File.join(corpus_dir, file_basename)
     if !file.is_a? ActionDispatch::Http::UploadedFile
@@ -691,7 +686,6 @@ class CollectionsController < ApplicationController
 
   # Processes the metadata for each item in the supplied request parameters
   # Returns a hash containing :successes and :failures of processed items
-  # TODO: collection_enhancement
   def process_items(collection_name, corpus_dir, request_params, uploaded_files=[])
     items = []
     failures = []
@@ -720,7 +714,6 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads any documents in the item metadata and returns a copy of the item metadata with its metadata graph updated
-  # TODO: collection_enhancement
   def process_item_documents_and_update_graph(corpus_dir, item_metadata)
     unless item_metadata["documents"].nil?
       item_metadata["documents"].each do |document|
@@ -809,7 +802,6 @@ class CollectionsController < ApplicationController
   end
 
   # Processes files uploaded as part of a multipart request
-  # TODO: collection_enhancement
   def process_uploaded_files(corpus_dir, collection_name, files)
     uploaded_files = []
     files.each do |uploaded_file|
@@ -842,17 +834,17 @@ class CollectionsController < ApplicationController
   end
 
   # Updates the item in Solr by re-indexing that item
-  def update_item_in_solr(item)
-    # ToDo: refactor this workaround into a proper test mock/stub
-    if Rails.env.test?
-      json = {:cmd => "index", :arg => "#{item.id}"}
-      Solr_Worker.new.on_message(JSON.generate(json).to_s)
-    else
-      stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
-      reindex_item_to_solr(item.id, stomp_client)
-      stomp_client.close
-    end
-  end
+  # def update_item_in_solr(item)
+  #   # ToDo: refactor this workaround into a proper test mock/stub
+  #   if Rails.env.test?
+  #     json = {:cmd => "index", :arg => "#{item.id}"}
+  #     Solr_Worker.new.on_message(JSON.generate(json).to_s)
+  #   else
+  #     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+  #     reindex_item_to_solr(item.id, stomp_client)
+  #     stomp_client.close
+  #   end
+  # end
 
   def update_item_in_sesame(new_metadata, collection)
     stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
@@ -920,7 +912,6 @@ class CollectionsController < ApplicationController
   end
 
   # Removes the metadata and document files for an item
-  # TODO: collection_enhancement
   def delete_item_from_filesystem(item)
     item_name = item.get_name
     delete_file(File.join(item.collection.corpus_dir, "#{item_name}-metadata.rdf"))
@@ -1120,7 +1111,6 @@ class CollectionsController < ApplicationController
   end
 
   # Performs add document validations and returns the formatted metadata with the automatically generated metadata fields
-  # TODO: collection_enhancement
   def format_and_validate_add_document_request(corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
     validate_add_document_request(corpus_dir, collection, doc_metadata, doc_filename, doc_content, uploaded_file)
     doc_metadata = format_add_document_metadata(corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
@@ -1130,7 +1120,6 @@ class CollectionsController < ApplicationController
   end
 
   # Format the add document metadata and add doc to file system
-  # TODO: collection_enhancement
   def format_add_document_metadata(corpus_dir, collection, item, document_metadata, document_filename, document_content, uploaded_file)
     # Update the document @id to the Alveo catalog URI
     document_metadata = update_jsonld_document_id(document_metadata, collection.name, item.get_name)
@@ -1146,40 +1135,54 @@ class CollectionsController < ApplicationController
   end
 
   # Creates a document in the database from Json-ld document metadata
-  def create_document(item, document_json_ld)
-    expanded_metadata = JSON::LD::API.expand(document_json_ld).first
-    file_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
-    file_name = File.basename(file_path)
-    doc_type = expanded_metadata[MetadataHelper::TYPE.to_s]
-    doc_type = doc_type.first['@value'] unless doc_type.nil?
-    document = item.documents.find_or_initialize_by_file_name(file_name)
-    if document.new_record?
-      begin
-        document.file_path = file_path
-        document.doc_type = doc_type
-        document.mime_type = mime_type_lookup(file_name)
-        document.item = item
-        document.item_id = item.id
-        document.save
-        logger.info "#{doc_type} Document = #{document.id.to_s}" unless Rails.env.test?
-      rescue Exception => e
-        logger.error("Error creating document: #{e.message}")
-      end
-    else
-      raise ResponseError.new(412), "A file named #{file_name} is already in use by another document of item #{item.get_name}"
-    end
-  end
+  # def create_document(item, document_json_ld, file_attr=nil)
+  #
+  #   file_path = nil
+  #   file_name = nil
+  #   doc_type = nil
+  #
+  #   if file_attr.nil?
+  #     # retrieve file attr from json
+  #     expanded_metadata = JSON::LD::API.expand(document_json_ld).first
+  #     file_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
+  #     file_name = File.basename(file_path)
+  #     doc_type = expanded_metadata[MetadataHelper::TYPE.to_s]
+  #     doc_type = doc_type.first['@value'] unless doc_type.nil?
+  #   else
+  #     # retrieve file attr
+  #     file_path = file_attr[:file_path]
+  #     file_name = File.basename(file_path)
+  #     doc_type = file_attr[:doc_type]
+  #   end
+  #
+  #   document = item.documents.find_or_initialize_by_file_name(file_name)
+  #   if document.new_record?
+  #     begin
+  #       document.file_path = file_path
+  #       document.doc_type = doc_type
+  #       document.mime_type = mime_type_lookup(file_name)
+  #       document.item = item
+  #       document.item_id = item.id
+  #       document.save
+  #       logger.info "#{doc_type} Document = #{document.id.to_s}" unless Rails.env.test?
+  #     rescue Exception => e
+  #       logger.error("Error creating document: #{e.message}")
+  #     end
+  #   else
+  #     raise ResponseError.new(412), "A file named #{file_name} is already in use by another document of item #{item.get_name}"
+  #   end
+  # end
 
   # Adds a document to Sesame and updates the corresponding item in Solr
-  def add_and_index_document(item, document_json_ld)
-    add_and_index_document_in_sesame(item.id, document_json_ld)
-
-    # Reindex item in Solr
-    delete_item_from_solr(item.id)
-    item.indexed_at = nil
-    item.save
-    update_item_in_solr(item)
-  end
+  # def add_and_index_document(item, document_json_ld)
+  #   add_and_index_document_in_sesame(item.id, document_json_ld)
+  #
+  #   # Reindex item in Solr
+  #   delete_item_from_solr(item.id)
+  #   item.indexed_at = nil
+  #   item.save
+  #   update_item_in_solr(item)
+  # end
 
   #
   # Core functionality common to creating a collection
@@ -1243,11 +1246,11 @@ class CollectionsController < ApplicationController
   #
   # Core functionality common to add document ingest (via api and web app)
   #
-  def add_document_core(collection, item, document_metadata, document_filename)
-    create_document(item, document_metadata)
-    add_and_index_document(item, document_metadata)
-    "Added the document #{File.basename(document_filename)} to item #{item.get_name} in collection #{collection.name}"
-  end
+  # def add_document_core(collection, item, document_metadata, document_filename)
+  #   create_document(item, document_metadata)
+  #   add_and_index_document(item, document_metadata)
+  #   "Added the document #{File.basename(document_filename)} to item #{item.get_name} in collection #{collection.name}"
+  # end
 
   #
   # Validates that the given request parameters contains the required fields
@@ -1412,7 +1415,7 @@ class CollectionsController < ApplicationController
     mappings = MetadataHelper::searchable_fields
     mappings.each do |m|
       unless exclude_name.include?(m.rdf_name)
-        # rlt[m.rdf_name] = m.user_friendly_name.nil? ? m.rdf_name : m.user_friendly_name
+        # f[m.rdf_name] = m.user_friendly_name.nil? ? m.rdf_name : m.user_friendly_name
         rlt[m.rdf_name] = m.rdf_name
       end
     end
