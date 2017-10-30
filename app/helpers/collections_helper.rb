@@ -55,8 +55,13 @@ module CollectionsHelper
   def self.create_document(item, document_json_ld)
 
     expanded_metadata = JSON::LD::API.expand(document_json_ld).first
-    # file_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
-    file_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@value']).path
+
+    uri = expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']
+    if uri.nil?
+      uri = expanded_metadata[MetadataHelper::SOURCE.to_s].first['@value']
+    end
+
+    file_path = URI(uri).path
     file_name = File.basename(file_path)
     doc_type = expanded_metadata[MetadataHelper::TYPE.to_s]
     doc_type = doc_type.first['@value'] unless doc_type.nil?

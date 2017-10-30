@@ -187,6 +187,9 @@ private
     document_RDF_URI = RDF::URI.new(document_json_ld['@id'])
     item_document_link = {'@id' => item.uri, MetadataHelper::DOCUMENT.to_s => document_RDF_URI}
     append_item_graph = RDF::Graph.new << JSON::LD::API.toRDF(item_document_link)
+
+    logger.debug "update_item_in_sesame_with_link: append_item_graph[#{append_item_graph.dump(:ttl)}]"
+
     update_sesame_with_graph(append_item_graph, repository)
   end
 
@@ -443,6 +446,8 @@ private
                           annotations_url: item_info.annotations_url,
                           documents: item_info.documents,
                           documentsLocations: documents_locations}.to_json.to_s
+    logger.debug "add_json_metadata_field: item.json_metadata[#{item.json_metadata}]"
+
     item.save!
     # ::Solrizer::Extractor.insert_solr_field_value(document, 'json_metadata', json_metadata.to_s)
 

@@ -7,6 +7,7 @@ defaults: &defaults
   licence_access_request_response_sender: karl.li@mq.edu.au
   download_max_files: 9999
   download_tmp_dir: /mnt/volume/hcsvlab_download
+  contrib_dir: /data/contrib
   # tmp file expired time - hours
   download_expired_time: 24
 

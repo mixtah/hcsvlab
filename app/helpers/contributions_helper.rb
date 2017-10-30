@@ -187,8 +187,11 @@ module ContributionsHelper
 
     # compose file attr
     contribution = Contribution.find_by_id(contribution_id)
-    corpus_dir = File.join(Rails.application.config.api_collections_location, contribution.collection.name)
-    file_path = File.join(corpus_dir, File.basename(uploaded_file.original_filename))
+
+    # /data/contrib/:collection_name/:contrib_id/:filename
+    contrib_dir = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution_id)
+    file_path = File.join(contrib_dir, File.basename(uploaded_file.original_filename))
+
     doc_type = self::extract_doc_type(File.basename(file_path))
 
     # copy uploaded document file from temp to corpus dir
@@ -196,6 +199,8 @@ module ContributionsHelper
     FileUtils.cp uploaded_file.tempfile, file_path
 
     # construct document Json-ld
+    doc_uri = Item.find_by_handle(item_handle).uri + "/document/#{File.basename(file_path)}"
+
     doc_json = JSON.parse(%(
     {
       "@context": {
@@ -203,7 +208,7 @@ module ContributionsHelper
         "foaf": "http://xmlns.com/foaf/0.1/",
         "alveo": "http://alveo.edu.au/schema/"
       },
-      "@id": "#{file_path}",
+      "@id": "#{doc_uri}",
       "@type": "foaf:Document",
       "alveo:Contribution": "#{contribution_id}",
       "dcterms:source": "#{file_path}",
@@ -217,10 +222,17 @@ module ContributionsHelper
   end
 
   # extract document type from file basename
-  def self::extract_doc_type(file)
-    rlt = "Text"
+  #
+  # Use gem "mimemagic" to handle this (at this version only by extension).
+  #
+  # File's document type is media type. e.g.,
+  #
+  # test.mp4: mediatype[video], subtype[mp4]
+  # test.txt: mediatype[text], subtype[plain]
+  #
 
-    return rlt
+  def self::extract_doc_type(file)
+    rlt = MimeMagic.by_path(file).mediatype
   end
 
   #

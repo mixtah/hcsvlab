@@ -296,7 +296,7 @@ class CollectionsController < ApplicationController
       uploaded_file = uploaded_file.first if uploaded_file.is_a? Array
       doc_filename = MetadataHelper::get_dc_identifier(doc_metadata) # the document filename is the document id
       doc_metadata = format_and_validate_add_document_request(collection.corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
-      @success_message = add_document_core(collection, item, doc_metadata, doc_filename)
+      @success_message = CollectionsHelper::add_document_core(collection, item, doc_metadata, doc_filename)
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
       return # Only respond with one error at a time
@@ -319,7 +319,7 @@ class CollectionsController < ApplicationController
         additional_metadata = validate_document_additional_metadata(params)
         uploaded_file_path = upload_document_using_multipart(collection.corpus_dir, uploaded_file.original_filename, uploaded_file, collection.name)
         json_ld = construct_document_json_ld(collection, item, params[:language], uploaded_file_path, additional_metadata)
-        msg = add_document_core(collection, item, json_ld, uploaded_file_path)
+        msg = CollectionsHelper::add_document_core(collection, item, json_ld, uploaded_file_path)
         redirect_to catalog_path(collection: collection.name, itemId: item.get_name), notice: msg
       rescue ResponseError => e
         flash[:error] = e.message

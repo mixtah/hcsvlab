@@ -136,6 +136,7 @@ module Blacklight::CatalogHelperBehavior
   #
   def create_display_info_hash(document, userAnnotations=nil)
     # TODO: This method is madness... :(
+    logger.debug "create_display_info_hash: start - document[#{document}]"
     default_url_options = Rails.application.config.action_mailer.default_url_options
 
     fieldDisplayName = create_display_field_name_mapping(document)
@@ -375,6 +376,8 @@ module Blacklight::CatalogHelperBehavior
 
 
     item_info.documents = documentsData
+
+    logger.debug "create_display_info_hash: end - item_info[#{item_info.inspect}]"
 
     item_info
   end
