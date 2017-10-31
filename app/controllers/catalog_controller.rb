@@ -612,8 +612,11 @@ class CatalogController < ApplicationController
       # check if document exists in JSON metadata from Sesame/Solr
       # This is set during Solr indexing based on a variety of metadata from Solr and Sesame
       # See add_json_metadata_field in solr_worker.rb
-      metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
-      doc = nil if doc.present? and metadata.blank?
+
+      # KL - ignore checking item.json_metadata
+      # item.id and document.file_name can guarantee the proper permission for document download
+      # metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
+      # doc = nil if doc.present? and metadata.blank?
 
       if doc.present?
 

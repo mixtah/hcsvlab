@@ -478,7 +478,7 @@ module MetadataHelper
   #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
   def self::update_jsonld_collection_id(collection_metadata, collection_name)
 
-    # TODO: replace hard-code with proper config
+    # already updated config (deploy/nci.rb, staging.rb), to remove below codes later
     id = UrlGenerator.new.collection_url(collection_name)
     if (id.start_with?("http://app.alveo.edu.au"))
       id.sub!("http://app.alveo.edu.au", "https://app.alveo.edu.au")
