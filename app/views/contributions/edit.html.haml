@@ -19,15 +19,15 @@
       = label_tag :contribution_text, 'Contribution Description:'
       = text_area_tag :contribution_text, @contribution.description, :style => 'height: 100%; width: 100%;'
 
-    .row-fluid
-      = label_tag :file_text, 'Upload Contribution Document:'
-      = file_field_tag :file
+    -#.row-fluid
+    -#  = label_tag :file_text, 'Upload Contribution Document:'
+    -#  = file_field_tag :file
 
     = submit_tag 'hidden', :style => "display:none"
     = hidden_field_tag :id, "#{@contribution.id}"
 
-  .row-fluid
-    = render 'display_contribution_mappings'
+  -#.row-fluid
+  -#  = render 'display_contribution_mappings'
 
   .form-actions
     = submit_tag 'Update', :class => "btn btn-primary", :id => 'update_contribution_btn'

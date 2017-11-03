@@ -1,6 +1,7 @@
 require Rails.root.join('lib/rdf-sesame/hcsvlab_server.rb')
 require Rails.root.join('app/helpers/collections_helper.rb')
 require 'zip'
+require 'mimemagic'
 
 module ContributionsHelper
 
@@ -87,23 +88,54 @@ module ContributionsHelper
   end
 
   #
+  # Preview zip file which contains document files.
+  #
+  # Return: hash
+  #
+  # {
+  #   :message => (string) result message to show on page,
+  #   :success_files => (array of string) success files, empty if no file
+  #   :failed_files  => (array of string) "file|failed cause", empty if no file
+  # }
+  #
+  def self::preview_import(zip_file)
+    logger.debug "preview_import: start - zip_file[#{zip_file.inspect}]"
+
+    rlt = {
+      :message => "",
+      :success_files => [],
+      :failed_files => []
+    }
+
+    files = entry_names_from_zip(zip_file)
+
+    logger.debug "preview_import: end - rlt[#{rlt.inspect}]"
+  end
+
+  #
   # Extract entry name (file name) from zip file. No extraction, just read from central directory.
   #
-  # Return - string array of file basename
+  # Return - string array of file basename, or string if failed
   #
   def self::entry_names_from_zip(zip_file)
     logger.debug "entry_names_from_zip: start - zip_file[#{zip_file}]"
 
     rlt = []
 
-    Zip::File.open(zip_file) do |file|
-      # Handle entries one by one
-      file.each do |entry|
-        rlt << File.basename(entry.name)
+    begin
+      Zip::File.open(zip_file) do |file|
+        # Handle entries one by one
+        file.each do |entry|
+          rlt << File.basename(entry.name)
+        end
       end
+    rescue Zip::Error => e
+      rlt = e.message
     end
 
     logger.debug "entry_names_from_zip: end - rlt[#{rlt}]"
+
+    return rlt
   end
 
   #
@@ -189,8 +221,9 @@ module ContributionsHelper
     contribution = Contribution.find_by_id(contribution_id)
 
     # /data/contrib/:collection_name/:contrib_id/:filename
-    contrib_dir = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution_id)
+    contrib_dir = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution_id.to_s)
     file_path = File.join(contrib_dir, File.basename(uploaded_file.original_filename))
+    logger.debug "add_document_to_contribution: file_path[#{file_path}]"
 
     doc_type = self::extract_doc_type(File.basename(file_path))
 
@@ -232,7 +265,14 @@ module ContributionsHelper
   #
 
   def self::extract_doc_type(file)
-    rlt = MimeMagic.by_path(file).mediatype
+    rlt = MimeMagic.by_path(file)
+    if rlt.nil?
+      rlt = "application"
+    else
+      rlt = rlt.mediatype
+    end
+
+    return rlt
   end
 
   #
@@ -261,6 +301,21 @@ module ContributionsHelper
     end
 
     logger.debug "load_contribution_mapping: end - rlt[#{rlt}]"
+
+    # for test purpose
+    rlt = [
+      {:mp_id => 1, :item_name => "s137", :document_file_name => "s137_faceup.transcript", :document_doc_type => "Text"},
+      {:mp_id => 2, :item_name => "s137", :document_file_name => "s137_facelow.transcript", :document_doc_type => "Text"},
+      {:mp_id => 3, :item_name => "s137", :document_file_name => "s137_face_audio.transcript", :document_doc_type => "Text"},
+
+      {:mp_id => 4, :item_name => "s99", :document_file_name => "s99_facelow.transcript", :document_doc_type => "Text"},
+      {:mp_id => 5, :item_name => "s99", :document_file_name => "s99_face_audio.transcript", :document_doc_type => "Text"},
+      {:mp_id => 6, :item_name => "s99", :document_file_name => "s99_faceup.transcript", :document_doc_type => "Text"},
+
+      {:mp_id => 4, :item_name => "s109", :document_file_name => "s109_facelow.transcript", :document_doc_type => "Text"},
+      {:mp_id => 5, :item_name => "s109", :document_file_name => "s109_face_audio.transcript", :document_doc_type => "Text"},
+      {:mp_id => 6, :item_name => "s109", :document_file_name => "s109_faceup.transcript", :document_doc_type => "Text"}
+    ]
 
     return rlt
   end

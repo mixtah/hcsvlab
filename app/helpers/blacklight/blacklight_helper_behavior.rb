@@ -497,6 +497,9 @@ module Blacklight::BlacklightHelperBehavior
   def link_literal_to_document(doc, label, opts={:counter => nil, :results_view => true})
     collectionName = Array(doc[MetadataHelper.short_form(MetadataHelper::COLLECTION)]).first
     itemIdentifier = doc[:handle].split(':').last
+
+    logger.debug "link_literal_to_document: opts[#{opts}], collectionName[#{collectionName}], itemIdentifier[#{itemIdentifier}]"
+
     if !opts[:itemViewList].nil?
       link_to label, solr_document_path(collectionName, itemIdentifier, :il => opts[:itemViewList])
     else

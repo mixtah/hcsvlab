@@ -64,6 +64,9 @@ class ContributionsController < ApplicationController
 
       msg, contrib_id = upsert_contribution_core(attr)
 
+      # create contribution directory
+      FileUtils.makedirs(File.join(APP_CONFIG["contrib_dir"], contribution_collection, contrib_id.to_s))
+
       redirect_to contrib_show_path(id: contrib_id), notice: msg
     rescue ResponseError => e
       flash[:error] = e.message
@@ -84,12 +87,17 @@ class ContributionsController < ApplicationController
       end
     else
       # load metadata
-      # not show abstract in show page
+      metadata = ContributionsHelper::load_contribution_metadata(@contribution.name)
+
       @contribution_metadata = {
-        :Title => @contribution.name,
-        :Creator => @contribution.owner.full_name,
-        :Created => @contribution.created_at
+        :title => @contribution.name,
+        :creator => @contribution.owner.full_name,
+        :created => @contribution.created_at,
+        :abstract => metadata["dcterms:abstract"]
       }
+
+      # load mapping data
+      @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
 
       respond_to do |format|
         format.html {render :show}
@@ -107,6 +115,41 @@ class ContributionsController < ApplicationController
     # collect extra info for add_document_to_item
     metadata = ""
     @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
+  end
+
+  # GET "contrib/:id/import"
+  # POST "contrib/:id/import"
+  #
+  # phrase 0: Import from Zip
+  # phrase 1: Review Import
+  # phrase 2: Import Confirmation
+  #
+  def import
+    @contribution = Contribution.find_by_id(params[:id])
+    @contribution_metadata = ContributionsHelper::load_contribution_metadata(@contribution.name)
+    @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
+
+    @phrase = params[:phrase]
+    if @phrase.nil?
+      @phrase = "0"
+    end
+
+    if request.post?
+
+      zip_file = params[:file] #  ActionDispatch::Http::UploadedFile
+
+      if !zip_file.nil?
+        # contains file, upload & preview
+        @phrase = "1"
+
+      else
+        # zip already uploaded, now proceed import
+        @phrase = "2"
+      end
+    else
+      # just load page
+    end
+
   end
 
   #
@@ -136,7 +179,7 @@ class ContributionsController < ApplicationController
         :abstract => contribution_abstract,
 
         # document part
-        :file => params[:file]  #  ActionDispatch::Http::UploadedFile
+        :file => params[:file] #  ActionDispatch::Http::UploadedFile
       }
 
       msg, contrib_id = upsert_contribution_core(attr)
@@ -310,7 +353,7 @@ class ContributionsController < ApplicationController
 
         if vld_rlt[:error].nil?
           # no news is good news, validation passed
-          add_rlt = ContributionsHelper::add_document_to_contribution(contrib.id,  vld_rlt[:item_handle], attr[:file])
+          add_rlt = ContributionsHelper::add_document_to_contribution(contrib.id, vld_rlt[:item_handle], attr[:file])
           msg = "Contribution '#{contrib.name}' (#{uri}) updated"
         else
           msg = "Contribution '#{contrib.name}' (#{uri}) update failed: #{vld_rlt[:error]}"

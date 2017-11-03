@@ -62,6 +62,7 @@ HcsvlabWeb::Application.routes.draw do
   post "contrib/", :to => "contributions#create", :as => "contrib_create"
   get "contrib/:id", :to => "contributions#show", :as => "contrib_show"
   get "contrib/:id/edit", :to => "contributions#edit", :as => "contrib_edit"
+  get "contrib/:id/import", :to => "contributions#import", :as => "contrib_import"
   put "contrib/update", :to => "contributions#update", :as => "contrib_update"
   delete "contrib/:id", :to => "contributions#delete", :as => "contrib_delete"
 
