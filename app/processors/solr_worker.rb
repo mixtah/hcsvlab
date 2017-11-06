@@ -1,11 +1,11 @@
 require 'linkeddata'
 require 'xmlsimple'
 
-require Rails.root.join("/app/helpers/blacklight/catalog_helper_behavior.rb")
-require Rails.root.join("/app/helpers/blacklight/blacklight_helper_behavior")
-require Rails.root.join("/lib/rdf-sesame/hcsvlab_server.rb")
-require Rails.root.join("/lib/zip_importer")
-require Rails.root.join("/app/helpers/items_helper")
+require Rails.root.join("app/helpers/blacklight/catalog_helper_behavior.rb")
+require Rails.root.join("app/helpers/blacklight/blacklight_helper_behavior")
+require Rails.root.join("lib/rdf-sesame/hcsvlab_server.rb")
+require Rails.root.join("lib/zip_importer")
+require Rails.root.join("app/helpers/items_helper")
 
 # Import RDF vocabularies
 Dir.glob("#{Rails.root}/lib/rdf/**/*.rb") {|f| require f}
