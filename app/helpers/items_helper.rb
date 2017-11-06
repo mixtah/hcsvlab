@@ -41,7 +41,11 @@ module ItemsHelper
   # "collection"=>"aftestcollection1",
   # "itemId"=>"bs_n_4"
   # }
-  def add_document(attrs)
+  def add_document(attrs, item, filepath)
+    additional_metadata = validate_document_additional_metadata(attrs)
+    filepath = upload_document_from_import(item.collection.corpus_dir, filepath, item.collection.name)
+    json_ld = construct_document_json_ld(item.collection, item, attrs[:language], filepath, additional_metadata)
+    add_document_core(item.collection, item, json_ld, filepath)
   end
 
   # Creates a file at the specified path with the given content
@@ -129,6 +133,20 @@ module ItemsHelper
     else
       Rails.logger.debug("Copying uploaded document file from #{file.tempfile} to #{absolute_filename}")
       FileUtils.cp file.tempfile, absolute_filename
+      absolute_filename
+    end
+  end
+
+  def upload_document_from_import(corpus_dir, file, collection_name)
+    file_basename = File.basename(file)
+    absolute_filename = File.join(corpus_dir, file_basename)
+    if !File.exist?(file)
+      raise ResponseError.new(412), "Error in file parameter."
+    elsif file.blank? or file.size == 0
+      raise ResponseError.new(412), "Uploaded file #{file_basename} is not present or empty."
+    else
+      Rails.logger.debug("Copying uploaded document file from #{file} to #{absolute_filename}")
+      FileUtils.cp file, absolute_filename
       absolute_filename
     end
   end

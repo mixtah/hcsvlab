@@ -1,10 +1,13 @@
 require 'linkeddata'
 require 'xmlsimple'
 
-require Rails.root.join("app/helpers/blacklight/catalog_helper_behavior.rb")
+require Rails.root.join("app/helpers/blacklight/catalog_helper_behavior")
 require Rails.root.join("app/helpers/blacklight/blacklight_helper_behavior")
-require Rails.root.join("lib/rdf-sesame/hcsvlab_server.rb")
+require Rails.root.join("lib/rdf-sesame/hcsvlab_server")
 require Rails.root.join("lib/zip_importer")
+
+require Rails.root.join('lib/tasks/fedora_helper')
+require Rails.root.join('lib/api/request_validator')
 require Rails.root.join("app/helpers/items_helper")
 
 # Import RDF vocabularies
@@ -19,6 +22,9 @@ class Solr_Worker < ApplicationProcessor
   include Blacklight::BlacklightHelperBehavior
   include Blacklight::Configurable
   include Blacklight::SolrHelper
+
+  include RequestValidator
+  include ItemsHelper
 
   #
   # =============================================================================
@@ -145,7 +151,7 @@ private
     @import = Import.find(import_id)
     logger.debug("Extracting zip upload: #{@import.directory} | #{@import.filename}")
 
-    options = JSON.parse(@import.options) rescue nil
+    options = JSON.parse(@import.options) rescue {}
 
     # TODO maybe ZipExtractor is a better name
     zip = AlveoUtil::ZipImporter.new(@import.directory, @import.filename, options)
@@ -156,13 +162,67 @@ private
   end
 
   def import_extracted_zip(import_id)
+    @import = Import.find(import_id)
     logger.debug("Committing import #{import_id} | #{@import.directory} | #{@import.filename}")
 
-    @import = Import.find(import_id)
-    @collection = @import.collection
+    begin
+      @import = Import.find(import_id)
+      @collection = @import.collection
 
-    options = JSON.parse(@import.options) rescue nil
+      options = JSON.parse(@import.options) rescue {}
+      default_metadata = JSON.parse(@import.metadata) rescue {}
+      
+      default_meta_keys = []
+      default_meta_values = []
+      default_metadata.each do |k,v|
+        default_meta_keys.push(k)
+        default_meta_values.push(v)
+      end
 
+      zip = AlveoUtil::ZipImporter.new(@import.directory, @import.filename, options)
+      return false unless @import.extracted?
+
+      # docs is really a hash of items > docs
+      docs = zip.find_documents
+      item_metadata = zip.item_metadata
+      item_metadata_fields = zip.item_metadata_fields
+
+      docs.each do |item_name,documents|
+        # Raise an exception if item is not unique in the collection
+        # 'item' has already been sanitized in item_name
+        item_name = validate_item_name_unique(@collection, item_name)
+
+        # Merge default/common meta fields
+        item_metadata[item_name] = item_metadata[item_name] || {}
+        merged = merge_meta_arrays(item_metadata[item_name].keys, item_metadata[item_name].values, default_meta_keys, default_meta_values)
+
+        attrs = {
+          :item_name => item_name,
+          :item_title => item_name,
+          :additional_key => merged.keys,
+          :additional_value => merged.values,
+        }
+
+        item_handles = add_item(attrs, item_name, @collection)
+        msg = "Created new item: #{item_name}" # Format the item creation message
+
+        item = Item.find_by_handle("#{@collection.name}:#{item_name}")
+
+        documents.keys.each do |basename|
+          attrs = {
+            # :document_file => docs[item_name][basename][:file],
+            :language => 'eng - English', # TODO
+            :collection => @collection.name,
+            :itemId => item_name,
+          }
+          logger.debug("Document attrs:" + attrs.inspect)
+
+          msg = add_document(attrs, item, docs[item_name][basename][:file])
+        end
+      end
+    rescue Exception => e
+      logger.debug("Exception: #{e}")
+    end
   end
 
   #

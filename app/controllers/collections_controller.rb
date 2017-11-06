@@ -267,6 +267,9 @@ class CollectionsController < ApplicationController
     @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
     if request.post?
       begin
+        # Raise an exception if required fields are empty
+        validate_required_web_fields(params, {:item_name => 'item name', :item_title => 'item title'})
+
         # Raise an exception if item is not unique in the collection
         item_name = validate_item_name_unique(@collection, Item.sanitise_name(params[:item_name]))
 
