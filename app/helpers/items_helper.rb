@@ -1,5 +1,5 @@
 module ItemsHelper
-
+  
   # Creates a file at the specified path with the given content
   def create_file(file_path, content)
     FileUtils.mkdir_p(File.dirname file_path)
@@ -427,17 +427,17 @@ module ItemsHelper
 
   # Returns an Alveo formatted collection full URL
   def format_collection_url(collection_name)
-    collection_url(collection_name)
+    Rails.application.routes.url_helpers.collection_url(collection_name)
   end
 
   # Returns an Alevo formatted item full URL
   def format_item_url(collection_name, item_name)
-    catalog_url(collection_name, item_name)
+    Rails.application.routes.url_helpers.catalog_url(collection_name, item_name)
   end
 
   # Retuns an Alveo formatted document full URL
   def format_document_url(collection_name, item_name, document_name)
-    catalog_document_url(collection_name, item_name, document_name)
+    Rails.application.routes.url_helpers.catalog_document_url(collection_name, item_name, document_name)
   end
 
   # Overrides the jsonld is_part_of_corpus with the collection's Alveo url
@@ -478,8 +478,6 @@ module ItemsHelper
     end
     jsonld_metadata
   end
-
-
 
   # #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
   # def update_jsonld_collection_id(collection_metadata, collection_name)
@@ -752,7 +750,7 @@ module ItemsHelper
   # Constructs Json-ld for a new item
   #
   def construct_item_json_ld(collection, item_name, item_title, metadata)
-    item_metadata = {'@id' => catalog_url(collection.name, item_name),
+    item_metadata = {'@id' => Rails.application.routes.url_helpers.catalog_url(collection.name, item_name),
                       MetadataHelper::IDENTIFIER.to_s => item_name,
                       MetadataHelper::TITLE.to_s => item_title,
                       MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
@@ -765,7 +763,7 @@ module ItemsHelper
   # Constructs Json-ld for a new document
   #
   def construct_document_json_ld(collection, item, language, document_file, metadata)
-    document_metadata = {'@id' => catalog_document_url(collection.name, item.get_name, File.basename(document_file)),
+    document_metadata = {'@id' => Rails.application.routes.url_helpers.catalog_document_url(collection.name, item.get_name, File.basename(document_file)),
                           '@type' => MetadataHelper::DOCUMENT.to_s,
                           MetadataHelper::LANGUAGE.to_s => language,
                           MetadataHelper::IDENTIFIER.to_s => File.basename(document_file),
