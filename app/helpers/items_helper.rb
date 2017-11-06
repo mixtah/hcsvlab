@@ -1,5 +1,49 @@
 module ItemsHelper
-  
+
+  # Kick off the addition of an item
+  # 
+  # attrs is expected to contain at least something like:
+  # {
+  # "item_name"=>"bombastic", 
+  # "item_title"=>"Bombastic Man",
+  # "additional_key"=>["dc:creator", "dc:somethingElse"],
+  # "additional_value"=>["Andy", "Thing"],
+  # }
+  # 
+  # This will either come from params via web_add_item or another object via worker/import_extracted_zip
+  # 
+  def add_item(attrs, item_name, collection)
+    Rails.logger.debug("Called add_item with:")
+    Rails.logger.debug(attrs)
+    Rails.logger.debug(item_name)
+    Rails.logger.debug(collection)
+
+    # Raise an exception if required fields are empty
+    validate_required_web_fields(attrs, {:item_name => 'item name', :item_title => 'item title'})
+
+    additional_metadata = validate_item_additional_metadata(attrs)
+    # Get a hash of metadata
+    json_ld = construct_item_json_ld(collection, item_name, attrs[:item_title], additional_metadata)
+
+    # Write the item metadata to an rdf file and ingest the file
+    processed_items = process_items(collection.name, collection.corpus_dir, {:items => [{'metadata' => json_ld}]})
+
+    add_item_core(collection, processed_items[:successes])
+  end
+
+  # Add a document
+  # 
+  # attrs is expected to contain at least something like:
+  # 
+  # {
+  # "document_file"=> ActionDispatch::Http::UploadedFile or path on disk,
+  # "language"=>"eng - English",
+  # "collection"=>"aftestcollection1",
+  # "itemId"=>"bs_n_4"
+  # }
+  def add_document(attrs)
+  end
+
   # Creates a file at the specified path with the given content
   def create_file(file_path, content)
     FileUtils.mkdir_p(File.dirname file_path)
@@ -816,5 +860,23 @@ module ItemsHelper
     end
 
     rlt
+  end
+
+  def merge_meta_arrays(meta_keys, meta_values, default_meta_keys, default_meta_values)
+    # I imagine there's a more hipster way to do this
+    # 
+    merged = {}
+    i = 0
+    meta_keys.each do |k|
+      merged[k] = meta_values[i]
+      i = i + 1
+    end
+
+    i = 0
+    default_meta_keys.each do |k|
+      merged[k] = default_meta_values[i] unless merged.has_key?(k)
+    end
+
+    return merged
   end
 end
