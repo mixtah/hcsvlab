@@ -6,7 +6,7 @@
     %dl.dl-horizontal.mt-20
       %dt.p-10 File:
       %dd.p-10 #{@import.filename}
-      %dt.p-10 Metadata:
+      %dt.p-10 Common Metadata:
       %dd.p-10 
         %table.table
           - @metadata.each do |key,value|
@@ -19,7 +19,7 @@
     
     %p.my-20
       %strong
-        Found #{@zip.total_files} documents in #{@zip.items.size} items.
+        Found #{@zip.total_files} documents in #{@size} items.
 
     - if @zip.warnings.size > 0
       .alert.alert-error.permanent
@@ -29,22 +29,49 @@
         %ul
           - @zip.warnings.each do |w|
             %li #{w}
-
+    
     .control-group
-      = label_tag :option_folders_as_item_names, 'Use folders as item names', :class => "control-label"
+      = label_tag :option_folders_as_item_names, 'Use folders as item names', :class => "control-label span4 p-10"
       .controls
         = check_box_tag :option_folders_as_item_names, true, @options['folders_as_item_names']
-    .control-group
-      = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth', :class => "control-label"
+    .control-group.folders-as-item-names-options
+      = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth', :class => "control-label span4 p-10"
       .controls
         = select_tag :option_item_name_at_folder_depth, options_for_select([1,2,3,4,5], @options['item_name_at_folder_depth'])
-      
+
+    .control-group
+      = label_tag :option_meta_in_filename, 'Extract item metadata from file names', :class => "control-label span4 p-10"
+      .controls
+        = check_box_tag :option_meta_in_filename, true, @options['meta_in_filename']
+
+    .control-group.meta-in-filename-options
+      = label_tag :option_meta_delimiter, 'Delimiter character', :class => "control-label span4 p-10"
+      .controls
+        = text_field_tag :option_meta_delimiter, @options['meta_delimiter'], maxlength: 1, size: 2, class: 'span1'
+
+    .control-group.meta-in-filename-options
+      = label_tag :option_num_meta_fields, 'Number of fields', :class => "control-label span4 p-10"
+      .controls
+        = select_tag :option_num_meta_fields, options_for_select([1,2,3,4,5], @options['num_meta_fields'])
+    
+    .control-group.meta-in-filename-options
+      = label_tag :option_meta_fields, 'Field names', :class => "control-label span4 p-10"
+      .controls.meta-fields
+        - if @options['meta_fields'].is_a?(Array)
+          - i = 0
+          - @options['meta_fields'].each do |value|
+            - next if i >= @options['num_meta_fields']
+            = text_field_tag 'option_meta_fields[]', value, class: 'span2 meta-field', id: "meta-field-#{i}"
+            %span.meta-delimiter
+              = @options['meta_delimiter']
+            - i = i + 1
+
     .form-actions
       = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
       = submit_tag 'Preview options', :class => "btn"
       = submit_tag 'Confirm import', :class => "btn btn-primary"
   
-  %p.my-20 Showing the first #{@limit} items.
+  %p.my-20 Showing the first #{@limit} items of #{@size}.
 
   %table.table
     %tr
@@ -53,14 +80,17 @@
       %th Filename
       %th Type
       %th Size
+      -# If we have extra item metadata, show the columns
+      -# We're assuming all the items have the same fields
+      - if @item_metadata_fields.is_a?(Array)
+        - @item_metadata_fields.each do |f|
+          %th #{f}
+
     - @docs.first(@limit).each do |item,documents|
       %tr
-        %th
+        %th.item-header
           %strong #{item}
-        %td
-        %td
-        %td
-        %td
+        %th.item-header{colspan: 4 + @item_metadata_fields.size}
         - documents.keys.each do |filename|
           %tr
             %td 
@@ -68,8 +98,11 @@
             %td #{filename}
             %td #{@docs[item][filename][:meta]['dcterms:type']}
             %td #{number_to_human_size @docs[item][filename][:meta]['dcterms:extent']}
+            - @item_metadata_fields.each do |f|
+              - if @item_metadata[item] and @item_metadata[item][f]
+                %td #{@item_metadata[item][f]}
 
-  %p.my-20 Showing the first #{@limit} items.
+  %p.my-20 Showing the first #{@limit} items of #{@size}.
 
 - else
   %h2 Please wait, extracting..

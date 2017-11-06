@@ -29,6 +29,16 @@ module AlveoUtil
             @documents.keys
         end
 
+        def item_metadata
+            @documents ||= find_documents
+            @item_metadata
+        end
+
+        def item_metadata_fields
+            @documents ||= find_documents
+            @item_metadata_fields
+        end
+
         def total_items
             items.size
         end
@@ -49,8 +59,11 @@ module AlveoUtil
             return @documents if @documents.size > 0
 
             @documents = {}
+            @item_metadata = {}
+            @item_metadata_fields = []
             @duplicates = []
             total = 0
+
             @files.each do |f|
                 i = item_name(f)
                 @documents[i] = {} unless @documents[i]
@@ -74,6 +87,23 @@ module AlveoUtil
                             "dcterms:type"   => ext,
                         }
                     }
+                    # Add extra meta data, extracted from filename
+                    if @options['meta_in_filename']
+                        @item_metadata[i] = {}
+                        bits = name.split(@options['meta_delimiter'])
+                        x = 0
+                        bits.each do |bit|
+                            if @options['meta_fields'].is_a?(Array) and !@options['meta_fields'][x].blank?
+                                meta_term = @options['meta_fields'][x]
+                                
+                                # Collect into global list
+                                @item_metadata_fields << meta_term unless @item_metadata_fields.include? meta_term
+                                # Collect into item list
+                                @item_metadata[i][meta_term] = bit
+                            end
+                            x = x + 1
+                        end
+                    end
                 else
                     @duplicates << (name + dot_ext)
                 end
