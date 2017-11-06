@@ -99,6 +99,9 @@ module AlveoUtil
                                 # Collect into global list
                                 @item_metadata_fields << meta_term unless @item_metadata_fields.include? meta_term
                                 # Collect into item list
+                                if @item_metadata[i][meta_term] != bit
+                                    set_warning("The \"#{meta_term}\" field was set more than once due to conflicts across filenames")
+                                end
                                 @item_metadata[i][meta_term] = bit
                             end
                             x = x + 1
@@ -113,13 +116,11 @@ module AlveoUtil
             dcount = @duplicates.size
 
             if fcount != total
-                msg = "File count (#{fcount}) does not match document count (#{total})"
-                @warnings << msg unless @warnings.include?(msg)
+                set_warning("File count (#{fcount}) does not match document count (#{total})")
             end
 
             if dcount > 0
-                msg = "#{dcount} duplicate files were found within the same item: " + @duplicates.join(', ')
-                @warnings << msg unless @warnings.include?(msg)
+                set_warning("#{dcount} duplicate files were found within the same item: " + @duplicates.join(', '))
             end
 
             return @documents
@@ -169,6 +170,10 @@ module AlveoUtil
             end
 
             return name
+        end
+
+        def set_warning(warning)
+            @warnings << warning unless @warnings.include?(warning)
         end
 
         # Derive a document name from a file name

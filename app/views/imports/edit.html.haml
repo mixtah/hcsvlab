@@ -90,7 +90,10 @@
       %tr
         %th.item-header
           %strong #{item}
-        %th.item-header{colspan: 4 + @item_metadata_fields.size}
+        %th.item-header{colspan: 4}
+        - @item_metadata_fields.each do |f|
+          - if @item_metadata[item] and @item_metadata[item][f]
+            %td.item-header #{@item_metadata[item][f]}
         - documents.keys.each do |filename|
           %tr
             %td 
@@ -98,9 +101,7 @@
             %td #{filename}
             %td #{@docs[item][filename][:meta]['dcterms:type']}
             %td #{number_to_human_size @docs[item][filename][:meta]['dcterms:extent']}
-            - @item_metadata_fields.each do |f|
-              - if @item_metadata[item] and @item_metadata[item][f]
-                %td #{@item_metadata[item][f]}
+            %td{colspan: @item_metadata_fields.size}
 
   %p.my-20 Showing the first #{@limit} items of #{@size}.
 
