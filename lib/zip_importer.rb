@@ -190,7 +190,7 @@ module AlveoUtil
                 Zip::ZipFile.open(zip_path) { |z|
                     z.each { |f|
                         f_path = File.join(@dir, f.name)
-                        FileUtils.mkdir_p(File.dirname(f_path))
+                        FileUtils.mkdir_p(File.dirname(f_path)) unless File.exist?(File.dirname(f_path))
                         z.extract(f, f_path) unless File.exist?(f_path)
                     }
                 }
