@@ -169,7 +169,7 @@ module AlveoUtil
                 end
             end
 
-            return name
+            return name.downcase.delete(' ./') # Same logic as sanitise_name
         end
 
         def set_warning(warning)
