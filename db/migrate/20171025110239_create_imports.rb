@@ -8,6 +8,7 @@ class CreateImports < ActiveRecord::Migration
       t.string :options
       t.string :metadata
       t.boolean :extracted
+      t.boolean :imported
       t.timestamps
     end
   end

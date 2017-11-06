@@ -1,10 +1,11 @@
 require 'linkeddata'
 require 'xmlsimple'
 
-require "#{Rails.root}/app/helpers/blacklight/catalog_helper_behavior.rb"
-require "#{Rails.root}/app/helpers/blacklight/blacklight_helper_behavior"
-require "#{Rails.root}/lib/rdf-sesame/hcsvlab_server.rb"
-require "#{Rails.root}/lib/zip_importer"
+require Rails.root.join("/app/helpers/blacklight/catalog_helper_behavior.rb")
+require Rails.root.join("/app/helpers/blacklight/blacklight_helper_behavior")
+require Rails.root.join("/lib/rdf-sesame/hcsvlab_server.rb")
+require Rails.root.join("/lib/zip_importer")
+require Rails.root.join("/app/helpers/items_helper")
 
 # Import RDF vocabularies
 Dir.glob("#{Rails.root}/lib/rdf/**/*.rb") {|f| require f}
@@ -114,10 +115,19 @@ class Solr_Worker < ApplicationProcessor
           error("Solr Worker", e.backtrace)
         end
       
-      when "import_zip"
+      when "extract_zip"
         begin
           args = packet["arg"]
-          import_zip(args['import_id'])
+          extract_zip(args['import_id'])
+        rescue Exception => e
+          error("Solr Worker", e.message)
+          error("Solr Worker", e.backtrace)
+        end
+
+      when "import_extracted_zip"
+        begin
+          args = packet["arg"]
+          import_extracted_zip(args['import_id'])
         rescue Exception => e
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
@@ -131,9 +141,9 @@ class Solr_Worker < ApplicationProcessor
 
 private
 
-  def import_zip(import_id)
+  def extract_zip(import_id)
     @import = Import.find(import_id)
-    logger.debug("Importing zip upload: #{@import.directory} | #{@import.filename}")
+    logger.debug("Extracting zip upload: #{@import.directory} | #{@import.filename}")
 
     options = JSON.parse(@import.options) rescue nil
 
@@ -143,6 +153,16 @@ private
       @import.extracted = true
       @import.save
     end
+  end
+
+  def import_extracted_zip(import_id)
+    logger.debug("Committing import #{import_id} | #{@import.directory} | #{@import.filename}")
+
+    @import = Import.find(import_id)
+    @collection = @import.collection
+
+    options = JSON.parse(@import.options) rescue nil
+
   end
 
   #

@@ -13,6 +13,12 @@ class ImportsController < ApplicationController
     @collection = @import.collection
     authorize! :web_add_item, @import.collection
 
+    if @import.imported?
+      msg = "This import has already been committed. Please upload a new file."
+      redirect_to collection_path(id: @collection.name), notice: msg
+      return
+    end
+
     @additional_metadata = JSON.parse(@import.metadata) rescue []
 
     @options = JSON.parse(@import.options) rescue {}
@@ -32,6 +38,12 @@ class ImportsController < ApplicationController
     @collection = @import.collection
     authorize! :web_add_item, @import.collection
 
+    if @import.imported?
+      msg = "This import has already been committed. Please upload a new file."
+      redirect_to collection_path(id: @collection.name), notice: msg
+      return
+    end
+
     @options = JSON.parse(@import.options) rescue {}
     @options[:folders_as_item_names] = !!params[:option_folders_as_item_names]
     @options[:item_name_at_folder_depth] = (params[:option_item_name_at_folder_depth].to_i > 0) ? params[:option_item_name_at_folder_depth].to_i : nil
@@ -45,7 +57,26 @@ class ImportsController < ApplicationController
     @import.save
 
     if params[:commit] == "Confirm import"
-      # TODO do it
+      # We'll set this as early as possible to avoid double submission
+      # But failure is still a possibility
+      @import.imported = true
+      @import.save!
+
+      stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
+      
+      packet = {
+        :cmd => "import_extracted_zip",
+        :arg => {
+          :import_id => @import.id
+        }
+      }
+      
+      stomp_client.publish('alveo.solr.worker', packet.to_json)
+      stomp_client.close
+
+      msg = "Your file is now being imported. It will be processed shortly."
+
+      redirect_to collection_path(id: @collection.name), notice: msg
     else
       redirect_to edit_import_path(@import)
     end
@@ -93,7 +124,7 @@ class ImportsController < ApplicationController
       stomp_client = Stomp::Client.open "#{STOMP_CONFIG['adapter']}://#{STOMP_CONFIG['host']}:#{STOMP_CONFIG['port']}"
       
       packet = {
-        :cmd => "import_zip",
+        :cmd => "extract_zip",
         :arg => {
           :import_id => @import.id
         }

@@ -93,6 +93,7 @@ ActiveRecord::Schema.define(:version => 20171025110239) do
     t.string   "options"
     t.string   "metadata"
     t.boolean  "extracted"
+    t.boolean  "imported"
     t.datetime "created_at",    :null => false
     t.datetime "updated_at",    :null => false
   end
