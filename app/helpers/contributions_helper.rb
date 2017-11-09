@@ -58,10 +58,6 @@ module ContributionsHelper
     return rlt
   end
 
-  def create_contribution()
-
-  end
-
   # To check whether user is the owner of specific contribution
   #
   # Only the contribution owner and admin can edit related contribution
@@ -71,10 +67,10 @@ module ContributionsHelper
     rlt = false
 
     if contribution.nil?
-    # contribution is nil, no one is the owner
+      # contribution is nil, no one is the owner
     else
       if user.nil?
-      #   user is nil, nil user is not the owner
+        #   user is nil, nil user is not the owner
       else
         if contribution.owner.id == user.id || user.is_superuser?
           rlt = true
@@ -87,35 +83,17 @@ module ContributionsHelper
     rlt
   end
 
-  #
-  # Preview zip file which contains document files.
-  #
-  # Return: hash
-  #
-  # {
-  #   :message => (string) result message to show on page,
-  #   :success_files => (array of string) success files, empty if no file
-  #   :failed_files  => (array of string) "file|failed cause", empty if no file
-  # }
-  #
-  def self::preview_import(zip_file)
-    logger.debug "preview_import: start - zip_file[#{zip_file.inspect}]"
-
-    rlt = {
-      :message => "",
-      :success_files => [],
-      :failed_files => []
-    }
-
-    files = entry_names_from_zip(zip_file)
-
-    logger.debug "preview_import: end - rlt[#{rlt.inspect}]"
-  end
 
   #
   # Extract entry name (file name) from zip file. No extraction, just read from central directory.
   #
-  # Return - string array of file basename, or string if failed
+  # Return - array of hash, or string if failed
+  #
+  # rlt = [{
+  #   :name => file base name,
+  #   :size => file size
+  # }]
+  #
   #
   def self::entry_names_from_zip(zip_file)
     logger.debug "entry_names_from_zip: start - zip_file[#{zip_file}]"
@@ -126,7 +104,12 @@ module ContributionsHelper
       Zip::File.open(zip_file) do |file|
         # Handle entries one by one
         file.each do |entry|
-          rlt << File.basename(entry.name)
+          if entry.ftype == :file
+            rlt << {
+              :name => File.basename(entry.name),
+              :size => entry.size
+            }
+          end
         end
       end
     rescue Zip::Error => e
@@ -153,23 +136,24 @@ module ContributionsHelper
   # {
   #   :file => input file (basename),
   #   :item_handle => item.handle (e.g., mava:s203, nil if not found),
-  #   :document_file_name => document.file_name (e.g., s1_48k.wav, nil if not found),
-  #   :error => nil (no news is good news)
+  #   :document_file_name => [document.file_name] (array of string, nil if not found),
+  #   :message => nil (no news is good news, otherwise error message)
   # }
   #
   def self::validate_contribution_file(collection_id, file)
     logger.debug "validate_contribution_file: start - collection_id[#{collection_id}], file[#{file}]"
 
-    error_msg = "can't find existing document associated with [#{file.original_filename}]"
     rlt = {
-      :error => error_msg
+      :file => file,
+      :item_handle => nil,
+      :document_file_name => [],
+      :message => nil
     }
 
     # document files: abc.wav, abc_1.wav
     # if pattern is only "abc", both abc.wav and abc_1.wav would be retrieved.
     # so pattern should include the dot
-    uplaoded_file_name = File.basename(file.original_filename)
-    pattern = File.basename(uplaoded_file_name, ".*") + "."
+    pattern = File.basename(file, ".*") + "."
 
     sql = %(
     SELECT
@@ -182,23 +166,19 @@ module ContributionsHelper
       AND d.file_name like '#{pattern}%'
     )
 
-    logger.debug "validate_contribution_file: sql[#{sql}]"
-
     result = ActiveRecord::Base.connection.execute(sql)
+    if result.count == 0
+      rlt[:message] = "can't find existing document associated with [#{file}]"
+    end
+
     result.each do |row|
-      error = nil
+      rlt[:item_handle] = row["item_handle"]
+      rlt[:document_file_name] << row["document_file_name"]
 
-      if (uplaoded_file_name == row["document_file_name"])
-      #   input file has the same name as document file, invalidated
-        error = "duplicated document file [#{uplaoded_file_name}]"
+      if (file == row["document_file_name"])
+        #   input file has the same name as document file, invalidated
+        rlt[:message] = "duplicated document file [#{file}]"
       end
-
-      rlt = {
-        :file => file,
-        :item_handle => row["item_handle"],
-        :document_file_name => row["document_file_name"],
-        :error => error
-      }
     end
 
     logger.debug "validate_contribution_file: end - rlt[#{rlt}]"
@@ -207,29 +187,147 @@ module ContributionsHelper
   end
 
   #
+  # Import document into contribution.
+  #
+  # Return: result (string)
+  #
+  # - success: xx document(s) imported.
+  # - failed: failed message
+  #
+  def self::import(contribution)
+    logger.debug "import: start - contribution[#{contribution}]"
+
+    rlt = "import failed - "
+    # run preview again to ensure zip file ok
+    contrib_doc = preview_import(contribution)
+
+    # ensure no failed doc
+    failed_doc = []
+    if contrib_doc.is_a?(Array)
+      contrib_doc.each do |d|
+        if !d[:message].nil?
+          failed_doc << d[:message]
+        end
+      end
+    else
+      #   sth error happened
+      rlt += contrib_doc.to_s
+      logger.error "import: rlt[#{rlt}]"
+
+      return rlt
+    end
+
+    if failed_doc.size > 0
+      #   failed doc found
+      rlt += failed_doc.join("; ")
+    else
+      # unzip file
+      zip_file = contribution_import_zip_file(contribution)
+      unzip_dir = File.join(File.dirname(zip_file), File.basename(zip_file, ".zip"))
+
+      extracted_file = unzip(zip_file)
+      if extracted_file.is_a? String
+        #   sth wrong happened
+        logger.error "import: return from unzip: #{extracted_file}"
+        rlt = extracted_file
+      end
+
+      contrib_doc.each do |doc|
+        begin
+          contrib_id = contribution.id
+          item_handle = %(#{contribution.collection.name}:#{doc[:item]})
+          # find full path thru :name mapping
+          doc_file = (extracted_file.select {|e| e[:name] == doc[:name]}.first)[:dest_name]
+
+          add_document_to_contribution(contrib_id, item_handle, doc_file)
+            # logger.info "import: contribution_id[#{contrib_id}], item_handle[#{item_handle}], doc_file[#{doc_file}]"
+
+        rescue Exception => e
+          logger.error "import: exception happened during add document to contribution [#{e.message}]"
+
+          rlt += "#{e.message}"
+
+          return rlt
+        end
+      end
+
+      # finally, get there
+      # clean up
+      FileUtils.rm_r(unzip_dir)
+      FileUtils.rm(zip_file)
+
+      rlt = "#{contrib_doc.size} document(s) imported."
+    end
+
+    logger.debug "import: end - rlt[#{rlt}]"
+
+    return rlt
+  end
+
+  #
+  # Unzip contribution's import zip file. All extracted files under directory named contribution_import_zip_file. e.g., import_123.zip(file) => import_123(dir)
+  #
+  # Return:
+  #
+  # - success: array of hash
+  #   rlt = [
+  #     {
+  #       :name => file name (basename),
+  #       :dest_name => extracted file name (full path)
+  #     }
+  #   ]
+  # - failed: string (message)
+  def self::unzip(zip_file)
+    logger.debug "unzip: start - zip_file[#{zip_file}]"
+    rlt = []
+
+    unzip_dir = File.join(File.dirname(zip_file), File.basename(zip_file, ".zip"))
+    FileUtils.mkdir_p(unzip_dir)
+
+    begin
+      Zip::File.open(zip_file) do |zf|
+        # Handle entries one by one
+        zf.each do |entry|
+          entry.extract(File.join(unzip_dir, entry.name))
+
+          rlt << {
+            :name => File.basename(entry.name),
+            :dest_name => File.join(unzip_dir, entry.name)
+          }
+        end
+      end
+    rescue Zip::Error => e
+      rlt = e.message
+    end
+
+    logger.debug "unzip: end - rlt[#{rlt}]"
+
+    return rlt
+  end
+
+  #
   # Add document to contribution.
   #
-  # - Document (file) already uploaded.
+  # - Document (file) already exists.
   # - file already validated
   #
   #
-  def self::add_document_to_contribution(contribution_id, item_handle, uploaded_file)
-    logger.debug "add_document_to_contribution: start - contribution_id[#{contribution_id}], item_handle[#{item_handle}], uploaded_file[#{uploaded_file.to_s}]"
-    # call CollectionsController.add_document_core to add to item
+  def self::add_document_to_contribution(contribution_id, item_handle, doc_file)
+    logger.debug "add_document_to_contribution: start - contribution_id[#{contribution_id}], item_handle[#{item_handle}], doc_file[#{doc_file}]"
 
     # compose file attr
     contribution = Contribution.find_by_id(contribution_id)
 
     # /data/contrib/:collection_name/:contrib_id/:filename
-    contrib_dir = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution_id.to_s)
-    file_path = File.join(contrib_dir, File.basename(uploaded_file.original_filename))
-    logger.debug "add_document_to_contribution: file_path[#{file_path}]"
+    contrib_dir = contribution_dir(contribution)
+    file_path = File.join(contrib_dir, File.basename(doc_file))
+    logger.debug "add_document_to_contribution: processing [#{file_path}]"
 
     doc_type = self::extract_doc_type(File.basename(file_path))
 
     # copy uploaded document file from temp to corpus dir
-    logger.debug("add_document_to_contribution: copying uploaded document file from #{uploaded_file.tempfile} to #{file_path}")
-    FileUtils.cp uploaded_file.tempfile, file_path
+    logger.debug("add_document_to_contribution: copying document file from #{doc_file} to #{file_path}")
+
 
     # construct document Json-ld
     doc_uri = Item.find_by_handle(item_handle).uri + "/document/#{File.basename(file_path)}"
@@ -251,6 +349,9 @@ module ContributionsHelper
     }))
 
     CollectionsHelper.add_document_core(contribution.collection, Item.find_by_handle(item_handle), doc_json, File.basename(file_path))
+
+    # finally, get there
+    FileUtils.cp(doc_file, file_path)
 
   end
 
@@ -290,11 +391,12 @@ module ContributionsHelper
     rlt = []
 
     mappings.each do |mp|
+      doc = Document.find_by_id(mp.document_id)
       hash = {
         :mp_id => mp.id,
         :item_name => Item.find_by_id(mp.item_id).get_name,
-        :document_file_name => Document.find_by_id(mp.document_id).file_name,
-        :document_doc_type => Document.find_by_id(mp.document_id).doc_type
+        :document_file_name => doc.file_name,
+        :document_doc_type => doc.doc_type
       }
 
       rlt << hash
@@ -302,22 +404,95 @@ module ContributionsHelper
 
     logger.debug "load_contribution_mapping: end - rlt[#{rlt}]"
 
-    # for test purpose
-    rlt = [
-      {:mp_id => 1, :item_name => "s137", :document_file_name => "s137_faceup.transcript", :document_doc_type => "Text"},
-      {:mp_id => 2, :item_name => "s137", :document_file_name => "s137_facelow.transcript", :document_doc_type => "Text"},
-      {:mp_id => 3, :item_name => "s137", :document_file_name => "s137_face_audio.transcript", :document_doc_type => "Text"},
+    return rlt
+  end
 
-      {:mp_id => 4, :item_name => "s99", :document_file_name => "s99_facelow.transcript", :document_doc_type => "Text"},
-      {:mp_id => 5, :item_name => "s99", :document_file_name => "s99_face_audio.transcript", :document_doc_type => "Text"},
-      {:mp_id => 6, :item_name => "s99", :document_file_name => "s99_faceup.transcript", :document_doc_type => "Text"},
+  #
+  # Load import preview according to contribution.
+  #
+  # 0. locate zip file according to contribution (contrib dir)
+  # 1. extract entry info (zipped file info, but not extract whole zip)
+  # 2. check file one by one
+  # 3. return all files' preview info (can import or not, reason)
+  #
+  # Return: array of hash, or string is error
+  #
+  # rlt = [
+  #   {
+  #     :name => file base name,
+  #     :size => file size,
+  #     :type => file type,
+  #     :item => associated item name,
+  #     :document => associated document name,
+  #     :message => error message (no news is good news, nil is good)
+  #   }
+  # ]
+  #
+  def self::preview_import(contribution)
+    logger.debug "preview_import: start - contribution[#{contribution.name}]"
 
-      {:mp_id => 4, :item_name => "s109", :document_file_name => "s109_facelow.transcript", :document_doc_type => "Text"},
-      {:mp_id => 5, :item_name => "s109", :document_file_name => "s109_face_audio.transcript", :document_doc_type => "Text"},
-      {:mp_id => 6, :item_name => "s109", :document_file_name => "s109_faceup.transcript", :document_doc_type => "Text"}
-    ]
+    rlt = []
+
+    # locate zip file
+    zip = contribution_import_zip_file(contribution)
+
+    doc_files = entry_names_from_zip(zip)
+
+    if doc_files.is_a? String
+      rlt = doc_files
+      logger.error "preview_import: rlt[#{rlt}]"
+      return rlt
+    end
+
+    doc_files.each do |f|
+      #   check file one by one
+      vld_rlt = validate_contribution_file(contribution.collection.id, f[:name])
+
+      rlt << {
+        :name => f[:name],
+        :size => f[:size],
+        :type => extract_doc_type(f[:name]),
+        :item => (vld_rlt[:item_handle].split(":").last unless vld_rlt[:item_handle].nil?),
+        :document => (vld_rlt[:document_file_name] unless vld_rlt[:document_file_name].nil?),
+        :message => vld_rlt[:message]
+      }
+
+    end
+
+    logger.debug "preview_import: end - rlt[#{rlt}]"
+
+    rlt
+  end
+
+  #
+  # zip file name:
+  #
+  # APP_CONFIG["contrib_dir"] (config/hcsvlab-web_config.yml: contrib_dir)
+  #
+  def self::contribution_import_zip_file(contribution)
+    rlt = nil
+
+    if !contribution.nil?
+      rlt = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution.id.to_s, "import_#{contribution.id.to_s}.zip")
+    end
+
+    rlt
+  end
+
+  #
+  # directory name:
+  #
+  # APP_CONFIG["contrib_dir"] (config/hcsvlab-web_config.yml: contrib_dir)
+  #
+  def self::contribution_dir(contribution)
+    rlt = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution.id.to_s)
 
     return rlt
+  end
+
+
+  def self.delete_document(document)
+
   end
 
 end

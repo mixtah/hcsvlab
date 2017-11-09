@@ -10,6 +10,16 @@ describe Collection do
     # CollectionProperty.delete_all
   end
 
+  it "has a valid factory" do
+    expect(FactoryGirl.create(:collection)).to be_valid
+  end
+
+  it "has correct association with user" do
+    coll = FactoryGirl.create(:collection, :owner => FactoryGirl.create(:user_data_owner))
+    user = coll.owner
+    expect(user.role.name).to eq(Role::DATA_OWNER_ROLE)
+  end
+
   describe "Collection Descriptive Metadata" do
     it "should persist metadata about a Collection" do
       coll = Collection.new

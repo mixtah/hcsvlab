@@ -1,8 +1,8 @@
 require 'kramdown'
 
 class Contribution < ActiveRecord::Base
-  belongs_to :owner, class_name: "User"
-  belongs_to :collection
+  belongs_to :owner, class_name: "User", foreign_key: :owner_id
+  belongs_to :collection, foreign_key: :collection_id
   attr_accessible :description, :name
 
   validates :name, presence: true, uniqueness: true

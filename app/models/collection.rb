@@ -14,7 +14,7 @@ class Collection < ActiveRecord::Base
   has_many :collection_properties, dependent: :destroy, inverse_of: :collection
   has_many :attachments, dependent: :destroy, inverse_of: :collection
 
-  belongs_to :owner, class_name: 'User'
+  belongs_to :owner, class_name: 'User', foreign_key: :owner_id
   belongs_to :collection_list
   belongs_to :licence
 

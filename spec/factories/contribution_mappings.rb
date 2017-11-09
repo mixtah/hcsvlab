@@ -2,7 +2,8 @@
 
 FactoryGirl.define do
   factory :contribution_mapping do
-    contribution nil
-    document nil
+    contribution {FactoryGirl.build(:contribution, :collection => item.collection)}
+    item {document.item}
+    association :document
   end
 end

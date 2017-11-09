@@ -15,7 +15,7 @@
               = link_to "Edit", contrib_edit_path, id: 'edit_contribution', :class => "btn btn-primary"
 
             - if ContributionsHelper::is_owner(current_user, @contribution)
-              = link_to "Import", contrib_import_path, id: 'import_contribution', :class => "btn btn-primary"
+              = link_to "Import", contrib_preview_path, id: 'import_contribution', :class => "btn btn-primary"
 
             - if can? :delete_contribution, @contribution
               = link_to "Delete", contrib_delete_path, method: :delete, id: 'delete_contribution', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current contribution?"}
@@ -38,10 +38,7 @@
       .row-fluid
         = @contribution.html_text.html_safe
 
-        %h2 Associated Documents
+        %h2 Documents
         = render 'display_contribution_mappings'
-
-
-
 
 = render 'shared/nectar_attribution'

@@ -2,9 +2,9 @@
 
 FactoryGirl.define do
   factory :contribution do
-    name "MyString"
-    user nil
-    collection nil
-    description "MyText"
+    name {"#{collection.name}-contrib"}
+    association :collection
+    owner { collection.owner }
+    description {"Long long ago there was a description in [#{name}]...the end."}
   end
 end

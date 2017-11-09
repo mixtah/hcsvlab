@@ -117,37 +117,61 @@ class ContributionsController < ApplicationController
     @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
   end
 
-  # GET "contrib/:id/import"
-  # POST "contrib/:id/import"
+  # GET "contrib/:id/preview"
   #
   # phrase 0: Import from Zip
   # phrase 1: Review Import
-  # phrase 2: Import Confirmation
   #
-  def import
+  def preview
     @contribution = Contribution.find_by_id(params[:id])
     @contribution_metadata = ContributionsHelper::load_contribution_metadata(@contribution.name)
-    @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
+    @preview_result = []
+    @phrase = "0"
+  end
 
-    @phrase = params[:phrase]
-    if @phrase.nil?
-      @phrase = "0"
+  #
+  # POST "contrib/:id/import"
+  #
+  def import
+
+    contrib = Contribution.find_by_id(params[:id])
+
+    if contrib.nil?
+      respond_to do |format|
+        format.html {
+          flash[:error] = "Contribution does not exist with the given id: #{params[:id]}"
+          redirect_to contrib_index_path}
+        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
+      end
+
+      return
     end
 
-    if request.post?
+    zip_file = params[:file] #  ActionDispatch::Http::UploadedFile
 
-      zip_file = params[:file] #  ActionDispatch::Http::UploadedFile
+    if !zip_file.nil?
+      # cp file to contrib dir (overwrite) for later use
+      contrib_zip_file = ContributionsHelper::contribution_import_zip_file(contrib)
+      FileUtils.mkdir_p(File.dirname(contrib_zip_file))
+      FileUtils.cp(zip_file.tempfile, contrib_zip_file)
+    end
 
-      if !zip_file.nil?
-        # contains file, upload & preview
-        @phrase = "1"
+    is_preview = params[:preview]
 
-      else
-        # zip already uploaded, now proceed import
-        @phrase = "2"
-      end
+    if !is_preview.nil?
+      #   preview mode
+      # load preview
+      @contribution = contrib
+      @contribution_metadata = ContributionsHelper::load_contribution_metadata(contrib.name)
+      @preview_result = ContributionsHelper::preview_import(contrib)
+      @phrase = "1"
+
+      render "preview"
     else
-      # just load page
+      #   import mode
+      message = ContributionsHelper::import(contrib)
+      flash[:notice] = "#{message}"
+      redirect_to contrib_show_url(params[:id])
     end
 
   end
@@ -176,16 +200,13 @@ class ContributionsController < ApplicationController
         # basic part
         :name => contrib.name,
         :description => contribution_text,
-        :abstract => contribution_abstract,
-
-        # document part
-        :file => params[:file] #  ActionDispatch::Http::UploadedFile
+        :abstract => contribution_abstract
       }
 
       msg, contrib_id = upsert_contribution_core(attr)
 
-      # redirect_to contrib_show_path(id: contrib_id), notice: msg
-      redirect_to contrib_edit_path(id: contrib_id), notice: msg
+      redirect_to contrib_show_path(id: contrib_id), notice: msg
+      # redirect_to contrib_edit_path(id: contrib_id), notice: msg
     rescue ResponseError => e
       flash[:error] = e.message
     end
@@ -245,6 +266,9 @@ class ContributionsController < ApplicationController
 
     contrib = Contribution.find_by_name(attr[:name])
 
+    # SPARQL does not accept "\r\n" within query string
+    contrib_abstract = attr[:abstract].gsub(/\r\n/, ' ')
+
     if contrib.nil?
       #   contribution not exist, create a new one
 
@@ -255,6 +279,8 @@ class ContributionsController < ApplicationController
       contrib.collection = Collection.find_by_name(attr[:collection])
       contrib.description = attr[:description]
       contrib.save!
+
+
 
       # retrieve contribution id to compose uri
       uri = contrib_show_url(contrib.id)
@@ -285,7 +311,7 @@ class ContributionsController < ApplicationController
         dcterms:title "#{contrib.name}";
         dcterms:creator "#{contrib.owner.full_name}";
         dcterms:created "#{contrib.created_at}";
-        dcterms:abstract "#{attr[:abstract]}".
+        dcterms:abstract "#{contrib_abstract}".
       }
       )
 
@@ -333,7 +359,7 @@ class ContributionsController < ApplicationController
         dcterms:title "#{contrib.name}";
         dcterms:creator "#{contrib.owner.full_name}";
         dcterms:created "#{contrib.created_at}";
-        dcterms:abstract "#{attr[:abstract]}".
+        dcterms:abstract "#{contrib_abstract}".
       }
       WHERE {
         ?contrib ?property ?value.
@@ -417,6 +443,8 @@ class ContributionsController < ApplicationController
 
       #   DB
       contribution.destroy
+
+      # Solr
 
       rlt = true
 

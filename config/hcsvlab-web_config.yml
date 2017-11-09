@@ -19,6 +19,7 @@ development:
 test:
   <<: *defaults
   download_tmp_dir: /data/hcsvlab_download
+  contrib_dir: /data/test/contrib
 
 production:
   password_reset_email_sender: steve.cassidy@mq.edu.au

@@ -375,9 +375,6 @@ class CatalogController < ApplicationController
 
       @response, @document = get_solr_response_for_doc_id
 
-      logger.debug "show: response[#{response.inspect}]"
-      logger.debug "show: document[#{document.inspect}]"
-
       # For some reason blacklight stopped to fullfill the counter value in the session since we changed
       # the item url to use /catalog/:collection/:itemId. So will set this in here.
       session[:search][:counter] = params[:counter] if params[:counter].present?
