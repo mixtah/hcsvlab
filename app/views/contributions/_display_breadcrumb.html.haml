@@ -1,0 +1,10 @@
+
+.container-fluid
+  %ul.breadcrumb
+    - nav_links.each do |key, value|
+      - if value.nil?
+        %li.active #{key}
+      - else
+        %li
+          %a{:href => "#{value}"} #{key}
+          %span.divider /

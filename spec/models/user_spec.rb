@@ -1,6 +1,13 @@
 require 'spec_helper'
 
 describe User do
+
+  it "has a valid factory" do
+    expect(FactoryGirl.create(:user_admin)).to be_valid
+    expect(FactoryGirl.create(:user_data_owner)).to be_valid
+    expect(FactoryGirl.create(:user_researcher)).to be_valid
+  end
+
   describe "Associations" do
     it { should belong_to(:role) }
   end

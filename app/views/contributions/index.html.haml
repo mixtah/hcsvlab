@@ -1,0 +1,21 @@
+
+.span2
+.span8
+
+
+  %h2 Contributions
+
+  = render 'display_contributions'
+
+  %p
+    New contribution can be uploaded by contributors and shared with the community (
+    %a{:href => "http://alveo.edu.au/tutorials/creating-collections-and-uploading-data/"}> help with uploading
+    ).
+
+  .row-fluid
+    - if can? :create, Contribution
+      %br
+      = link_to "Create New Contribution", contrib_new_path, :id => 'Create New Contribution', :class => "btn"
+
+  = render 'shared/nectar_attribution'
+  = render 'shared/modal_waiting_panel'

@@ -371,6 +371,7 @@ class CatalogController < ApplicationController
     unless @item.nil?
       render 'catalog/processing_show' and return if @processing_index
 
+      logger.debug "show: params[#{params.inspect}]"
 
       @response, @document = get_solr_response_for_doc_id
 
@@ -396,6 +397,7 @@ class CatalogController < ApplicationController
       end
       return
     end
+
     respond_to do |format|
       format.html {setup_next_and_previous_documents}
       format.json {}
@@ -612,8 +614,11 @@ class CatalogController < ApplicationController
       # check if document exists in JSON metadata from Sesame/Solr
       # This is set during Solr indexing based on a variety of metadata from Solr and Sesame
       # See add_json_metadata_field in solr_worker.rb
-      metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
-      doc = nil if doc.present? and metadata.blank?
+
+      # KL - ignore checking item.json_metadata
+      # item.id and document.file_name can guarantee the proper permission for document download
+      # metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
+      # doc = nil if doc.present? and metadata.blank?
 
       if doc.present?
 
@@ -647,9 +652,10 @@ class CatalogController < ApplicationController
       Rails.logger.error(e.backtrace)
       # Fall through to return Not Found
     end
+
     respond_to do |format|
       #format.html { raise ActionController::RoutingError.new('Not Found') }
-      format.html {flash[:error] = "Sorry, you have requested a document that doesn't exist."
+      format.html {flash[:error] = "Sorry, you have requested a document[#{params[:filename]}] (under item[#{params[:id]}]) that doesn't exist."
       redirect_to catalog_path(params[:id]) and return}
       format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
     end
@@ -944,7 +950,10 @@ class CatalogController < ApplicationController
         @processing_index = true
         flash.keep(:notice)
       end
-    rescue ActiveRecord::RecordNotFound
+
+      logger.debug "check_item_indexed: @processing_index[#{@processing_index}]"
+    rescue ActiveRecord::RecordNotFound => e
+      logger.debug "check_item_indexed: ActiveRecord::RecordNotFound[#{e.message}], @processing_index[#{@processing_index}]"
       return
     end
   end
@@ -956,16 +965,20 @@ class CatalogController < ApplicationController
     begin
       enforce_show_permissions(opts) unless @processing_index
     rescue Hydra::AccessDenied => e
+      logger.error "wrapped_enforce_show_permissions: opts[#{opts}], Hydra::AccessDenied[#{e.inspect}, subject:#{e.subject}]"
       respond_to do |format|
         format.html {raise e}
         format.any {render :json => {:error => "access-denied"}.to_json, :status => 403}
       end
     rescue Blacklight::Exceptions::InvalidSolrID => e
+      logger.error "wrapped_enforce_show_permissions: opts[#{opts}], Blacklight::Exceptions::InvalidSolrID[#{e.inspect}], subject[#{e.subject}]"
       respond_to do |format|
         format.html {resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return}
         format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
     end
+
+    logger.debug "wrapped_enforce_show_permissions: end - opts[#{opts}]"
   end
 
   #

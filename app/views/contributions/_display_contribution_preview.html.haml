@@ -1,0 +1,32 @@
+%table.table.table-hover
+  %thead
+    %tr
+      %th File
+      %th Type
+      %th Size(byte)
+      %th Associated Item
+      %th Associated Document
+      %th Status
+  %tbody
+    - if @preview_result.is_a?(Array)
+      - @preview_result.each do |m|
+        %tr
+          %td
+            = m[:name]
+          %td
+            = ContributionsHelper::extract_doc_type(m[:name])
+          %td
+            = m[:size]
+          %td
+            - if !m[:item].nil?
+              %a{:href => "#{item_path(@contribution.collection.name, m[:item])}"} #{m[:item]}
+          %td
+            - if !m[:item].nil?
+              - m[:document].each do |d_name|
+                %a{:href => "#{catalog_document_path(@contribution.collection.name, m[:item], d_name)}"} #{d_name}
+          %td
+            - if m[:message].nil?
+              %span.label.label-success Ready to import
+            - else
+              %span.label.label-important ERROR
+              = m[:message]

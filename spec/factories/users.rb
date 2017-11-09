@@ -1,9 +1,10 @@
 FactoryGirl.define do
-  factory :user do |f|
+  factory :user, aliases: [:owner] do |f|
     f.first_name "Fred"
     f.last_name "Bloggs"
     f.password "Pas$w0rd"
     f.sequence(:email) { |n| "#{n}@alveo.edu.au" }
+    f.association :role, factory: :role_data_owner
 
     factory :user_admin do |a|
       a.association :role, factory: :role_admin
