@@ -1,0 +1,112 @@
+- if @import.extracted?
+  %h2 Import Options
+
+  = form_tag({controller: 'imports', action: 'update'}, class: 'form-horizontal', method: :put) do
+
+    %dl.dl-horizontal.mt-20
+      %dt.p-10 File:
+      %dd.p-10 #{@import.filename}
+      %dt.p-10 Common Metadata:
+      %dd.p-10 
+        %table.table
+          - @metadata.each do |key,value|
+            %tr
+              %td #{key}
+              %td #{value}
+    
+    %h3
+      Import options
+    
+    %p.my-20
+      %strong
+        Found #{@zip.total_files} documents in #{@size} items.
+
+    - if @zip.warnings.size > 0
+      .alert.alert-error.permanent
+        %p
+          %strong
+            Warning:
+        %ul
+          - @zip.warnings.each do |w|
+            %li #{w}
+    
+    .control-group
+      = label_tag :option_folders_as_item_names, 'Use folders as item names', :class => "control-label span4 p-10"
+      .controls
+        = check_box_tag :option_folders_as_item_names, true, @options['folders_as_item_names']
+    .control-group.folders-as-item-names-options
+      = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth', :class => "control-label span4 p-10"
+      .controls
+        = select_tag :option_item_name_at_folder_depth, options_for_select([1,2,3,4,5], @options['item_name_at_folder_depth'])
+
+    .control-group
+      = label_tag :option_meta_in_filename, 'Extract item metadata from file names', :class => "control-label span4 p-10"
+      .controls
+        = check_box_tag :option_meta_in_filename, true, @options['meta_in_filename']
+
+    .control-group.meta-in-filename-options
+      = label_tag :option_meta_delimiter, 'Delimiter character', :class => "control-label span4 p-10"
+      .controls
+        = text_field_tag :option_meta_delimiter, @options['meta_delimiter'], maxlength: 1, size: 2, class: 'span1'
+
+    .control-group.meta-in-filename-options
+      = label_tag :option_num_meta_fields, 'Number of fields', :class => "control-label span4 p-10"
+      .controls
+        = select_tag :option_num_meta_fields, options_for_select([1,2,3,4,5], @options['num_meta_fields'])
+    
+    .control-group.meta-in-filename-options
+      = label_tag :option_meta_fields, 'Field names', :class => "control-label span4 p-10"
+      .controls.meta-fields
+        - if @options['meta_fields'].is_a?(Array)
+          - i = 0
+          - @options['meta_fields'].each do |value|
+            - next if i >= @options['num_meta_fields']
+            = text_field_tag 'option_meta_fields[]', value, class: 'span2 meta-field', id: "meta-field-#{i}"
+            %span.meta-delimiter
+              = @options['meta_delimiter']
+            - i = i + 1
+
+    .form-actions
+      = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+      = submit_tag 'Preview options', :class => "btn"
+      = submit_tag 'Confirm import', :class => "btn btn-primary"
+  
+  %p.my-20 Showing the first #{@limit} items of #{@size}.
+
+  %table.table
+    %tr
+      %th Item
+      %th Document
+      %th Filename
+      %th Type
+      %th Size
+      -# If we have extra item metadata, show the columns
+      -# We're assuming all the items have the same fields
+      - if @item_metadata_fields.is_a?(Array)
+        - @item_metadata_fields.each do |f|
+          %th #{f}
+
+    - @docs.first(@limit).each do |item,documents|
+      %tr
+        %th.item-header
+          %strong #{item}
+        %th.item-header{colspan: 4}
+        - @item_metadata_fields.each do |f|
+          - if @item_metadata[item] and @item_metadata[item][f]
+            %td.item-header #{@item_metadata[item][f]}
+        - documents.keys.each do |basename|
+          %tr
+            %td 
+            %td #{@docs[item][basename][:meta]['dcterms:title']}
+            %td #{basename}
+            %td #{@docs[item][basename][:meta]['dcterms:type']}
+            %td #{number_to_human_size @docs[item][basename][:meta]['dcterms:extent']}
+            %td{colspan: @item_metadata_fields.size}
+
+  %p.my-20 Showing the first #{@limit} items of #{@size}.
+
+- else
+  %h2 Please wait, extracting..
+  <meta http-equiv="refresh" content="5">
+
+= render 'shared/nectar_attribution'

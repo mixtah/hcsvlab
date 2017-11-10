@@ -15,6 +15,9 @@ HcsvlabWeb::Application.configure do
   # Base directory where api created collections will be stored
   config.api_collections_location = "/mnt/volume/alveo-production-data"
 
+  # Temporary directory where imports/zip files will be uploaded
+  config.upload_location = "/mnt/volume/uploads"
+
   # Settings specified here will take precedence over those in config/application.rb
 
   # Code is not reloaded between requests

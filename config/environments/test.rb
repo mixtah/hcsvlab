@@ -12,6 +12,9 @@ HcsvlabWeb::Application.configure do
   # Base directory where api created collections will be stored
   config.api_collections_location = "#{Rails.root}/test/api/collections"
 
+  # Temporary directory where imports/zip files will be uploaded
+  config.upload_location = "#{Rails.root}/test/api/uploads"
+
   # Settings specified here will take precedence over those in config/application.rb
 
   # The test environment is used exclusively to run your application's

@@ -44,11 +44,14 @@ HcsvlabWeb::Application.routes.draw do
   delete 'catalog-delete/:id', :to => 'collections#delete_collection', :as => 'delete_collection'
   get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'
   post 'catalog-create', :to => 'collections#web_create_collection'
+  
+  resources :imports
 
   # collection attachment
   resources :collections do
     # without collection_id can't proceed, so must include that
     resources :attachments, only: [:index, :new, :create]
+    resources :imports
   end
   get 'collections/:collection_id/attachments', :to => 'attachments#index', :as => 'attachments'
   get 'collections/:collection_id/attachments/new', :to => 'attachments#new', :as => 'new_attachment'
@@ -93,7 +96,6 @@ HcsvlabWeb::Application.routes.draw do
 
   post 'catalog/download_items', :to => 'catalog#download_items', :as => 'catalog_download_items_api'
   #get 'catalog/download_annotation/:id', :to => 'catalog#download_annotation', :as => 'catalog_download_annotation'
-
 
   get "add-item/:id", :to => 'collections#web_add_item', :as => 'web_add_item'
   post "add-item/:id", :to => 'collections#web_add_item'

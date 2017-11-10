@@ -15,6 +15,9 @@ HcsvlabWeb::Application.configure do
   # Base directory where api created collections will be stored
   config.api_collections_location = "/data/collections/"
 
+  # Temporary directory where imports/zip files will be uploaded
+  config.upload_location = "/data/uploads/"
+
   # Settings specified here will take precedence over those in config/application.rb
 
   # Code is not reloaded between requests

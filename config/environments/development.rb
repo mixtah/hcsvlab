@@ -7,10 +7,17 @@ HcsvlabWeb::Application.configure do
   config.galaxy_url = 'http://localhost:8081/root'
 
   # Base directory where user contributed annotations will be stored
-  config.user_annotations_location = "/data/contributed_annotations/"
+  # For dev environments already set up with /data path, use that
+  # Otherwise let's use a local dir
+  config.user_annotations_location = File.exist?("/data/contributed_annotations") ? "/data/contributed_annotations" : File.join(Rails.root, 'data', 'contributed_annotations')
 
   # Base directory where api created collections will be stored
-  config.api_collections_location = "/data/collections/"
+  # For dev environments already set up with /data path, use that
+  # Otherwise let's use a local dir
+  config.api_collections_location = File.exist?("/data/collections") ? "/data/collections" : File.join(Rails.root, 'data', 'collections')
+
+  # Temporary directory where imports/zip files will be uploaded
+  config.upload_location = File.join(Rails.root, "tmp", "uploads")
 
   # Settings specified here will take precedence over those in config/application.rb
 

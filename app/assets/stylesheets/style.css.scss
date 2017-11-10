@@ -1498,3 +1498,22 @@ border: 1px solid #BCBCBC;
 .metadata-input {
   width: 190px;
 }
+
+.mt-20 {
+  margin-top: 20px;
+}
+.p-10 {
+  padding: 10px;
+}
+.my-20 {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.meta-delimiter:last-child {
+  display: none;
+}
+.item-header {
+  border-top: 1px solid #ddd !important;
+  background-color: whitesmoke;
+}
