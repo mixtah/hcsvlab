@@ -113,4 +113,46 @@ module CollectionsHelper
       stomp_client.close
     end
   end
+
+  #
+  # Delete document. Remove DB/Sesame/Solr/Filesystem associated record/file.
+  #
+  # Return string of result
+  #
+  def self.delete_document_core(collection, item, document)
+    remove_document(document, collection)
+    delete_item_from_solr(item.id)
+    item.indexed_at = nil
+    item.save
+    update_item_in_solr(item)
+    "Deleted the document #{document.file_name} from item #{item.get_name} in collection #{collection.name}"
+
+  end
+
+  # Removes a document from the database, filesystem, Sesame and Solr
+  def self.remove_document(document, collection)
+    solr_worker = Solr_Worker.new
+    # solr_worker.delete_document_from_sesame(document, get_sesame_repository(collection))
+    # delete_document_from_solr(document.id)
+
+    solr_worker.delete_document(document)
+
+
+    document.destroy # Remove document and document audits from database
+  end
+
+  # Returns a collection repository from the Sesame server
+  def self.get_sesame_repository(collection)
+    server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
+    server.repository(collection.name)
+  end
+
+  # def self.get_collection_by_document(document)
+  #   get_collection_by_item(document.item)
+  # end
+  #
+  # def self.get_collection_by_item(item)
+  #   item.collection
+  # end
+
 end

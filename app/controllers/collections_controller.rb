@@ -361,7 +361,8 @@ class CollectionsController < ApplicationController
       collection = validate_collection(params[:collectionId], params[:api_key])
       item = validate_item_exists(collection, params[:itemId])
       document = validate_document_exists(item, params[:filename])
-      @success_message = delete_doc_core(collection, item, document)
+      # @success_message = delete_doc_core(collection, item, document)
+      @success_message = CollectionHelper.delete_document_core(collection, item, document)
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
       return # Only respond with one error at a time
@@ -383,7 +384,8 @@ class CollectionsController < ApplicationController
       item = Item.find_by_handle(Item.format_handle(params[:collectionId], params[:itemId]))
       collection = item.collection
       document = item.documents.find_by_file_name(params[:filename])
-      msg = delete_doc_core(collection, item, document)
+      # msg = delete_doc_core(collection, item, document)
+      msg = CollectionsHelper.delete_document_core(collection, item, document)
       redirect_to catalog_path(params[:collectionId], params[:itemId]), notice: msg
     rescue ResponseError => e
       Rails.logger.error e.message
@@ -937,14 +939,14 @@ class CollectionsController < ApplicationController
   end
 
   # Attempts to delete a file or logs any exceptions raised
-  def delete_file(file_path)
-    begin
-      File.delete(file_path)
-    rescue => e
-      Rails.logger.error e.inspect
-      false
-    end
-  end
+  # def delete_file(file_path)
+  #   begin
+  #     File.delete(file_path)
+  #   rescue => e
+  #     Rails.logger.error e.inspect
+  #     false
+  #   end
+  # end
 
   # KL
   # Writes a metadata RDF graph

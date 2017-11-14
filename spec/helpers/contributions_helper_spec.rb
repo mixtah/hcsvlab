@@ -174,4 +174,33 @@ RSpec.describe ContributionsHelper, :type => :helper do
     end
   end
 
+  describe "test contribution_dir" do
+    context "when contribution is valid" do
+      it "returns valid directory" do
+        dir = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution.id.to_s)
+        rlt = ContributionsHelper.contribution_dir(contribution)
+
+        expect(rlt).to eq(dir)
+      end
+    end
+
+    context "when contribution is nil" do
+      it "returns nil" do
+        contribution = nil
+        rlt = ContributionsHelper.contribution_dir(contribution)
+
+        expect(rlt.nil?).to be_true
+      end
+    end
+
+    context "when contribution is invalid, collection is nil" do
+      it "returns nil" do
+        contribution.collection = nil
+        rlt = ContributionsHelper.contribution_dir(contribution)
+
+        expect(rlt.nil?).to be_true
+      end
+    end
+  end
+
 end

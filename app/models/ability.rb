@@ -181,11 +181,6 @@ class Ability
       can :edit_contribution, Contribution
       can :update_contribution, Contribution
     end
-
-    #  Only superuser can delete Contribution
-    if is_superuser
-      can :delete_contribution, Contribution
-    end
   end
 
 end

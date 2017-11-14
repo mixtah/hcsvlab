@@ -1,6 +1,7 @@
 class DocumentAudit < ActiveRecord::Base
 
-  belongs_to :document, inverse_of: :document_audits
+  # belongs_to :document, inverse_of: :document_audits
+  belongs_to :document
   belongs_to :user
 
   attr_accessible :document, :user

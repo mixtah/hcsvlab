@@ -32,7 +32,7 @@ module ContributionsHelper
     }
     )
 
-    logger.debug "load_contribution_metadata: query[#{query}]"
+    # logger.debug "load_contribution_metadata: query[#{query}]"
 
     solutions = repo.sparql_query(query)
 
@@ -62,7 +62,7 @@ module ContributionsHelper
   #
   # Only the contribution owner and admin can edit related contribution
   #
-  def self::is_owner(user, contribution)
+  def self.is_owner?(user, contribution)
     logger.debug "is_owner: start - user[#{user}], contribution[#{contribution}]"
     rlt = false
 
@@ -485,15 +485,65 @@ module ContributionsHelper
   # APP_CONFIG["contrib_dir"] (config/hcsvlab-web_config.yml: contrib_dir)
   #
   def self::contribution_dir(contribution)
-    rlt = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution.id.to_s)
+    rlt = nil
+
+    if !contribution.nil?
+      begin
+        rlt = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution.id.to_s)
+      rescue Exception => e
+        logger.error "contribution_dir: #{e.message}"
+      end
+    end
 
     return rlt
   end
 
 
-  def self.delete_document(document)
+  #
+  # Call CollectionHelper.delete_doc_core to delete document
+  #
+  # One contribution associates to 1 collection, multiple items and multiple documents.
+  #
+  # Return hash:
+  #
+  # {
+  #   message: failure reason, nil if success (no news is good news)
+  #   document_count: deleted document count (nil if delete failure)
+  # }
+  #
+  def self.delete_contribution(contribution)
+    logger.debug "delete_contribution: start - contribution[#{contribution}]"
+    rlt = {message: nil, document_count: nil}
 
-  end
+    collection = contribution.collection
+    # contrib_dir = contribution_dir(contribution)
+
+    begin
+      result = ContributionMapping.where(:contribution_id => contribution.id)
+      # delete all related document one-by-one
+      result.each do |row|
+        item = Item.find_by_id(row.item_id)
+        document = Document.find_by_id(row.document_id)
+
+        CollectionsHelper.delete_document_core(collection, item, document)
+      end
+
+      #   delete related contribution mapping
+      ContributionMapping.delete_all(contribution_id: contribution.id)
+
+      # delete contribution
+      contribution.destroy
+
+      rlt[:document_count] = result.count
+    rescue Exception => e
+      logger.error "delete_contribution: #{e.inspect}"
+      rlt[:message] = e.message
+    end
+
+  logger.debug "delete_contribution: end - rlt[#{rlt}]"
+
+  rlt
+end
 
 end
 

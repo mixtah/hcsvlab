@@ -45,6 +45,7 @@ namespace :jetty do
     Jettywrapper.start(JETTY_CONFIG)
     puts "jetty started at PID #{Jettywrapper.pid(JETTY_CONFIG)}"
     puts "Waiting for Solr and Sesame to be ready...".yellow
+    puts "Pinging Solr host #{Blacklight.solr_config[:url]}...".yellow
     sleep 30
 
     while !ping(Blacklight.solr_config[:url]) do

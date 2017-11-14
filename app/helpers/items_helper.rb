@@ -361,7 +361,11 @@ module ItemsHelper
         end
       end
     end
-    raise 'Could not obtain document URI from Sesame' if document_uri.nil?
+    # raise 'Could not obtain document URI from Sesame' if document_uri.nil?
+    if document_uri.nil?
+      logger.warn "get_doc_subject_uri_from_sesame: Could not obtain document[db_id=#{document.id}] URI from Sesame"
+    end
+
     document_uri
   end
 

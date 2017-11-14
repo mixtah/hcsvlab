@@ -145,6 +145,14 @@ class Solr_Worker < ApplicationProcessor
 
   end
 
+  #
+  # Shortcut to delete document
+  #
+  def delete_document(document)
+    delete_document_from_sesame(document, CollectionsHelper.get_sesame_repository(document.item.collection))
+    delete(document.id)
+  end
+
 private
 
   def extract_zip(import_id)
@@ -244,6 +252,13 @@ private
   #
   def delete_document_from_sesame(document, repository)
     document_uri = get_doc_subject_uri_from_sesame(document, repository)
+
+    if document_uri.nil?
+      logger.warn("delete_document_from_sesame: document[#{document}] not found in sesame")
+
+      return
+    end
+
     triples_with_doc_subject = RDF::Query.execute(repository) do
       pattern [document_uri, :predicate, :object]
     end
@@ -257,7 +272,7 @@ private
       repository.delete(RDF::Statement(statement[:subject], statement[:predicate], document_uri))
     end
   end
-  
+
   # Deletes statements with the item's URI from Sesame
   def issue_sesame_item_delete(item, repository)
     item_subject = RDF::URI.new(item.uri)

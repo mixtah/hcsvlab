@@ -12,4 +12,13 @@ class Contribution < ActiveRecord::Base
   def html_text
     Kramdown::Document.new(description.nil? ? '' : description).to_html
   end
+
+  def destroy
+    # delete contrib dir
+    contrib_dir = ContributionsHelper.contribution_dir(self)
+    logger.debug "Contribution.destroy: delete contrib_dir[#{contrib_dir}]"
+    FileUtils.rm_rf(contrib_dir)
+
+    super
+  end
 end

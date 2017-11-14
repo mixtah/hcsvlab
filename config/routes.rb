@@ -69,7 +69,7 @@ HcsvlabWeb::Application.routes.draw do
   get "contrib/:id/preview", :to => "contributions#preview", :as => "contrib_preview"
   post "contrib/:id/import", :to => "contributions#import", :as => "contrib_import"
 
-  # delete "contrib/:id", :to => "contributions#delete", :as => "contrib_delete"
+  delete "contrib/:id", :to => "contributions#delete", :as => "contrib_delete"
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
   post "catalog", :to => 'collections#create', :as => 'collections'

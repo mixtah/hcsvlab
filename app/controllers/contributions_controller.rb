@@ -16,7 +16,6 @@ class ContributionsController < ApplicationController
       contrib.description = metadata["dcterms:abstract"]
     end
 
-
     respond_to do |format|
       format.html
       format.json
@@ -215,21 +214,27 @@ class ContributionsController < ApplicationController
 
   # DELETE "contrib/:id"
   def delete
-    authorize! :delete_contribution, Contribution
-
     contribution = Contribution.find_by_id(params[:id])
 
     if contribution.nil?
       raise ResponseError.new(404), "A contribution with the id '#{params[:id]}' not exist."
     end
 
-    name = contribution.name
+    if current_user.is_superuser? || ContributionsHelper.is_owner?(current_user, contribution)
+      name = contribution.name
 
-    if delete_contribution(contribution)
-      flash[:notice] = "Contribution with the name '#{name}' has been removed successfully."
+      if delete_contribution(contribution)
+        flash[:notice] = "Contribution with the name '#{name}' has been removed successfully."
+
+        redirect_to :contrib_index
+      end
+
+    else
+      flash[:notice] = "Ony owner or admin can delete contribution."
 
       redirect_to :contrib_index
     end
+
   end
 
   # List all contributions by name
