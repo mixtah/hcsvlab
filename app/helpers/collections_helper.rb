@@ -4,7 +4,7 @@ require Rails.root.join('lib/tasks/fedora_helper.rb')
 module CollectionsHelper
 
   # To check whether user is the owner of specific collection
-  def self::is_owner(user, collection)
+  def self.is_owner(user, collection)
     logger.debug "is_owner: start - user[#{user}], collection[#{collection}]"
     rlt = false
 
@@ -28,10 +28,16 @@ module CollectionsHelper
   #
   # Core functionality common to add document ingest (via api and web app)
   #
-  def self.add_document_core(collection, item, document_metadata, document_filename)
+  # args:
+  # collection - collection instance
+  # item - item instance
+  # document_metadata - hash
+  # document_file - document file path
+  #
+  def self.add_document_core(collection, item, document_metadata, document_file)
     doc_id, msg = create_document(item, document_metadata)
     add_and_index_document(item, document_metadata)
-    "Added the document #{File.basename(document_filename)} to item #{item.get_name} in collection #{collection.name}"
+    "Added the document #{File.basename(document_file)} to item #{item.get_name} in collection #{collection.name}"
 
     # check contribution mapping
     if !document_metadata["alveo:Contribution"].nil? && !doc_id.nil?
@@ -64,7 +70,7 @@ module CollectionsHelper
     file_path = URI(uri).path
     file_name = File.basename(file_path)
     doc_type = expanded_metadata[MetadataHelper::TYPE.to_s]
-    doc_type = doc_type.first['@value'] unless doc_type.nil?
+    doc_type = ContributionsHelper.extract_doc_type(file_name) unless doc_type.nil?
     msg = nil
 
     # TODO: replaced by Collections.find_associated_document_by_file_name
@@ -132,11 +138,7 @@ module CollectionsHelper
   # Removes a document from the database, filesystem, Sesame and Solr
   def self.remove_document(document, collection)
     solr_worker = Solr_Worker.new
-    # solr_worker.delete_document_from_sesame(document, get_sesame_repository(collection))
-    # delete_document_from_solr(document.id)
-
     solr_worker.delete_document(document)
-
 
     document.destroy # Remove document and document audits from database
   end

@@ -5,8 +5,10 @@ class Document < ActiveRecord::Base
 
   def destroy
     # check contribution_mappings
-    ContributionMapping.find_by_document_id(self.id).destroy
-
+    cm = ContributionMapping.find_by_document_id(self.id)
+    if !cm.nil?
+      cm.destroy
+    end
     FileUtils.rm_f(self.file_path)
 
     super

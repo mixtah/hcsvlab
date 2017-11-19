@@ -1,11 +1,11 @@
 module JsonLdHelper
 
-public
+  public
 
   #
   #
   #
-  def self::predefined_context_properties
+  def self.predefined_context_properties
     predefined_properties = HashWithIndifferentAccess.new
     predefined_properties['commonProperties'] = {'@id' => "http://purl.org/dada/schema/0.2#commonProperties"}
     predefined_properties['dada'] = {'@id' => "http://purl.org/dada/schema/0.2#"}
@@ -21,7 +21,7 @@ public
   #
   # Returns an array of predefined vocabularies that should not be shown in the json ld schema.
   #
-  def self::restricted_predefined_vocabulary
+  def self.restricted_predefined_vocabulary
     avoid_context = []
     avoid_context << RDF::CC.to_uri
     avoid_context << RDF::CERT.to_uri
@@ -66,11 +66,11 @@ public
   #
   # Returns a hash containing the values of a default Alveo json_ld context
   #
-  def self::default_context
+  def self.default_context
     predefined_properties = predefined_context_properties
     avoid_context = restricted_predefined_vocabulary
     vocab_hash = HashWithIndifferentAccess.new
-    RDF::Vocabulary.each { |vocab|
+    RDF::Vocabulary.each {|vocab|
       if !avoid_context.include?(vocab.to_uri) and vocab.to_uri.qname.present?
         prefix = vocab.to_uri.qname.first.to_s
         uri = vocab.to_uri.to_s
@@ -78,15 +78,15 @@ public
       end
     }
     hash = {}
-    predefined_properties.each_pair { |key, value| hash[key] = value }
+    predefined_properties.each_pair {|key, value| hash[key] = value}
 
-    Hash[*vocab_hash.sort.flatten].each_pair { |key, value| hash[key] = value }
+    Hash[*vocab_hash.sort.flatten].each_pair {|key, value| hash[key] = value}
 
     # KL
     hash["marcrel"] = {"@id" => "http://www.loc.gov/loc.terms/relators/"}
     hash["dcterms"] = {"@id" => "http://purl.org/dc/terms/"}
-    hash["dc"]      = {"@id" => "http://purl.org/dc/elements/1.1/"}
-    hash["cld"]     = {"@id" => "http://purl.org/cld/terms/"}
+    hash["dc"] = {"@id" => "http://purl.org/dc/elements/1.1/"}
+    hash["cld"] = {"@id" => "http://purl.org/cld/terms/"}
 
     hash
   end
@@ -94,7 +94,7 @@ public
   #
   # Returns a string containing the values of a default Alveo RDF (turtle) prefix
   #
-  def self::default_rdf_prefix
+  def self.default_rdf_prefix
 
     rlt = ""
 
@@ -107,6 +107,31 @@ public
     rlt
   end
 
-  private
+  #
+  # Constructs Json-ld for a new document
+  #
+  def self.construct_document_json_ld(collection, item, language, document_file, metadata)
+    document_metadata =
+      {
+        '@id' => Rails.application.routes.url_helpers.catalog_document_url(collection.name, item.get_name, File.basename(document_file)),
+        '@type' => MetadataHelper::DOCUMENT.to_s,
+        MetadataHelper::LANGUAGE.to_s => language,
+        MetadataHelper::IDENTIFIER.to_s => File.basename(document_file),
+        MetadataHelper::TITLE.to_s => File.basename(document_file),
+        MetadataHelper::TYPE.to_s => ContributionsHelper.extract_doc_type(File.basename(document_file)),
+        MetadataHelper::SOURCE.to_s => format_document_source_metadata(document_file),
+        MetadataHelper::EXTENT.to_s => File.size(document_file)
+      }
+    document_metadata.merge!(metadata) {|key, val1, val2| val1}
+    {'@context' => JsonLdHelper::default_context}.merge(document_metadata)
+  end
+
+  #
+  # Returns a hash containing the metadata for a document source
+  #
+  def self.format_document_source_metadata(doc_source)
+    # Escape any filename symbols which need to be replaced with codes to form a valid URI
+    {'@id' => "file://#{URI.escape(doc_source)}"}
+  end
 
 end

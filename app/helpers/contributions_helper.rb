@@ -12,7 +12,7 @@ module ContributionsHelper
   # Load contribution's metadata, return json
   #
   #
-  def self::load_contribution_metadata(contribution_name)
+  def self.load_contribution_metadata(contribution_name)
     logger.debug "load_contribution_metadata: start - contribution_name[#{contribution_name}]"
 
     contrib = Contribution.find_by_name(contribution_name)
@@ -95,7 +95,7 @@ module ContributionsHelper
   # }]
   #
   #
-  def self::entry_names_from_zip(zip_file)
+  def self.entry_names_from_zip(zip_file)
     logger.debug "entry_names_from_zip: start - zip_file[#{zip_file}]"
 
     rlt = []
@@ -140,7 +140,7 @@ module ContributionsHelper
   #   :message => nil (no news is good news, otherwise error message)
   # }
   #
-  def self::validate_contribution_file(collection_id, file)
+  def self.validate_contribution_file(collection_id, file)
     logger.debug "validate_contribution_file: start - collection_id[#{collection_id}], file[#{file}]"
 
     rlt = {
@@ -194,7 +194,7 @@ module ContributionsHelper
   # - success: xx document(s) imported.
   # - failed: failed message
   #
-  def self::import(contribution)
+  def self.import(contribution)
     logger.debug "import: start - contribution[#{contribution}]"
 
     rlt = "import failed - "
@@ -225,7 +225,7 @@ module ContributionsHelper
       zip_file = contribution_import_zip_file(contribution)
       unzip_dir = File.join(File.dirname(zip_file), File.basename(zip_file, ".zip"))
 
-      extracted_file = unzip(zip_file)
+      extracted_file = unzip(zip_file, unzip_dir)
       if extracted_file.is_a? String
         #   sth wrong happened
         logger.error "import: return from unzip: #{extracted_file}"
@@ -253,8 +253,8 @@ module ContributionsHelper
 
       # finally, get there
       # clean up
-      FileUtils.rm_r(unzip_dir)
-      FileUtils.rm(zip_file)
+      FileUtils.rm_f(zip_file)
+      FileUtils.rm_rf(unzip_dir)
 
       rlt = "#{contrib_doc.size} document(s) imported."
     end
@@ -265,7 +265,7 @@ module ContributionsHelper
   end
 
   #
-  # Unzip contribution's import zip file. All extracted files under directory named contribution_import_zip_file. e.g., import_123.zip(file) => import_123(dir)
+  # Unzip contribution's import zip file to specific dir.
   #
   # Return:
   #
@@ -277,22 +277,26 @@ module ContributionsHelper
   #     }
   #   ]
   # - failed: string (message)
-  def self::unzip(zip_file)
-    logger.debug "unzip: start - zip_file[#{zip_file}]"
+  def self.unzip(zip_file, unzip_dir)
+    logger.debug "unzip: start - zip_file[#{zip_file}], unzip_dir[#{unzip_dir}]"
     rlt = []
 
-    unzip_dir = File.join(File.dirname(zip_file), File.basename(zip_file, ".zip"))
+    # init unzip_dir
     FileUtils.mkdir_p(unzip_dir)
 
     begin
       Zip::File.open(zip_file) do |zf|
         # Handle entries one by one
         zf.each do |entry|
-          entry.extract(File.join(unzip_dir, entry.name))
+          # init dest file
+          dest_name = File.join(unzip_dir, entry.name)
+          FileUtils.rm_f(dest_name)
+
+          entry.extract(dest_name)
 
           rlt << {
             :name => File.basename(entry.name),
-            :dest_name => File.join(unzip_dir, entry.name)
+            :dest_name => dest_name
           }
         end
       end
@@ -312,7 +316,7 @@ module ContributionsHelper
   # - file already validated
   #
   #
-  def self::add_document_to_contribution(contribution_id, item_handle, doc_file)
+  def self.add_document_to_contribution(contribution_id, item_handle, doc_file)
     logger.debug "add_document_to_contribution: start - contribution_id[#{contribution_id}], item_handle[#{item_handle}], doc_file[#{doc_file}]"
 
     # compose file attr
@@ -323,35 +327,23 @@ module ContributionsHelper
     file_path = File.join(contrib_dir, File.basename(doc_file))
     logger.debug "add_document_to_contribution: processing [#{file_path}]"
 
-    doc_type = self::extract_doc_type(File.basename(file_path))
-
-    # copy uploaded document file from temp to corpus dir
+    # copy extracted document file from temp to corpus dir
     logger.debug("add_document_to_contribution: copying document file from #{doc_file} to #{file_path}")
+    FileUtils.cp(doc_file, file_path)
 
-
-    # construct document Json-ld
-    doc_uri = Item.find_by_handle(item_handle).uri + "/document/#{File.basename(file_path)}"
-
-    doc_json = JSON.parse(%(
+    contrib_metadata = JSON.parse(%(
     {
-      "@context": {
-        "dcterms": "http://purl.org/dc/terms/",
-        "foaf": "http://xmlns.com/foaf/0.1/",
-        "alveo": "http://alveo.edu.au/schema/"
-      },
-      "@id": "#{doc_uri}",
-      "@type": "foaf:Document",
-      "alveo:Contribution": "#{contribution_id}",
-      "dcterms:source": "#{file_path}",
-      "dcterms:identifier": "#{File.basename(file_path)}",
-      "dcterms:type": "#{doc_type}",
-      "dcterms:title": "#{File.basename(file_path)}##{doc_type}"
+      "alveo:Contribution": "#{contribution_id}"
     }))
 
-    CollectionsHelper.add_document_core(contribution.collection, Item.find_by_handle(item_handle), doc_json, File.basename(file_path))
+    doc_json = JsonLdHelper.construct_document_json_ld(
+      contribution.collection,
+      Item.find_by_handle(item_handle),
+      "eng - English",
+      file_path,
+      contrib_metadata)
 
-    # finally, get there
-    FileUtils.cp(doc_file, file_path)
+    CollectionsHelper.add_document_core(contribution.collection, Item.find_by_handle(item_handle), doc_json, file_path)
 
   end
 
@@ -364,8 +356,7 @@ module ContributionsHelper
   # test.mp4: mediatype[video], subtype[mp4]
   # test.txt: mediatype[text], subtype[plain]
   #
-
-  def self::extract_doc_type(file)
+  def self.extract_doc_type(file)
     rlt = MimeMagic.by_path(file)
     if rlt.nil?
       rlt = "application"
@@ -385,7 +376,7 @@ module ContributionsHelper
   #   :document_file_name => file name of associated document
   #   :document_doc_type => file type of associated document
   # }
-  def self::load_contribution_mapping(contribution)
+  def self.load_contribution_mapping(contribution)
     mappings = ContributionMapping.where(:contribution_id => contribution.id)
 
     rlt = []
@@ -428,7 +419,7 @@ module ContributionsHelper
   #   }
   # ]
   #
-  def self::preview_import(contribution)
+  def self.preview_import(contribution)
     logger.debug "preview_import: start - contribution[#{contribution.name}]"
 
     rlt = []
@@ -469,11 +460,11 @@ module ContributionsHelper
   #
   # APP_CONFIG["contrib_dir"] (config/hcsvlab-web_config.yml: contrib_dir)
   #
-  def self::contribution_import_zip_file(contribution)
+  def self.contribution_import_zip_file(contribution)
     rlt = nil
 
     if !contribution.nil?
-      rlt = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, contribution.id.to_s, "import_#{contribution.id.to_s}.zip")
+      rlt = File.join(APP_CONFIG["contrib_dir"], contribution.collection.name, "import_#{contribution.id.to_s}.zip")
     end
 
     rlt
@@ -484,7 +475,7 @@ module ContributionsHelper
   #
   # APP_CONFIG["contrib_dir"] (config/hcsvlab-web_config.yml: contrib_dir)
   #
-  def self::contribution_dir(contribution)
+  def self.contribution_dir(contribution)
     rlt = nil
 
     if !contribution.nil?
@@ -540,10 +531,47 @@ module ContributionsHelper
       rlt[:message] = e.message
     end
 
-  logger.debug "delete_contribution: end - rlt[#{rlt}]"
+    logger.debug "delete_contribution: end - rlt[#{rlt}]"
 
-  rlt
-end
+    rlt
+  end
+
+  #
+  # Export contribution as zip file. Compress all files in contrib_dir as {id}.zip
+  #
+  # Contribution document files only include those within contribution_mappings.
+  #
+  # Return zip file path if success , otherwise exception throws
+  #
+  def self.export_as_zip(contribution)
+    logger.debug "export_as_zip: start - contribution[#{contribution}]"
+
+    rlt = nil
+
+    begin
+      # collect contribution document file path
+      file_path = []
+      cm_list = ContributionMapping.where(contribution_id: contribution.id)
+      cm_list.each do |cm|
+        file_path << cm.document.file_path
+      end
+
+      # generate zip path
+      zip_path = File.join(APP_CONFIG['download_tmp_dir'], "contrib_export_#{contribution.id}_#{Time.now.getutc.to_i.to_s}.zip")
+
+      # zip it
+      ZipBuilder.build_simple_zip_from_files(zip_path, file_path)
+
+      rlt = zip_path
+    rescue Exception => e
+      logger.error "export_as_zip: #{e.message}"
+      raise Exception.new(e.message)
+    end
+
+    logger.debug "export_as_zip: end - rlt[#{rlt}]"
+
+    return rlt
+  end
 
 end
 

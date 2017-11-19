@@ -63,12 +63,12 @@ HcsvlabWeb::Application.routes.draw do
   get "contrib/", :to => "contributions#index", :as => "contrib_index"
   get "contrib/new", :to => "contributions#new", :as => "contrib_new"
   post "contrib/", :to => "contributions#create", :as => "contrib_create"
-  get "contrib/:id", :to => "contributions#show", :as => "contrib_show"
+  get "contrib/(:id).zip", :to => "contributions#export", :as => "contrib_export"
+  get "contrib/:id", :to => "contributions#show", :as => "contrib_show", constraints: {id: /\d+/}
   get "contrib/:id/edit", :to => "contributions#edit", :as => "contrib_edit"
   put "contrib/update", :to => "contributions#update", :as => "contrib_update"
   get "contrib/:id/preview", :to => "contributions#preview", :as => "contrib_preview"
   post "contrib/:id/import", :to => "contributions#import", :as => "contrib_import"
-
   delete "contrib/:id", :to => "contributions#delete", :as => "contrib_delete"
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'

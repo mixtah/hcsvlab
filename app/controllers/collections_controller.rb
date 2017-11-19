@@ -182,15 +182,6 @@ class CollectionsController < ApplicationController
           params,
           {
             :collection_name => 'collection name'
-            # :collection_title => 'collection title',
-            # :collection_language => 'collection language',
-            # :collection_creation_date => 'collection creation date',
-            # :collection_creator => 'collection creator',
-            # :collection_owner => 'collection owner',
-            # :collection_olac_name => 'collection OLAC linguistic subject',
-            # :collection_olac_value => 'collection OLAC linguistic subject value',
-            # :collection_abstract => 'collection abstract'
-            # :collection_text => 'collection description'
           }
         )
 
@@ -207,7 +198,7 @@ class CollectionsController < ApplicationController
 
         # Construct collection Json-ld
         json_ld = {
-          '@context' => JsonLdHelper::default_context,
+          '@context' => JsonLdHelper.default_context,
           '@type' => 'dcmitype:Collection',
           MetadataHelper::LOC_OWNER.to_s => @collection_owner,
           MetadataHelper::LICENCE.to_s => (lic ? lic.name : ""),
@@ -295,9 +286,9 @@ class CollectionsController < ApplicationController
       doc_content = params[:document_content]
       uploaded_file = params[:file]
       uploaded_file = uploaded_file.first if uploaded_file.is_a? Array
-      doc_filename = MetadataHelper::get_dc_identifier(doc_metadata) # the document filename is the document id
+      doc_filename = MetadataHelper.get_dc_identifier(doc_metadata) # the document filename is the document id
       doc_metadata = format_and_validate_add_document_request(collection.corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
-      @success_message = CollectionsHelper::add_document_core(collection, item, doc_metadata, doc_filename)
+      @success_message = CollectionsHelper.add_document_core(collection, item, doc_metadata, doc_filename)
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
       return # Only respond with one error at a time
@@ -321,7 +312,7 @@ class CollectionsController < ApplicationController
         additional_metadata = validate_document_additional_metadata(params)
         uploaded_file_path = upload_document_using_multipart(collection.corpus_dir, uploaded_file.original_filename, uploaded_file, collection.name)
         json_ld = construct_document_json_ld(collection, item, params[:language], uploaded_file_path, additional_metadata)
-        msg = CollectionsHelper::add_document_core(collection, item, json_ld, uploaded_file_path)
+        msg = CollectionsHelper.add_document_core(collection, item, json_ld, uploaded_file_path)
         redirect_to catalog_path(collection: collection.name, itemId: item.get_name), notice: msg
       rescue ResponseError => e
         flash[:error] = e.message
@@ -361,21 +352,11 @@ class CollectionsController < ApplicationController
       collection = validate_collection(params[:collectionId], params[:api_key])
       item = validate_item_exists(collection, params[:itemId])
       document = validate_document_exists(item, params[:filename])
-      # @success_message = delete_doc_core(collection, item, document)
       @success_message = CollectionHelper.delete_document_core(collection, item, document)
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
       return # Only respond with one error at a time
     end
-  end
-
-  def delete_doc_core(collection, item, document)
-    remove_document(document, collection)
-    delete_item_from_solr(item.id)
-    item.indexed_at = nil
-    item.save
-    update_item_in_solr(item)
-    "Deleted the document #{params[:filename]} from item #{params[:itemId]} in collection #{params[:collectionId]}"
   end
 
   def delete_document_via_web_app
@@ -384,7 +365,6 @@ class CollectionsController < ApplicationController
       item = Item.find_by_handle(Item.format_handle(params[:collectionId], params[:itemId]))
       collection = item.collection
       document = item.documents.find_by_file_name(params[:filename])
-      # msg = delete_doc_core(collection, item, document)
       msg = CollectionsHelper.delete_document_core(collection, item, document)
       redirect_to catalog_path(params[:collectionId], params[:itemId]), notice: msg
     rescue ResponseError => e
@@ -498,7 +478,7 @@ class CollectionsController < ApplicationController
 
       # Construct collection Json-ld
       json_ld = {
-        '@context' => JsonLdHelper::default_context,
+        '@context' => JsonLdHelper.default_context,
         '@type' => 'dcmitype:Collection',
         MetadataHelper::TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
         MetadataHelper::LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
@@ -766,7 +746,8 @@ class CollectionsController < ApplicationController
   #
   def format_document_source_metadata(doc_source)
     # Escape any filename symbols which need to be replaced with codes to form a valid URI
-    {'@id' => "file://#{URI.escape(doc_source)}"}
+    # {'@id' => "file://#{URI.escape(doc_source)}"}
+    JsonLdHelper.format_document_source_metadata(doc_source)
   end
 
   # Updates the source of a specific document
@@ -897,22 +878,6 @@ class CollectionsController < ApplicationController
     end
     raise 'Could not obtain document URI from Sesame' if document_uri.nil?
     document_uri
-  end
-
-  # Removes a document from the database, filesystem, Sesame and Solr
-  def remove_document(document, collection)
-    delete_file(document.file_path)
-    delete_document_from_sesame(document, get_sesame_repository(collection))
-    delete_document_from_solr(document.id)
-    document.destroy # Remove document and document audits from database
-  end
-
-  # Removes an item and its documents from the database, filesystem, Sesame and Solr
-  def remove_item(item, collection)
-    delete_item_from_filesystem(item)
-    delete_from_sesame(item, collection)
-    delete_item_from_solr(item[:handle])
-    item.destroy # Remove from database (item, its documents and their document audits)
   end
 
   # Removes the metadata and document files for an item
@@ -1136,41 +1101,6 @@ class CollectionsController < ApplicationController
     document_metadata
   end
 
-  # Creates a document in the database from Json-ld document metadata
-  def create_document(item, document_json_ld)
-    expanded_metadata = JSON::LD::API.expand(document_json_ld).first
-    file_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
-    file_name = File.basename(file_path)
-    doc_type = expanded_metadata[MetadataHelper::TYPE.to_s]
-    doc_type = doc_type.first['@value'] unless doc_type.nil?
-    document = item.documents.find_or_initialize_by_file_name(file_name)
-    if document.new_record?
-      begin
-        document.file_path = file_path
-        document.doc_type = doc_type
-        document.mime_type = mime_type_lookup(file_name)
-        document.item = item
-        document.item_id = item.id
-        document.save
-        logger.info "#{doc_type} Document = #{document.id.to_s}" unless Rails.env.test?
-      rescue Exception => e
-        logger.error("Error creating document: #{e.message}")
-      end
-    else
-      raise ResponseError.new(412), "A file named #{file_name} is already in use by another document of item #{item.get_name}"
-    end
-  end
-
-  # Adds a document to Sesame and updates the corresponding item in Solr
-  def add_and_index_document(item, document_json_ld)
-    add_and_index_document_in_sesame(item.id, document_json_ld)
-
-    # Reindex item in Solr
-    delete_item_from_solr(item.id)
-    item.indexed_at = nil
-    item.save
-    update_item_in_solr(item)
-  end
 
   #
   # Core functionality common to creating a collection
@@ -1229,15 +1159,6 @@ class CollectionsController < ApplicationController
   #
   def add_item_core(collection, item_id_and_file_hash)
     ingest_items(collection.corpus_dir, item_id_and_file_hash)
-  end
-
-  #
-  # Core functionality common to add document ingest (via api and web app)
-  #
-  def add_document_core(collection, item, document_metadata, document_filename)
-    create_document(item, document_metadata)
-    add_and_index_document(item, document_metadata)
-    "Added the document #{File.basename(document_filename)} to item #{item.get_name} in collection #{collection.name}"
   end
 
   #
@@ -1349,22 +1270,14 @@ class CollectionsController < ApplicationController
                       MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
     }
     item_metadata.merge!(metadata) {|key, val1, val2| val1}
-    {'@context' => JsonLdHelper::default_context, '@graph' => [item_metadata]}
+    {'@context' => JsonLdHelper.default_context, '@graph' => [item_metadata]}
   end
 
   #
   # Constructs Json-ld for a new document
   #
   def construct_document_json_ld(collection, item, language, document_file, metadata)
-    document_metadata = {'@id' => Rails.application.routes.url_helpers.catalog_document_url(collection.name, item.get_name, File.basename(document_file)),
-                          '@type' => MetadataHelper::DOCUMENT.to_s,
-                          MetadataHelper::LANGUAGE.to_s => language,
-                          MetadataHelper::IDENTIFIER.to_s => File.basename(document_file),
-                          MetadataHelper::SOURCE.to_s => format_document_source_metadata(document_file),
-                          MetadataHelper::EXTENT.to_s => File.size(document_file)
-    }
-    document_metadata.merge!(metadata) {|key, val1, val2| val1}
-    {'@context' => JsonLdHelper::default_context}.merge(document_metadata)
+    JsonLdHelper.construct_document_json_ld(collection, item, language, document_file, metadata)
   end
 
   def zip_additional_metadata(meta_field_names, meta_field_values)

@@ -231,7 +231,8 @@ module ItemsHelper
   #
   def format_document_source_metadata(doc_source)
     # Escape any filename symbols which need to be replaced with codes to form a valid URI
-    {'@id' => "file://#{URI.escape(doc_source)}"}
+    # {'@id' => "file://#{URI.escape(doc_source)}"}
+    JsonLdHelper.format_document_source_metadata(doc_source)
   end
 
   # Updates the source of a specific document
@@ -829,15 +830,7 @@ module ItemsHelper
   # Constructs Json-ld for a new document
   #
   def construct_document_json_ld(collection, item, language, document_file, metadata)
-    document_metadata = {'@id' => Rails.application.routes.url_helpers.catalog_document_url(collection.name, item.get_name, File.basename(document_file)),
-                          '@type' => MetadataHelper::DOCUMENT.to_s,
-                          MetadataHelper::LANGUAGE.to_s => language,
-                          MetadataHelper::IDENTIFIER.to_s => File.basename(document_file),
-                          MetadataHelper::SOURCE.to_s => format_document_source_metadata(document_file),
-                          MetadataHelper::EXTENT.to_s => File.size(document_file)
-    }
-    document_metadata.merge!(metadata) {|key, val1, val2| val1}
-    {'@context' => JsonLdHelper::default_context}.merge(document_metadata)
+    JsonLdHelper::construct_document_json_ld(collection, item, language, document_file, metadata)
   end
 
   def zip_additional_metadata(meta_field_names, meta_field_values)

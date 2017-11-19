@@ -12,7 +12,7 @@ class ContributionsController < ApplicationController
     @contributions.each do |contrib|
       # replace description with abstract for display purpose
       # contrib.description = MetadataHelper::load_metadata_from_contribution(contrib.name)[:abstract]
-      metadata = ContributionsHelper::load_contribution_metadata(contrib.name)
+      metadata = ContributionsHelper.load_contribution_metadata(contrib.name)
       contrib.description = metadata["dcterms:abstract"]
     end
 
@@ -86,7 +86,7 @@ class ContributionsController < ApplicationController
       end
     else
       # load metadata
-      metadata = ContributionsHelper::load_contribution_metadata(@contribution.name)
+      metadata = ContributionsHelper.load_contribution_metadata(@contribution.name)
 
       @contribution_metadata = {
         :title => @contribution.name,
@@ -96,7 +96,7 @@ class ContributionsController < ApplicationController
       }
 
       # load mapping data
-      @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
+      @contribution_mapping = ContributionsHelper.load_contribution_mapping(@contribution)
 
       respond_to do |format|
         format.html {render :show}
@@ -109,11 +109,11 @@ class ContributionsController < ApplicationController
   # GET "contrib/:id/edit"
   def edit
     @contribution = Contribution.find_by_id(params[:id])
-    @contribution_metadata = ContributionsHelper::load_contribution_metadata(@contribution.name)
+    @contribution_metadata = ContributionsHelper.load_contribution_metadata(@contribution.name)
 
     # collect extra info for add_document_to_item
     metadata = ""
-    @contribution_mapping = ContributionsHelper::load_contribution_mapping(@contribution)
+    @contribution_mapping = ContributionsHelper.load_contribution_mapping(@contribution)
   end
 
   # GET "contrib/:id/preview"
@@ -123,7 +123,7 @@ class ContributionsController < ApplicationController
   #
   def preview
     @contribution = Contribution.find_by_id(params[:id])
-    @contribution_metadata = ContributionsHelper::load_contribution_metadata(@contribution.name)
+    @contribution_metadata = ContributionsHelper.load_contribution_metadata(@contribution.name)
     @preview_result = []
     @phrase = "0"
   end
@@ -150,8 +150,8 @@ class ContributionsController < ApplicationController
 
     if !zip_file.nil?
       # cp file to contrib dir (overwrite) for later use
-      contrib_zip_file = ContributionsHelper::contribution_import_zip_file(contrib)
-      FileUtils.mkdir_p(File.dirname(contrib_zip_file))
+      contrib_zip_file = ContributionsHelper.contribution_import_zip_file(contrib)
+      FileUtils.mkdir_p(ContributionsHelper.contribution_dir(contrib))
       FileUtils.cp(zip_file.tempfile, contrib_zip_file)
     end
 
@@ -161,14 +161,14 @@ class ContributionsController < ApplicationController
       #   preview mode
       # load preview
       @contribution = contrib
-      @contribution_metadata = ContributionsHelper::load_contribution_metadata(contrib.name)
-      @preview_result = ContributionsHelper::preview_import(contrib)
+      @contribution_metadata = ContributionsHelper.load_contribution_metadata(contrib.name)
+      @preview_result = ContributionsHelper.preview_import(contrib)
       @phrase = "1"
 
       render "preview"
     else
       #   import mode
-      message = ContributionsHelper::import(contrib)
+      message = ContributionsHelper.import(contrib)
       flash[:notice] = "#{message}"
       redirect_to contrib_show_url(params[:id])
     end
@@ -233,6 +233,30 @@ class ContributionsController < ApplicationController
       flash[:notice] = "Ony owner or admin can delete contribution."
 
       redirect_to :contrib_index
+    end
+
+  end
+
+  #
+  # GET "contrib/(:id).zip"
+  #
+  def export
+    id = params[:id]
+    contrib = Contribution.find_by_id(id)
+    if contrib.nil?
+      flash[:error] = "contribution with id[#{id}] not found."
+      redirect_to contrib_show_url(id)
+    end
+
+    begin
+      zip_path = ContributionsHelper.export_as_zip(contrib)
+
+      send_file zip_path, :type => 'application/zip',
+                :disposition => 'attachment',
+                :filename => "#{id}.zip"
+    rescue Exception => e
+      flash[:error] = "contribution export error: #{e.message}"
+      redirect_to contrib_show_url(id)
     end
 
   end
@@ -380,11 +404,11 @@ class ContributionsController < ApplicationController
         proceed_sesame = true
       else
         # validate file to be added to contribution
-        vld_rlt = ContributionsHelper::validate_contribution_file(contrib.collection.id, attr[:file])
+        vld_rlt = ContributionsHelper.validate_contribution_file(contrib.collection.id, attr[:file])
 
         if vld_rlt[:error].nil?
           # no news is good news, validation passed
-          add_rlt = ContributionsHelper::add_document_to_contribution(contrib.id, vld_rlt[:item_handle], attr[:file])
+          add_rlt = ContributionsHelper.add_document_to_contribution(contrib.id, vld_rlt[:item_handle], attr[:file])
           msg = "Contribution '#{contrib.name}' (#{uri}) updated"
         else
           msg = "Contribution '#{contrib.name}' (#{uri}) update failed: #{vld_rlt[:error]}"

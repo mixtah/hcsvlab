@@ -87,29 +87,30 @@
         %th Filename
         %th Type
         %th Size
+        %th Contribution
         - if can? :delete_document_via_web_app, @item.collection
           %th Delete
     %tbody
-      - documents.each_with_index do |values, index|
+      - documents.each_with_index do |document, index|
         %tr
-          - if values.has_key?(MetadataHelper::SOURCE)
-            - if values[MetadataHelper::SOURCE].to_s.starts_with? 'http'
+          - if document.has_key?(MetadataHelper::SOURCE)
+            - if document[MetadataHelper::SOURCE].to_s.starts_with? 'http'
               %td
-                %a{:href => values[MetadataHelper::SOURCE]}= values[MetadataHelper::IDENTIFIER]
+                %a{:href => document[MetadataHelper::SOURCE]}= document[MetadataHelper::IDENTIFIER]
             - else
               %td
-                %a{:href => "/catalog/#{document[:handle].split(':').first}/#{document[:handle].split(':').last}/document/#{values[MetadataHelper::IDENTIFIER]}"}= values[MetadataHelper::IDENTIFIER]
+                %a{:href => "/catalog/#{document[:handle].split(':').first}/#{document[:handle].split(':').last}/document/#{document[MetadataHelper::IDENTIFIER]}"}= document[MetadataHelper::IDENTIFIER]
           - else
-            %td= values[MetadataHelper::IDENTIFIER]
-          - if values.has_key?(MetadataHelper::TYPE)
-            - field = values[MetadataHelper::TYPE]
+            %td= document[MetadataHelper::IDENTIFIER]
+          - if document.has_key?(MetadataHelper::TYPE)
+            - field = document[MetadataHelper::TYPE]
             - field = "unlabelled" if field == ""
             -#/ - field = "Plain" if is_cooee && field == type
           - else
             - field = "unlabelled"
           %td= sprintf(type_format, field)
-          - if values.has_key?(MetadataHelper::EXTENT)
-            - field = values[MetadataHelper::EXTENT]
+          - if document.has_key?(MetadataHelper::EXTENT)
+            - field = document[MetadataHelper::EXTENT]
             - if field.nil? || field == ""
               - field = "unknown"
             - else
@@ -117,10 +118,14 @@
           - else
             - field = "unknown"
           %td= field
+          %td
+            - if !document[:contribution_id].nil?
+              %a{:href => contrib_show_path(document[:contribution_id])}= Contribution.find_by_id(document[:contribution_id]).name
+
           - if can? :delete_document_via_web_app, @item.collection
-            - doc = @item.documents.find_by_file_name(values[MetadataHelper::IDENTIFIER].to_s)
+            - doc = @item.documents.find_by_file_name(document[MetadataHelper::IDENTIFIER].to_s)
             - unless doc.nil?
-              %td= link_to image_tag('/assets/closebox.png'), delete_item_document_web_path(params[:collection],params[:itemId],values[MetadataHelper::IDENTIFIER]), :id => "delete_document_#{doc.id}", data: {confirm: 'Are you sure you want to delete this document?'}
+              %td= link_to image_tag('/assets/closebox.png'), delete_item_document_web_path(params[:collection],params[:itemId],document[MetadataHelper::IDENTIFIER]), :id => "delete_document_#{doc.id}", data: {confirm: 'Are you sure you want to delete this document?'}
 
 - if can? :web_add_document, @item.collection
   %br

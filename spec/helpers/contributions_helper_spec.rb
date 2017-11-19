@@ -103,10 +103,11 @@ RSpec.describe ContributionsHelper, :type => :helper do
 
   describe "test unzip" do
 
+    let(:zip_file)  {ContributionsHelper.contribution_import_zip_file(contribution)}
+    let(:unzip_dir) {File.join(File.dirname(zip_file), File.basename(zip_file, ".zip"))}
+
     after do
       #   clean up
-      zip_file = ContributionsHelper.contribution_import_zip_file(contribution)
-      unzip_dir = File.join(File.dirname(zip_file), File.basename(zip_file, ".zip"))
       FileUtils.rm_r unzip_dir
     end
 
@@ -117,7 +118,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
       it "returns array of file full path" do
         FileUtils.mkdir_p(File.dirname(dest))
         FileUtils.cp(src, dest)
-        rlt = ContributionsHelper.unzip(dest)
+        rlt = ContributionsHelper.unzip(dest, unzip_dir)
 
         if rlt.is_a? String
 
@@ -151,7 +152,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
       it "returns string message indicates success" do
         src = "test/samples/contributions/contrib_doc.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
-        FileUtils.mkdir_p(File.dirname(dest))
+        FileUtils.mkdir_p(ContributionsHelper.contribution_dir(contribution))
         FileUtils.cp(src, dest)
 
         rlt = ContributionsHelper.import(contribution)
