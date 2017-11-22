@@ -72,7 +72,27 @@ RSpec.describe ContributionsHelper, :type => :helper do
     end
 
     context "when zip contains bad file" do
-      it "returns error result" do
+      it "returns error result - not found" do
+        #   prepare zip
+        src = "test/samples/contributions/contrib_doc.error.zip"
+        dest = ContributionsHelper.contribution_import_zip_file(contribution)
+        FileUtils.mkdir_p(File.dirname(dest))
+        FileUtils.cp(src, dest)
+
+        rlt = ContributionsHelper.preview_import(contribution)
+
+        error_not_found = false
+
+        rlt.each do |row|
+          if !row[:message].nil? && row[:message].include?("can't find existing document associated with")
+            error_not_found = true
+          end
+        end
+
+        expect(error_not_found).to be_true
+      end
+
+      it "returns error result - duplicated file" do
         #   prepare zip
         src = "test/samples/contributions/contrib_doc.error.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
@@ -82,23 +102,18 @@ RSpec.describe ContributionsHelper, :type => :helper do
         rlt = ContributionsHelper.preview_import(contribution)
 
         error_duplicated_doc = false
-        error_not_found = false
 
         rlt.each do |row|
-          if !row[:message].nil? && row[:message].include?("can't find existing document associated with")
-            error_not_found = true
-          end
-
           if !row[:message].nil? && row[:message].include?("duplicated document file")
             error_duplicated_doc = true
           end
         end
 
-        expect(error_not_found).to be_true
         expect(error_duplicated_doc).to be_true
 
       end
     end
+
   end
 
   describe "test unzip" do
@@ -120,9 +135,10 @@ RSpec.describe ContributionsHelper, :type => :helper do
         FileUtils.cp(src, dest)
         rlt = ContributionsHelper.unzip(dest, unzip_dir)
 
-        if rlt.is_a? String
+        if !rlt.is_a? String
 
           rlt.each do |f|
+            puts "checking [#{f[:dest_name]}]..."
             expect(File.exists?(f[:dest_name])).to be_true
           end
 

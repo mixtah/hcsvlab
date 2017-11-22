@@ -230,6 +230,8 @@ module ContributionsHelper
         #   sth wrong happened
         logger.error "import: return from unzip: #{extracted_file}"
         rlt = extracted_file
+
+        return rlt
       end
 
       contrib_doc.each do |doc|
@@ -290,6 +292,7 @@ module ContributionsHelper
         zf.each do |entry|
           # init dest file
           dest_name = File.join(unzip_dir, entry.name)
+          FileUtils.mkdir_p(File.dirname(dest_name))
           FileUtils.rm_f(dest_name)
 
           entry.extract(dest_name)
@@ -301,6 +304,7 @@ module ContributionsHelper
         end
       end
     rescue Zip::Error => e
+      logger.error "unzip: #{e.message}"
       rlt = e.message
     end
 
