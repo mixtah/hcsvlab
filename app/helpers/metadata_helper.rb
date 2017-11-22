@@ -526,4 +526,11 @@ module MetadataHelper
     repo
   end
 
+  #
+  # SPARQL does not support new line (\r\n) and double quote (") with query string
+  #
+  def self.sqarql_well_formed(field_value)
+    field_value.to_s.gsub(/\r\n/, ' ').gsub(/"/, '\"')
+  end
+
 end

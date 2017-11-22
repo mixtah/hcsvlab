@@ -269,7 +269,7 @@ class ItemListsController < ApplicationController
         redirect_to @item_list
       end
 
-      format.json { render :json => {:success => message} }
+      format.json { render :json => {:success => message}.to_json }
     end
   end
 
@@ -293,7 +293,7 @@ class ItemListsController < ApplicationController
         redirect_to item_lists_path
       end
 
-      format.json { render :json => {:success => "item list #{@item_list.name} deleted successfully"} }
+      format.json { render :json => {:success => "item list #{@item_list.name} deleted successfully"}.to_json }
     end
   end
 
@@ -310,7 +310,7 @@ class ItemListsController < ApplicationController
         redirect_to @item_list
       end
 
-      format.json { render :json => {:success => message} }
+      format.json { render :json => {:success => message}.to_json }
     end
 
   end
@@ -328,7 +328,7 @@ class ItemListsController < ApplicationController
         redirect_to @item_list
       end
 
-      format.json { render :json => {:success => message} }
+      format.json { render :json => {:success => message}.to_json }
     end
 
   end

@@ -670,6 +670,8 @@ def populate_triple_store(corpus_dir, collection_name, glob)
   # Create a instance of the repository where we are going to store the metadata
   repository = server.repository(collection_name)
 
+  # TODO: add metadata to sesame
+
   # KL - deprecated features
   # Now will store every RDF file
   # if !corpus_dir.nil? && !glob.nil?

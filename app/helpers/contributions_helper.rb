@@ -256,7 +256,7 @@ module ContributionsHelper
       FileUtils.rm_f(zip_file)
       FileUtils.rm_rf(unzip_dir)
 
-      rlt = "#{contrib_doc.size} document(s) imported."
+      rlt = "OK! #{contrib_doc.size} document(s) imported."
     end
 
     logger.debug "import: end - rlt[#{rlt}]"

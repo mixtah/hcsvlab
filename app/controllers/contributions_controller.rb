@@ -53,6 +53,15 @@ class ContributionsController < ApplicationController
         }
       )
 
+      # check duplicated
+      contrib = Contribution.find_by_name(contribution_name)
+      if !contrib.nil?
+      #   contrib with same name already exists
+        msg = "contribution [#{contribution_name}] already exists."
+        logger.error "create: #{msg}"
+        raise Exception.new(msg)
+      end
+
       attr = {
         :name => contribution_name,
         :owner => current_user,
@@ -63,12 +72,28 @@ class ContributionsController < ApplicationController
 
       msg, contrib_id = upsert_contribution_core(attr)
 
-      # create contribution directory
+      # create contrib directory
       FileUtils.makedirs(File.join(APP_CONFIG["contrib_dir"], contribution_collection, contrib_id.to_s))
 
-      redirect_to contrib_show_path(id: contrib_id), notice: msg
-    rescue ResponseError => e
-      flash[:error] = e.message
+      respond_to do |format|
+        format.html {
+          redirect_to contrib_show_path(id: contrib_id), notice: msg
+        }
+        format.json {
+          redirect_to contrib_show_path(id: contrib_id, format: :json)
+        }
+      end
+
+    rescue Exception => e
+      respond_to do |format|
+        format.html {
+          flash[:error] = e.message
+          redirect_to contrib_new_path
+        }
+        format.json {
+          render :json => {:error => "#{e.message}"}.to_json, :status => 422
+        }
+      end
     end
   end
 
@@ -92,7 +117,7 @@ class ContributionsController < ApplicationController
         :title => @contribution.name,
         :creator => @contribution.owner.full_name,
         :created => @contribution.created_at,
-        :abstract => metadata["dcterms:abstract"]
+        :abstract => metadata["dcterms:abstract"].to_json
       }
 
       # load mapping data
@@ -100,7 +125,7 @@ class ContributionsController < ApplicationController
 
       respond_to do |format|
         format.html {render :show}
-        format.json {}
+        format.json
       end
     end
 
@@ -139,8 +164,11 @@ class ContributionsController < ApplicationController
       respond_to do |format|
         format.html {
           flash[:error] = "Contribution does not exist with the given id: #{params[:id]}"
-          redirect_to contrib_index_path}
-        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
+          redirect_to contrib_index_path
+        }
+        format.json {
+          render :json => {:error => "not-found"}.to_json, :status => 404
+        }
       end
 
       return
@@ -169,8 +197,23 @@ class ContributionsController < ApplicationController
     else
       #   import mode
       message = ContributionsHelper.import(contrib)
-      flash[:notice] = "#{message}"
-      redirect_to contrib_show_url(params[:id])
+
+      respond_to do |format|
+        format.html {
+          flash[:notice] = "#{message}"
+          redirect_to contrib_show_url(params[:id])
+        }
+        format.json {
+          if message.start_with?("OK")
+          #   success
+            redirect_to contrib_show_path(id: contrib.id, format: :json)
+          else
+            render :json => {:error => "#{message}"}.to_json, :status => 422
+          end
+
+        }
+      end
+
     end
 
   end
@@ -204,37 +247,82 @@ class ContributionsController < ApplicationController
 
       msg, contrib_id = upsert_contribution_core(attr)
 
-      redirect_to contrib_show_path(id: contrib_id), notice: msg
-      # redirect_to contrib_edit_path(id: contrib_id), notice: msg
+      respond_to do |format|
+        format.html {
+          redirect_to contrib_show_path(id: contrib_id), notice: msg
+        }
+        format.json {
+          redirect_to contrib_show_path(id: contrib_id, format: :json)
+        }
+      end
+
+
     rescue ResponseError => e
-      flash[:error] = e.message
+      respond_to do |format|
+        format.html {
+          flash[:error] = e.message
+          redirect_to contrib_show_path(id: contrib_id)
+        }
+        format.json {
+          render :json => {:error => "#{e.message}"}.to_json, :status => 422
+        }
+      end
+
     end
 
   end
 
   # DELETE "contrib/:id"
-  def delete
-    contribution = Contribution.find_by_id(params[:id])
+  def destroy
+    contrib = Contribution.find_by_id(params[:id])
 
-    if contribution.nil?
-      raise ResponseError.new(404), "A contribution with the id '#{params[:id]}' not exist."
-    end
+    if contrib.nil?
+      msg = "Contribution does not exist with the given id: #{params[:id]}"
+      logger.warn "delete: #{msg}"
 
-    if current_user.is_superuser? || ContributionsHelper.is_owner?(current_user, contribution)
-      name = contribution.name
-
-      if delete_contribution(contribution)
-        flash[:notice] = "Contribution with the name '#{name}' has been removed successfully."
-
-        redirect_to :contrib_index
+      respond_to do |format|
+        format.html {
+          flash[:error] = msg
+          redirect_to contrib_index_path}
+        format.json {
+          render :json => {:error => msg}.to_json, :status => 404
+        }
       end
 
-    else
-      flash[:notice] = "Ony owner or admin can delete contribution."
-
-      redirect_to :contrib_index
+      return
     end
 
+    if current_user.is_superuser? || ContributionsHelper.is_owner?(current_user, contrib)
+      name = contrib.name
+
+      if delete_contribution(contrib)
+        msg = "Contribution [#{name}] has been removed successfully."
+        logger.info "delete: #{msg}"
+
+        respond_to do |format|
+          format.html {
+            flash[:notice] = msg
+            redirect_to :contrib_index
+          }
+          format.json {
+            render :json => {:success => "#{msg}"}, :status => 200
+          }
+        end
+      end
+    else
+      msg = "Ony owner or admin can delete contrib."
+      logger.info "delete: #{msg}"
+
+      respond_to do |format|
+        format.html {
+          flash[:notice] = msg
+          redirect_to :contrib_index
+        }
+        format.json {
+          render :json => {:error => "#{msg}"}, :status => 403
+        }
+      end
+    end
   end
 
   #
@@ -243,9 +331,21 @@ class ContributionsController < ApplicationController
   def export
     id = params[:id]
     contrib = Contribution.find_by_id(id)
+
     if contrib.nil?
-      flash[:error] = "contribution with id[#{id}] not found."
-      redirect_to contrib_show_url(id)
+      msg = "Contribution does not exist with the given id: #{params[:id]}"
+      logger.warn "export: #{msg}"
+
+      respond_to do |format|
+        format.html {
+          flash[:error] = msg
+          redirect_to contrib_show_path}
+        format.json {
+          render :json => {:error => msg}.to_json, :status => 404
+        }
+      end
+
+      return
     end
 
     begin
@@ -255,8 +355,18 @@ class ContributionsController < ApplicationController
                 :disposition => 'attachment',
                 :filename => "#{id}.zip"
     rescue Exception => e
-      flash[:error] = "contribution export error: #{e.message}"
-      redirect_to contrib_show_url(id)
+      msg = "contribution export failed: #{e.message}"
+      logger.error "export: #{msg}"
+
+      respond_to do |format|
+        format.html {
+          flash[:error] = msg
+          redirect_to contrib_show_url(id)
+        }
+        format.json {
+          render :json => {:error => "#{msg}"}, :status => 422
+        }
+      end
     end
 
   end
@@ -279,11 +389,11 @@ class ContributionsController < ApplicationController
   #
   # attr:
   #
-  # - :name contribution name
-  # - :owner contribution owner (current_user)
+  # - :name contrib name
+  # - :owner contrib owner (current_user)
   # - :collection related collection (name)
-  # - :description contribution description
-  # - :abstract contribution abstract
+  # - :description contrib description
+  # - :abstract contrib abstract
   # - :file uploaded file
   #
   def upsert_contribution_core(attr)
@@ -295,8 +405,7 @@ class ContributionsController < ApplicationController
 
     contrib = Contribution.find_by_name(attr[:name])
 
-    # SPARQL does not accept "\r\n" within query string
-    contrib_abstract = attr[:abstract].gsub(/\r\n/, ' ')
+    contrib_abstract = attr[:abstract]
 
     if contrib.nil?
       #   contribution not exist, create a new one
@@ -336,11 +445,11 @@ class ContributionsController < ApplicationController
 
       INSERT DATA {
         <#{uri}> a alveo:Contribution;
-        dcterms:identifier "#{contrib.id}";
-        dcterms:title "#{contrib.name}";
-        dcterms:creator "#{contrib.owner.full_name}";
-        dcterms:created "#{contrib.created_at}";
-        dcterms:abstract "#{contrib_abstract}".
+        dcterms:identifier "#{MetadataHelper.sqarql_well_formed(contrib.id)}";
+        dcterms:title "#{MetadataHelper.sqarql_well_formed(contrib.name)}";
+        dcterms:creator "#{MetadataHelper.sqarql_well_formed(contrib.owner.full_name)}";
+        dcterms:created "#{MetadataHelper.sqarql_well_formed(contrib.created_at)}";
+        dcterms:abstract "#{MetadataHelper.sqarql_well_formed(contrib_abstract)}".
       }
       )
 
@@ -384,11 +493,11 @@ class ContributionsController < ApplicationController
       DELETE { ?contrib ?property ?value. }
       INSERT {
         <#{uri}> a alveo:Contribution;
-        dcterms:identifier "#{contrib.id}";
-        dcterms:title "#{contrib.name}";
-        dcterms:creator "#{contrib.owner.full_name}";
-        dcterms:created "#{contrib.created_at}";
-        dcterms:abstract "#{contrib_abstract}".
+        dcterms:identifier "#{MetadataHelper.sqarql_well_formed(contrib.id)}";
+        dcterms:title "#{MetadataHelper.sqarql_well_formed(contrib.name)}";
+        dcterms:creator "#{MetadataHelper.sqarql_well_formed(contrib.owner.full_name)}";
+        dcterms:created "#{MetadataHelper.sqarql_well_formed(contrib.created_at)}";
+        dcterms:abstract "#{MetadataHelper.sqarql_well_formed(contrib_abstract)}".
       }
       WHERE {
         ?contrib ?property ?value.
@@ -418,14 +527,14 @@ class ContributionsController < ApplicationController
 
     # sesame repo
     if proceed_sesame
-      repo = MetadataHelper::get_repo_by_collection(contrib.collection.name)
+      repo = MetadataHelper.get_repo_by_collection(contrib.collection.name)
 
       logger.debug "upsert_contribution_core: sparql query[#{query}]"
 
       repo.sparql_query(query)
     end
 
-    logger.debug "upsert_contribution_core: end - contribution.id[#{contrib.id}]"
+    logger.debug "upsert_contribution_core: end - contrib.id[#{contrib.id}]"
 
     return msg, contrib.id
 
@@ -438,7 +547,7 @@ class ContributionsController < ApplicationController
   # - call API to remove document
   #
   def delete_contribution(contribution)
-    logger.debug "delete_contribution: start - contribution[#{contribution}]"
+    logger.debug "delete_contribution: start - contrib[#{contribution}]"
 
     rlt = false
 
@@ -447,7 +556,7 @@ class ContributionsController < ApplicationController
       # sesame repo
       repo = MetadataHelper::get_repo_by_collection(contribution.collection.name)
 
-      # retrieve contribution uri to compose subject
+      # retrieve contrib uri to compose subject
       #
       # e.g.,
       #
@@ -473,10 +582,7 @@ class ContributionsController < ApplicationController
       #   DB
       contribution.destroy
 
-      # Solr
-
       rlt = true
-
     end
 
     rlt

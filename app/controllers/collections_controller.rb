@@ -138,7 +138,7 @@ class CollectionsController < ApplicationController
     @collection_title = params[:collection_title]
     @collection_owner = params[:collection_owner]
     @collection_text = params[:collection_text]
-    @collection_abstract = params[:collection_abstract]
+    @collection_abstract = params[:collection_abstract].nil? ? "" : params[:collection_abstract].gsub(/\r\n/, ' ').gsub(/"/, '\"')
     @approval_required = params[:approval_required]
     @approval_required = 'private' if request.get?
     @licence_id = params[:licence_id]
@@ -165,7 +165,7 @@ class CollectionsController < ApplicationController
       @collection_creation_date = nil
       @collection_creator = nil
       @collection_owner = nil
-      @collection_abstract = nil
+      @collection_abstract = ""
       @collection_text = nil
 
       #   load content only for Get
@@ -1133,9 +1133,9 @@ class CollectionsController < ApplicationController
         raise ResponseError.new(400), "Licence with id #{licence_id} does not exist"
       end
 
-      MetadataHelper::create_manifest(name)
+      MetadataHelper.create_manifest(name)
 
-      MetadataHelper::update_collection_metadata_from_json(name, metadata)
+      MetadataHelper.update_collection_metadata_from_json(name, metadata)
 
       # corpus_dir = MetadataHelper::corpus_dir_by_name(name)
 
