@@ -503,7 +503,7 @@ module MetadataHelper
   # Extracts the value of the dc:identifier or dcterms:identifier from a metadata hash
   def self.get_dc_identifier(metadata)
     dc_id = nil
-    ['dc:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
+    ['dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_id_predicate|
       dc_id = metadata[dc_id_predicate] if metadata.has_key?(dc_id_predicate)
     end
     dc_id

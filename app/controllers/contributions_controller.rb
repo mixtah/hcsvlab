@@ -328,6 +328,8 @@ class ContributionsController < ApplicationController
   #
   # GET "contrib/(:id).zip"
   #
+  # Returns {}contribution.name}.zip
+  #
   def export
     id = params[:id]
     contrib = Contribution.find_by_id(id)
@@ -353,7 +355,7 @@ class ContributionsController < ApplicationController
 
       send_file zip_path, :type => 'application/zip',
                 :disposition => 'attachment',
-                :filename => "#{id}.zip"
+                :filename => "#{contrib.name}.zip"
     rescue Exception => e
       msg = "contribution export failed: #{e.message}"
       logger.error "export: #{msg}"
