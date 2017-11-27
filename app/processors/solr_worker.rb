@@ -115,7 +115,7 @@ class Solr_Worker < ApplicationProcessor
       when "delete_item_from_sesame"
         begin
           args = packet["arg"]
-          delete_item_from_sesame(item)
+          delete_item_from_sesame(args['item_id'])
         rescue Exception => e
           error("Solr Worker", e.message)
           error("Solr Worker", e.backtrace)
@@ -239,7 +239,8 @@ private
   # =============================================================================
   #
 
-  def delete_item_from_sesame(item)
+  def delete_item_from_sesame(item_id)
+    item = Item.find(item_id)
     repository = get_sesame_repository(item.collection)
     item.documents.each do |document|
       delete_document_from_sesame(document, repository)
