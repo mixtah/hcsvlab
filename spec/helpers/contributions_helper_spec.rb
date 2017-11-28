@@ -220,4 +220,83 @@ RSpec.describe ContributionsHelper, :type => :helper do
     end
   end
 
+  describe "test next_available_name" do
+    let(:contrib_id) {1}
+    let(:src_file) {"test.txt"}
+    let(:dest_file) {"test-c#{contrib_id}.txt"}
+    let(:dest_file_2) {"test-c#{contrib_id}-c#{contrib_id}.txt"}
+
+    context "rename: no duplicated file" do
+      it "returns normal result" do
+        existing_files = [
+          {:name => 'not_me.txt', :contrib_id => 12},
+          {:name => 'not_me_2.txt', :contrib_id => 123},
+          {:name => 'not_me_3.txt', :contrib_id => nil}
+        ]
+
+        rlt = ContributionsHelper.next_available_name(contrib_id, src_file, existing_files)
+        expect(rlt[:mode]).to eq("rename")
+        expect(rlt[:file_name]).to eq(src_file)
+      end
+    end
+
+    context "overwrite: src_file duplicated with same contribution" do
+      it "returns overwrite result" do
+        existing_files = [
+          {:name => 'not_me.txt', :contrib_id => 12},
+          {:name => src_file, :contrib_id => contrib_id},
+          {:name => 'not_me_3.txt', :contrib_id => nil}
+        ]
+
+        rlt = ContributionsHelper.next_available_name(contrib_id, src_file, existing_files)
+        expect(rlt[:mode]).to eq("overwrite")
+        expect(rlt[:file_name]).to eq(src_file)
+      end
+
+    end
+
+    context "rename: src_file duplicated with other contribution" do
+      it "returns rename result" do
+        existing_files = [
+          {:name => 'not_me.txt', :contrib_id => 12},
+          {:name => src_file, :contrib_id => 12},
+          {:name => 'not_me_3.txt', :contrib_id => nil}
+        ]
+
+        rlt = ContributionsHelper.next_available_name(contrib_id, src_file, existing_files)
+        expect(rlt[:mode]).to eq("rename")
+        expect(rlt[:file_name]).to eq(dest_file)
+      end
+    end
+
+    context "rename: src_file duplicated with null contribution (collection document)" do
+      it "returns rename result" do
+        existing_files = [
+          {:name => 'not_me.txt', :contrib_id => 12},
+          {:name => src_file, :contrib_id => nil},
+          {:name => 'not_me_3.txt', :contrib_id => nil}
+        ]
+
+        rlt = ContributionsHelper.next_available_name(contrib_id, src_file, existing_files)
+        expect(rlt[:mode]).to eq("rename")
+        expect(rlt[:file_name]).to eq(dest_file)
+      end
+    end
+
+    context "rename: dest_file duplicated with existing file" do
+      it "returns rename result" do
+        existing_files = [
+          {:name => 'not_me.txt', :contrib_id => 12},
+          {:name => src_file, :contrib_id => 12},
+          {:name => dest_file, :contrib_id => nil}
+        ]
+
+        rlt = ContributionsHelper.next_available_name(contrib_id, src_file, existing_files)
+        expect(rlt[:mode]).to eq("rename")
+        expect(rlt[:file_name]).to eq(dest_file_2)
+      end
+    end
+  end
+
+
 end

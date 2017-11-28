@@ -131,6 +131,7 @@ GEM
     childprocess (0.5.5)
       ffi (~> 1.0, >= 1.0.11)
     chronic (0.10.2)
+    clipboard-rails (1.7.1)
     coderay (1.0.9)
     coffee-rails (3.2.2)
       coffee-script (>= 2.2.0)
@@ -545,8 +546,6 @@ GEM
     xray-rails (0.1.5)
       coffee-rails
       rails (>= 3.1.0)
-    zeroclipboard-rails (0.0.4)
-      railties (>= 3.1)
     zeus (0.13.3)
       method_source (>= 0.6.7)
     zip-zip (0.3)
@@ -577,6 +576,7 @@ DEPENDENCIES
   capybara
   carrierwave (= 0.11.0)
   celluloid
+  clipboard-rails
   coffee-rails (~> 3.2.1)
   colorize
   create_deployment_record!
@@ -650,7 +650,6 @@ DEPENDENCIES
   whenever
   xml-simple
   xray-rails
-  zeroclipboard-rails
   zeus
   zip-zip
   zipline

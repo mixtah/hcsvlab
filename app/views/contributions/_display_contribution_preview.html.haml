@@ -28,5 +28,8 @@
             - if m[:message].nil?
               %span.label.label-success Ready to import
             - else
-              %span.label.label-important ERROR
+              - if !m[:dest_file].nil?
+                %span.label.label-warning WARNING
+              - else
+                %span.label.label-important ERROR
               = m[:message]

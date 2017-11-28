@@ -137,31 +137,36 @@ module ContributionsHelper
   #   :file => input file (basename),
   #   :item_handle => item.handle (e.g., mava:s203, nil if not found),
   #   :document_file_name => [document.file_name] (array of string, nil if not found),
+  #   :dest_file => destination file name (basename), nil if validate failed
   #   :message => nil (no news is good news, otherwise error message)
   # }
   #
-  def self.validate_contribution_file(collection_id, file)
-    logger.debug "validate_contribution_file: start - collection_id[#{collection_id}], file[#{file}]"
+  def self.validate_contribution_file(contribution_id, file)
+    logger.debug "validate_contribution_file: start - contribution_id[#{contribution_id}], file[#{file}]"
+
+    contrib = Contribution.find_by_id(contribution_id)
 
     rlt = {
       :file => file,
       :item_handle => nil,
       :document_file_name => [],
+      :dest_file => file,
       :message => nil
     }
 
-    # document files: abc.wav, abc_1.wav
-    # if pattern is only "abc", both abc.wav and abc_1.wav would be retrieved.
-    # so pattern should include the dot
-    pattern = File.basename(file, ".*") + "."
+    # document file: abc.txt
+    # pattern is "abc", all files start with "abc" would be retrieved
+    pattern = File.basename(file, ".*")
 
     sql = %(
     SELECT
-      i.handle as item_handle, d.file_name as document_file_name
+      i.handle as item_handle, d.file_name as document_file_name, cm.contribution_id as contribution_id
     FROM
       items i, documents d
+    LEFT OUTER JOIN contribution_mappings cm
+      ON d.id = cm.document_id
     WHERE
-      i.collection_id = #{collection_id}
+      i.collection_id = #{contrib.collection_id}
       AND d.item_id = i.id
       AND d.file_name like '#{pattern}%'
     )
@@ -169,6 +174,7 @@ module ContributionsHelper
     result = ActiveRecord::Base.connection.execute(sql)
     if result.count == 0
       rlt[:message] = "can't find existing document associated with [#{file}]"
+      rlt[:dest_file] = nil
     end
 
     result.each do |row|
@@ -176,8 +182,30 @@ module ContributionsHelper
       rlt[:document_file_name] << row["document_file_name"]
 
       if (file == row["document_file_name"])
-        #   input file has the same name as document file, invalidated
-        rlt[:message] = "duplicated document file [#{file}]"
+        # input file has the same name as document file, duplicated warning
+        # need to further check duplicated file is from same contribution or not
+
+        # if duplicated file is from same contribution, overwrite
+        # otherwise (from collection or different contribution) need to rename
+
+        name_result = next_available_name(
+          contribution_id,
+          file,
+          result.map {|e| {
+            :name => e["document_file_name"],
+            :contrib_id => e["contribution_id"]}}
+        )
+
+        rlt[:message] = "duplicated document found[#{file}]. "
+        rlt[:dest_file] = name_result[:file_name]
+
+        if name_result[:mode] == "rename"
+          rlt[:message] += "New file would be renamed as '#{name_result[:file_name]}'."
+        else
+          if name_result[:mode] == "overwrite"
+            rlt[:message] += "Existing file would be overwritten as '#{name_result[:file_name]}'."
+          end
+        end
       end
     end
 
@@ -205,7 +233,7 @@ module ContributionsHelper
     failed_doc = []
     if contrib_doc.is_a?(Array)
       contrib_doc.each do |d|
-        if !d[:message].nil?
+        if !d[:message].nil? && d[:dest_file].nil?
           failed_doc << d[:message]
         end
       end
@@ -239,7 +267,11 @@ module ContributionsHelper
           contrib_id = contribution.id
           item_handle = %(#{contribution.collection.name}:#{doc[:item]})
           # find full path thru :name mapping
-          doc_file = (extracted_file.select {|e| e[:name] == doc[:name]}.first)[:dest_name]
+          extracted_filepath = (extracted_file.select {|e| e[:name] == doc[:name]}.first)[:dest_name]
+
+          # move(rename): from extracted file to destination file
+          doc_file = File.join(File.dirname(extracted_filepath), doc[:dest_file])
+          FileUtils.mv(extracted_filepath, doc_file)
 
           add_document_to_contribution(contrib_id, item_handle, doc_file)
             # logger.info "import: contribution_id[#{contrib_id}], item_handle[#{item_handle}], doc_file[#{doc_file}]"
@@ -328,6 +360,10 @@ module ContributionsHelper
 
     # /data/contrib/:collection_name/:contrib_id/:filename
     contrib_dir = contribution_dir(contribution)
+
+    # # get available file name
+    # name_result = next_available_name(contribution_id)
+
     file_path = File.join(contrib_dir, File.basename(doc_file))
     logger.debug "add_document_to_contribution: processing [#{file_path}]"
 
@@ -419,6 +455,7 @@ module ContributionsHelper
   #     :type => file type,
   #     :item => associated item name,
   #     :document => associated document name,
+  #     :dest_file => destination file base name, nil if validate failed
   #     :message => error message (no news is good news, nil is good)
   #   }
   # ]
@@ -441,7 +478,7 @@ module ContributionsHelper
 
     doc_files.each do |f|
       #   check file one by one
-      vld_rlt = validate_contribution_file(contribution.collection.id, f[:name])
+      vld_rlt = validate_contribution_file(contribution.id, f[:name])
 
       rlt << {
         :name => f[:name],
@@ -449,6 +486,7 @@ module ContributionsHelper
         :type => extract_doc_type(f[:name]),
         :item => (vld_rlt[:item_handle].split(":").last unless vld_rlt[:item_handle].nil?),
         :document => (vld_rlt[:document_file_name] unless vld_rlt[:document_file_name].nil?),
+        :dest_file => vld_rlt[:dest_file],
         :message => vld_rlt[:message]
       }
 
@@ -457,6 +495,63 @@ module ContributionsHelper
     logger.debug "preview_import: end - rlt[#{rlt}]"
 
     rlt
+  end
+
+  #
+  # Find next available file name (if duplicated name exits) for contribution import.
+  #
+  # process rule:
+  #
+  # - overwrite
+  #   - if collection-document, can't overwrite, need to rename (rule?)
+  #   - if contribution-document, just overwrite (easiest to implement)
+  #
+  # - rename
+  # - auto suffix (goal: make it easy to identify all of these files as being associated with each other)
+  # - e.g., user upload file.txt via contrib x (id: x)
+  # - if collection-document file.txt exists
+  # - rename to file-cx.txt (suffix "-cx", means from contribution x). if file-cx.txt already exits, refer to following rules.
+  #   - if contribution-document file.txt exists (from same contribution)
+  # - overwrite file.txt
+  # - if contribution-document file.txt exists (from different contribution, but two contributions associated to same collection)
+  # - rename to file-cx.txt
+  #
+  # Return: string hash
+  #
+  # {
+  #   :mode => "overwrite" / "rename",
+  #   :file_name => available file name
+  # }
+  #
+  def self.next_available_name(contrib_id, src_file, existing_files)
+    logger.debug "next_available_name: start - contrib_id[#{contrib_id}], src_file[#{src_file}], existing_files[#{existing_files}]"
+
+    rlt = {:mode => 'rename', :file_name => "#{src_file}"}
+
+    existing_files.each do |f|
+      if f[:name] == src_file
+        #   duplicated file found
+        #   check contribution
+        if f[:contrib_id].to_s == contrib_id.to_s
+          #   same contribution with src file, overwrite mode
+          rlt[:mode] = "overwrite"
+          logger.debug "next_available_name: rlt[#{rlt}]"
+          break
+        else
+          #   collection document or different contribution, rename mode
+          #   abc.txt => abc-cx.txt (x is contribution id)
+          dest_file = File.basename(src_file, File.extname(src_file)) + "-c#{contrib_id}" + File.extname(src_file)
+
+          # further check dest_file available
+          rlt = next_available_name(contrib_id, dest_file, existing_files)
+        end
+      end
+    end
+
+    logger.debug "next_available_name: end - rlt[#{rlt}]"
+
+    return rlt
+
   end
 
   #

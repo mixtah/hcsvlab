@@ -70,7 +70,7 @@ gem 'doorkeeper'
 
 gem "jsonpath"
 
-gem 'zeroclipboard-rails'
+gem 'clipboard-rails'
 gem "haml"
 gem "haml-rails"
 gem "simple_form"

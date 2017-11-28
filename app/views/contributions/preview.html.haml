@@ -9,14 +9,14 @@
     - main_title = "Review Import"
 
 -#    prepare for import preview brief
-- preview_brief = "How's going?"
+- preview_brief = "Choose your zip file to import."
 - can_proceed_import = true
 - failed_doc = []
 
 - if @preview_result.is_a?(Array)
 
   - @preview_result.each do |f|
-    - if !f[:message].nil?
+    - if !f[:message].nil? && f[:dest_file].nil?
       - failed_doc << { :document => f[:document], :message => f[:message] }
 
   - if @preview_result.size > 0
@@ -61,7 +61,7 @@
 
   - if !can_proceed_import
     .row-fluid
-      %span.label.label-important ERROR
+      %span.label.label-important ATTENTION
       - failed_doc.each do |fd|
         %li= fd[:message]
 

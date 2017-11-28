@@ -515,7 +515,7 @@ class ContributionsController < ApplicationController
         proceed_sesame = true
       else
         # validate file to be added to contribution
-        vld_rlt = ContributionsHelper.validate_contribution_file(contrib.collection.id, attr[:file])
+        vld_rlt = ContributionsHelper.validate_contribution_file(contrib.id, attr[:file])
 
         if vld_rlt[:error].nil?
           # no news is good news, validation passed
