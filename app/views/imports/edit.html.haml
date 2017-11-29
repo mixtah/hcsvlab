@@ -1,7 +1,7 @@
 - if @import.extracted?
   %h2 Import Options
 
-  = form_tag({controller: 'imports', action: 'update'}, class: 'form-horizontal', method: :put) do
+  = form_tag({controller: 'imports', action: 'update'}, class: 'form-horizontal import-form', method: :put) do
 
     %dl.dl-horizontal.mt-20
       %dt.p-10 File:
@@ -30,41 +30,62 @@
           - @zip.warnings.each do |w|
             %li #{w}
     
-    .control-group
-      = label_tag :option_folders_as_item_names, 'Use folders as item names', :class => "control-label span4 p-10"
-      .controls
-        = check_box_tag :option_folders_as_item_names, true, @options['folders_as_item_names']
-    .control-group.folders-as-item-names-options
-      = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth', :class => "control-label span4 p-10"
-      .controls
-        = select_tag :option_item_name_at_folder_depth, options_for_select([1,2,3,4,5], @options['item_name_at_folder_depth'])
+    %table.table
+      %tr
+        %td{style: "width: 200px"}
+          = label_tag :option_folders_as_item_names, 'Use folders as item names'
+        %td
+          = check_box_tag :option_folders_as_item_names, true, @options['folders_as_item_names']
+          .help-text
+            When checked, your items will be named according to the sub-folders in your zip file.
+      %tr
+        %td
+          = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth'
+        %td
+          = select_tag :option_item_name_at_folder_depth, options_for_select([1,2,3,4,5], @options['item_name_at_folder_depth'])
+          .help-text
+            Select how many directory levels deep your item names appear as folders.
 
-    .control-group
-      = label_tag :option_meta_in_filename, 'Extract item metadata from file names', :class => "control-label span4 p-10"
-      .controls
-        = check_box_tag :option_meta_in_filename, true, @options['meta_in_filename']
+      %tr
+        %td
+          = label_tag :option_meta_in_filename, 'Extract item metadata from file names'
+        %td
+          = check_box_tag :option_meta_in_filename, true, @options['meta_in_filename']
+          .help-text
+            Reveals additional options to enable metadata extraction from the name of individual files.
+      
+      %tr.meta-in-filename-options
+        %td
+          = label_tag :option_meta_delimiter, 'Delimiter character'
+        %td
+          = text_field_tag :option_meta_delimiter, @options['meta_delimiter'] || ".", maxlength: 1, size: 2, class: 'span1'
+          .help-text
+            Choose the character in your filenames that separates metadata fields, e.g. "." or "_"
 
-    .control-group.meta-in-filename-options
-      = label_tag :option_meta_delimiter, 'Delimiter character', :class => "control-label span4 p-10"
-      .controls
-        = text_field_tag :option_meta_delimiter, @options['meta_delimiter'], maxlength: 1, size: 2, class: 'span1'
+      %tr.meta-in-filename-options
+        %td
+          = label_tag :option_num_meta_fields, 'Number of fields'
+        %td
+          = select_tag :option_num_meta_fields, options_for_select([1,2,3,4,5], @options['num_meta_fields'])
+          .help-text
+            We should expect this number of metadata fields in each document file name.
 
-    .control-group.meta-in-filename-options
-      = label_tag :option_num_meta_fields, 'Number of fields', :class => "control-label span4 p-10"
-      .controls
-        = select_tag :option_num_meta_fields, options_for_select([1,2,3,4,5], @options['num_meta_fields'])
-    
-    .control-group.meta-in-filename-options
-      = label_tag :option_meta_fields, 'Field names', :class => "control-label span4 p-10"
-      .controls.meta-fields
-        - if @options['meta_fields'].is_a?(Array)
-          - i = 0
-          - @options['meta_fields'].each do |value|
-            - next if i >= @options['num_meta_fields']
-            = text_field_tag 'option_meta_fields[]', value, class: 'span2 meta-field', id: "meta-field-#{i}"
-            %span.meta-delimiter
-              = @options['meta_delimiter']
-            - i = i + 1
+      %tr.meta-in-filename-options
+        %td
+          = label_tag :option_meta_fields, 'Field names'
+        %td
+          .meta-fields
+            - if @options['meta_fields'].is_a?(Array)
+              - i = 0
+              - @options['meta_fields'].each do |value|
+                - next if i >= @options['num_meta_fields']
+                = text_field_tag 'option_meta_fields[]', value, class: 'span2 meta-field', id: "meta-field-#{i}"
+                %span.meta-delimiter
+                  = @options['meta_delimiter']
+                - i = i + 1
+          .help-text
+            Name the metadata fields expected in each document file name, e.g. <code>olac:speaker</code>.
+            You may leave fields blank if you don't want to use that portion of the filename for metadata.
 
     .form-actions
       = link_to 'Cancel', collection_path(@collection.name), :class => "btn"

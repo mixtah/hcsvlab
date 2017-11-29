@@ -100,7 +100,7 @@ module AlveoUtil
                                 @item_metadata_fields << meta_term unless @item_metadata_fields.include? meta_term
                                 # Collect into item list
                                 if @item_metadata[i][meta_term] != bit
-                                    set_warning("The \"#{meta_term}\" field was set more than once due to conflicts across filenames")
+                                    set_warning("We found more than one value for the \"#{meta_term}\" item field across all files. Using the last one.")
                                 end
                                 @item_metadata[i][meta_term] = bit
                             end

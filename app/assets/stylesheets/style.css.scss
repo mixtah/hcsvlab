@@ -1505,6 +1505,9 @@ border: 1px solid #BCBCBC;
 .p-10 {
   padding: 10px;
 }
+.pt-0 {
+  padding-top: 0 !important;
+}
 .my-20 {
   margin-top: 20px;
   margin-bottom: 20px;
@@ -1516,4 +1519,12 @@ border: 1px solid #BCBCBC;
 .item-header {
   border-top: 1px solid #ddd !important;
   background-color: whitesmoke;
+}
+
+.import-form input[type='checkbox'] {
+  margin-top: 0;
+}
+.import-form .help-text {
+  padding-top: 4px;
+  color: grey;
 }
