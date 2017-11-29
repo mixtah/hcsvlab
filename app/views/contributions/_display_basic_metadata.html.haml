@@ -7,6 +7,8 @@
       %label{:for => "Related Collection:"}
         Related Collection:
       = select_tag :contribution_collection, options_for_select(@contribution_collections, ""), id: 'contribution_collection'
+  .row-fluid
+    * A unique numerical identifier will be generated for your contribution.
 - else
   .row-fluid
     .span4

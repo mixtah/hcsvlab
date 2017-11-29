@@ -420,8 +420,6 @@ class ContributionsController < ApplicationController
       contrib.description = attr[:description]
       contrib.save!
 
-
-
       # retrieve contribution id to compose uri
       uri = contrib_show_url(contrib.id)
 

@@ -1,4 +1,4 @@
-%h2 Create Contribution
+%h2 Create Annotation Contribution
 
 = form_tag({controller: 'contributions', action: 'create'}, method: 'post', :id => 'create_contribution_form') do
 
@@ -12,10 +12,7 @@
 
   .row-fluid
     = label_tag :contribution_text, 'Contribution Description:'
-    = text_area_tag :contribution_text, @contribution_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide'
-
-  -#.row-fluid
-  -#  = render 'display_attachment'
+    = text_area_tag :contribution_text, @contribution_text, placeholder: 'Please provide a full description of the annotations that you are uploading in this contribution. This should include as much detail as possible on how they were generated, including references to software (if applicable) or annotation guidelines.'
 
   .form-actions
     = submit_tag 'Create', :class => "btn btn-primary"

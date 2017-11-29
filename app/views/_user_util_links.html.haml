@@ -39,7 +39,7 @@
       %li.divider
       %li= link_to "Help", "http://alveo.edu.au/help", :target => "_blank"
       %li= link_to "View Usage Metrics", view_metrics_path
-      %li= link_to "Report An Issue", new_issue_report_path(:url => request.original_url)
+      %li= link_to "Report To Admin", new_issue_report_path(:url => request.original_url)
     %li.divider
     - if has_user_authentication_provider?
       - if current_user

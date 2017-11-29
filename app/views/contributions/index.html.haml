@@ -3,7 +3,10 @@
 .span8
 
 
-  %h2 Contributions
+  %h2 Annotation Contributions
+
+  .row-fluid
+    This page allows you to upload annotation contributions associated with a collection in Alveo. You can upload any type of data file which you wish to link to existing data, for example transcription text files or textgrids. To be associated with a data file, an annotation file must have the same filename up to the extension (e.g. “4_68_4_10.wav” and “4_68_4_10.TextGrid”).
 
   = render 'display_contributions'
 
@@ -15,7 +18,7 @@
   .row-fluid
     - if can? :create, Contribution
       %br
-      = link_to "Create New Contribution", contrib_new_path, :id => 'Create New Contribution', :class => "btn"
+      = link_to "Create New Annotation Contribution", contrib_new_path, :id => 'Create New Contribution', :class => "btn"
 
   = render 'shared/nectar_attribution'
   = render 'shared/modal_waiting_panel'

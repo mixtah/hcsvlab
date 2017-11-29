@@ -149,12 +149,4 @@ module CollectionsHelper
     server.repository(collection.name)
   end
 
-  # def self.get_collection_by_document(document)
-  #   get_collection_by_item(document.item)
-  # end
-  #
-  # def self.get_collection_by_item(item)
-  #   item.collection
-  # end
-
 end
