@@ -271,7 +271,9 @@ module ContributionsHelper
 
           # move(rename): from extracted file to destination file
           doc_file = File.join(File.dirname(extracted_filepath), doc[:dest_file])
-          FileUtils.mv(extracted_filepath, doc_file)
+          if extracted_filepath != doc_file
+            FileUtils.mv(extracted_filepath, doc_file)
+          end
 
           add_document_to_contribution(contrib_id, item_handle, doc_file)
             # logger.info "import: contribution_id[#{contrib_id}], item_handle[#{item_handle}], doc_file[#{doc_file}]"

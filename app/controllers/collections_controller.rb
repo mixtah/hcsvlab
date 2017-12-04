@@ -529,7 +529,7 @@ class CollectionsController < ApplicationController
       logger.debug "remove directory #{corpus_dir}"
       FileUtils.remove_dir(corpus_dir, true)
 
-      flash[:notice] = "Collection with the name '#{name} has been removed successfully.'"
+      flash[:notice] = "Collection with the name '#{name}' has been removed successfully."
       redirect_to :collections
     end
 

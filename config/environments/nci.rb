@@ -7,7 +7,7 @@ HcsvlabWeb::Application.configure do
   config.action_mailer.default_url_options = { :host => 'app.alveo.edu.au' }
   Rails.application.routes.default_url_options[:host] = 'app.alveo.edu.au'
 
-  config.galaxy_url = 'http://130.56.244.157:8081/root'
+  config.galaxy_url = 'http://galaxy.alveo.edu.au/root'
 
   # Base directory where user contributed annotations will be stored
   config.user_annotations_location = "/mnt/volume/alveo-production-data"

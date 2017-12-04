@@ -9,17 +9,24 @@ class ContributionsController < ApplicationController
   def index
     @contributions = contributions_by_name
 
-    @contributions.each do |contrib|
-      # replace description with abstract for display purpose
-      # contrib.description = MetadataHelper::load_metadata_from_contribution(contrib.name)[:abstract]
-      metadata = ContributionsHelper.load_contribution_metadata(contrib.name)
-      contrib.description = metadata["dcterms:abstract"]
+    begin
+      @contributions.each do |contrib|
+        # replace description with abstract for display purpose
+        # contrib.description = MetadataHelper::load_metadata_from_contribution(contrib.name)[:abstract]
+        metadata = ContributionsHelper.load_contribution_metadata(contrib.name)
+        contrib.description = metadata["dcterms:abstract"]
+      end
+
+      respond_to do |format|
+        format.html
+        format.json
+      end
+    rescue Exception => e
+      logger.error "index: #{e.message}"
+      internal_error(e)
     end
 
-    respond_to do |format|
-      format.html
-      format.json
-    end
+
   end
 
   # GET "/contrib/new"

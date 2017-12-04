@@ -722,7 +722,7 @@ module Blacklight::BlacklightHelperBehavior
 
       #   find document by item id and file_name
       doc = Document.where(item_id: item.id, file_name: d[MetadataHelper::IDENTIFIER].to_s)
-      if !doc.nil?
+      if !doc.nil? && !doc.first.nil?
         d[:handle] = item.handle
         d[:document_id] = doc.first.id
 

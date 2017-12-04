@@ -7,7 +7,8 @@ module ErrorResponseActions
                              page_not_found
                              not_implmented
                              route_not_found
-                             method_not_allowed].freeze
+                             method_not_allowed
+                             internal_error].freeze
 
   def authorization_error(exception)
     # 403 Forbidden response
@@ -40,6 +41,17 @@ module ErrorResponseActions
       }
       format.xml { render :xml => exception.message, :status => 400 }
       format.json { render :json => {:error => "invalid-json"}.to_json, :status => 400 }
+    end
+  end
+
+  def internal_error(exception)
+    respond_to do |format|
+      format.html {
+        flash[:alert] = "Sorry, we found an internal error [#{exception.message}] which is somewhat embarrassing, isn’t it?"
+        redirect_to root_url
+      }
+      format.xml { render :xml => exception.message, :status => 500 }
+      format.json { render :json => {:error => "internal error[#{exception.message}]"}.to_json, :status => 500 }
     end
   end
 

@@ -25,10 +25,10 @@ class CatalogController < ApplicationController
 
   # doorkeeper_authorize! should protect sparqlQuery (Endpoint)
   #before_filter :doorkeeper_authorize!, only: [:sparqlQuery]
-  
+
   #excepting :sparqlQuery 
   before_filter :authenticate_user!, :except => [:annotation_context, :searchable_fields]
-  
+
   include Blacklight::Catalog
   include Hydra::Controller::ControllerBehavior
   include Blacklight::BlacklightHelperBehavior
@@ -404,12 +404,19 @@ class CatalogController < ApplicationController
       # Add all dynamically added (such as by document extensions)
       # export formats.
       if @document
+        begin
+          @item_info = create_display_info_hash(@document, @user_annotations)
+          @document.export_formats.each_key do |format_name|
+            # It's important that the argument to send be a symbol;
+            # if it's a string, it makes Rails unhappy for unclear reasons.
+            format.send(format_name.to_sym) {render :text => @document.export_as(format_name), :layout => false}
+          end
+        rescue Exception => e
+          msg = "show: #{e.message}"
+          logger.error msg
+          internal_error(e)
 
-        @item_info = create_display_info_hash(@document, @user_annotations)
-        @document.export_formats.each_key do |format_name|
-          # It's important that the argument to send be a symbol;
-          # if it's a string, it makes Rails unhappy for unclear reasons.
-          format.send(format_name.to_sym) {render :text => @document.export_as(format_name), :layout => false}
+          return
         end
       end
     end
@@ -596,11 +603,7 @@ class CatalogController < ApplicationController
       Rails.logger.debug("Time for retrieving primary text for #{params[:id]} took: (#{'%.1f' % ((bench_end.to_f - bench_start.to_f)*1000)}ms)")
     rescue Exception => e
       logger.error("primary_text: #{e.message}")
-      respond_to do |format|
-        format.html {flash[:error] = "Sorry, internal error (#{e.message})"
-        redirect_to root_path and return}
-        format.any {render :json => {:error => "internal error (#{e.message})"}.to_json, :status => 500}
-      end
+      internal_error(e)
     end
   end
 
@@ -976,6 +979,9 @@ class CatalogController < ApplicationController
         format.html {resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return}
         format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
+    rescue Exception => e
+      logger.error "wrapped_enforce_show_permissions: #{e.message}"
+      internal_error(Exception.new(e.message))
     end
 
     logger.debug "wrapped_enforce_show_permissions: end - opts[#{opts}]"
