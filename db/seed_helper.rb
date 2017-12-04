@@ -22,6 +22,8 @@ end
 def seed_languages
   logger.info "running import from CSV to populate languages table"
   csv_file = File.join('lib', 'resources', 'languages-2015-11-09.csv')
+  Language.delete_all
+  Language.reset_pk_seq
   CSV.foreach(csv_file, :headers => true) do |csv_obj|
     unless Language.exists?(code: csv_obj['Code'], name: csv_obj['Name'])
       Language.create!(:code => csv_obj['Code'], :name => csv_obj['Name'])
@@ -33,6 +35,8 @@ end
 def seed_licences
   logger.info "running import from CSV to populate licences table"
   csv_file = File.join('lib', 'resources', 'licence-seed.csv')
+  Licence.delete_all
+  Licence.reset_pk_seq
   CSV.foreach(csv_file, :headers => true) do |csv_obj|
     unless Licence.exists?(id: csv_obj['Id'], name: csv_obj['Name'])
       Licence.create!(
@@ -50,6 +54,8 @@ end
 def seed_metadata_field_name_mapping
   logger.info "running import from CSV to populate item_metadata_field_name_mappings table"
   csv_file = File.join('lib', 'resources', 'item_metadata_field_name_mappings-seed.csv')
+  ItemMetadataFieldNameMapping.delete_all
+  ItemMetadataFieldNameMapping.reset_pk_seq
   CSV.foreach(csv_file, :headers => true) do |csv_obj|
     unless ItemMetadataFieldNameMapping.exists?(solr_name: csv_obj['solr_name'])
       ItemMetadataFieldNameMapping.create!(

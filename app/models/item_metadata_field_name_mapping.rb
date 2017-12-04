@@ -23,4 +23,8 @@ class ItemMetadataFieldNameMapping < ActiveRecord::Base
   def self.find_text_in_any_column(text)
     return ItemMetadataFieldNameMapping.where("solr_name = ? OR user_friendly_name = ? OR rdf_name = ?", text, text, text).to_a
   end
+
+  def self.reset_pk_seq
+    ActiveRecord::Base.connection.reset_pk_sequence!(ItemMetadataFieldNameMapping.table_name)
+  end
 end
