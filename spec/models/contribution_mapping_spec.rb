@@ -17,3 +17,17 @@ describe ContributionMapping do
   end
 
 end
+
+describe ContributionMapping, 'validation' do
+  it {should validate_uniqueness_of(:contribution_id).scoped_to(:document_id)}
+
+  it {should validate_presence_of(:item)}
+
+  it {should validate_presence_of(:document)}
+end
+
+describe ContributionMapping, 'association' do
+  it {should belong_to(:contribution)}
+  it {should belong_to(:item)}
+  it {should belong_to(:document)}
+end

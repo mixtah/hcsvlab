@@ -35,7 +35,7 @@
 .row-fluid
   .span4
     = label_tag :licence_id, 'Licence:'
-    = select_tag :licence_id, options_for_select(@collection_licences.map {|l| [l.name, l.id]}, @collection.nil? ? '' : @collection.licence_id), include_blank: true
+    = select_tag :licence_id, options_for_select(@collection_licences.map {|l| [l.name, l.id]}, @collection.nil? ? LicenceHelper.licence(nil).id : @collection.licence_id), include_blank: false
   .span4
     = label_tag :approval_required, 'Privacy: '
     = check_box_tag :approval_required, 'private', @approval_required == 'private'

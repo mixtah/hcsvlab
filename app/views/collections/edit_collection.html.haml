@@ -4,17 +4,11 @@
 .container-fluid
   .row-fluid
     .page-header
-      %h2=  @collection.name
+      %h2=  @collection_title
 
   = form_tag({controller: 'collections', action: 'update_collection'}, method: 'put', :id => 'update_collection_form') do
 
     = render 'display_basic_metadata'
-
-    %hr
-
-    = render 'display_additional_metadata'
-
-    = hidden_field_tag :approval_required, 'public'
 
     %hr
 
@@ -26,8 +20,18 @@
       = label_tag :collection_text, 'Collection Description:'
       = text_area_tag :collection_text, @collection.text, :style => 'height: 100%; width: 100%;'
 
+    %hr
+    .row-fluid
+      = render 'display_additional_metadata'
+
+    %hr
+    .row-fluid
+      = label_tag :status_text, 'Status:'
+      = select_tag :collection_status, options_for_select(@collection_status_options, @collection.status)
+
     = submit_tag 'hidden', :style => "display:none"
 
+  %hr
   .row-fluid
     = render 'display_attachment'
 

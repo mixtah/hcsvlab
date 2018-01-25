@@ -100,30 +100,50 @@ class Ability
     ############################################################
     ##          PERMISSIONS OVER COLLECTIONS                  ##
     ############################################################
-    if is_superuser || is_data_owner || is_researcher
-      can :add_licence_to_collection, Collection, owner_id: user_id
+    if is_superuser
+      can :add_licence_to_collection, Collection
 
-      can :change_collection_privacy, Collection, owner_id: user_id
+      can :change_collection_privacy, Collection
 
-      can :revoke_access, Collection, owner_id: user_id
+      can :revoke_access, Collection
 
-      can :delete_item_via_web_app, Collection, owner_id: user_id
+      can :delete_item_via_web_app, Collection
 
-      can :delete_document_via_web_app, Collection, owner_id: user_id
+      can :delete_document_via_web_app, Collection
 
-      can :web_add_item, Collection, owner_id: user_id
+      can :web_add_item, Collection
 
-      can :web_add_document, Collection, owner_id: user_id
+      can :web_add_document, Collection
 
-      # User can discover a collection only if he/she is the owner or if he/she was granted
-      # with discover, read or edit access to that collection
       can :discover, Collection
-      # User can read a collection only if he/she is the owner or if he/she was granted
-      # with read or edit access to that collection
+
       can :read, Collection
     else
-      #   visitor
-      can :read, Collection
+      if is_data_owner || is_researcher
+        can :add_licence_to_collection, Collection, owner_id: user_id
+
+        can :change_collection_privacy, Collection, owner_id: user_id
+
+        can :revoke_access, Collection, owner_id: user_id
+
+        can :delete_item_via_web_app, Collection, owner_id: user_id
+
+        can :delete_document_via_web_app, Collection, owner_id: user_id
+
+        can :web_add_item, Collection, owner_id: user_id
+
+        can :web_add_document, Collection, owner_id: user_id
+
+        # User can discover a collection only if he/she is the owner or if he/she was granted
+        # with discover, read or edit access to that collection
+        can :discover, Collection
+        # User can read a collection only if he/she is the owner or if he/she was granted
+        # with read or edit access to that collection
+        can :read, Collection
+      else
+        #   visitor
+        can :read, Collection
+      end
     end
 
     # User can edit a collection only if he/she is the owner or if he/she was granted

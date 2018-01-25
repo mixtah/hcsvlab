@@ -13,3 +13,17 @@ describe Contribution do
     expect(contrib.name).to eq("#{coll.name}-contrib")
   end
 end
+
+describe Contribution, 'validation' do
+  it {should validate_uniqueness_of(:name)}
+  it {should validate_presence_of(:name)}
+
+  it {should validate_presence_of(:owner)}
+
+  it {should validate_presence_of(:collection)}
+end
+
+describe Contribution, 'association' do
+  it {should belong_to(:collection)}
+  it {should belong_to(:owner)}
+end

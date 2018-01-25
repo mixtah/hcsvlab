@@ -192,6 +192,10 @@ HcsvlabWeb::Application.routes.draw do
           put 'change_collection_privacy'
           put 'revoke_access'
         end
+
+        member do
+          post 'update_permission'
+        end
       end
 
       resources :collection_lists, :only => [:index, :show, :new, :create, :destroy] do
@@ -214,7 +218,6 @@ HcsvlabWeb::Application.routes.draw do
           put :reject_request
         end
       end
-
 
     end
   end

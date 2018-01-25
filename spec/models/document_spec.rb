@@ -28,3 +28,17 @@ describe Document do
   end
 
 end
+
+describe Document, 'validation' do
+  it {should validate_presence_of(:file_name)}
+
+  it {should validate_presence_of(:file_path)}
+
+  it {should validate_presence_of(:item_id)}
+end
+
+describe Document, 'association' do
+  it {should have_many(:document_audits)}
+
+  it {should belong_to(:item)}
+end

@@ -19,16 +19,13 @@ class User < ActiveRecord::Base
   has_many :document_audits
 
 # Setup accessible attributes (status/approved flags should NEVER be accessible by mass assignment)
-  attr_accessible :email, :password, :password_confirmation, :first_name, :last_name, :status
+  attr_accessible :email, :password, :password_confirmation, :first_name, :last_name, :status, :role_id
 
-  validates_presence_of :first_name
-  validates_presence_of :last_name
-  validates_presence_of :email
-  validates_presence_of :status
-
-  validates_length_of :first_name, :maximum => 255
-  validates_length_of :last_name, :maximum => 255
-  validates_length_of :email, :maximum => 255
+  validates :first_name, presence: true
+  validates :last_name, presence: true
+  validates :status, presence: true
+  validates :email, presence: true, uniqueness: {case_sensitive: false}
+  validates :role, presence: true
 
   with_options :if => :password_required? do |v|
     v.validates :password, :password_format => true

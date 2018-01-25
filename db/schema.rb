@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20171025110239) do
+ActiveRecord::Schema.define(:version => 20171207032545) do
 
   create_table "attachments", :force => true do |t|
     t.string   "file"
@@ -60,8 +60,9 @@ ActiveRecord::Schema.define(:version => 20171025110239) do
     t.integer  "owner_id"
     t.integer  "collection_list_id"
     t.integer  "licence_id"
-    t.datetime "created_at",         :null => false
-    t.datetime "updated_at",         :null => false
+    t.datetime "created_at",                              :null => false
+    t.datetime "updated_at",                              :null => false
+    t.string   "status",             :default => "DRAFT"
   end
 
   create_table "contribution_mappings", :force => true do |t|

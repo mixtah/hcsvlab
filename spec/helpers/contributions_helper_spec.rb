@@ -58,7 +58,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
     context "when zip contains all good files" do
       it "returns all success" do
         #   prepare zip
-        src = "test/samples/contributions/contrib_doc.zip"
+        src = "#{Rails.root}/test/samples/contributions/contrib_doc.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
         FileUtils.mkdir_p(File.dirname(dest))
         FileUtils.cp(src, dest)
@@ -74,7 +74,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
     context "when zip contains bad file" do
       it "returns error result - not found" do
         #   prepare zip
-        src = "test/samples/contributions/contrib_doc.error.zip"
+        src = "#{Rails.root}/test/samples/contributions/contrib_doc.error.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
         FileUtils.mkdir_p(File.dirname(dest))
         FileUtils.cp(src, dest)
@@ -94,7 +94,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
 
       it "returns error result - duplicated file" do
         #   prepare zip
-        src = "test/samples/contributions/contrib_doc.error.zip"
+        src = "#{Rails.root}/test/samples/contributions/contrib_doc.error.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
         FileUtils.mkdir_p(File.dirname(dest))
         FileUtils.cp(src, dest)
@@ -104,7 +104,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
         error_duplicated_doc = false
 
         rlt.each do |row|
-          if !row[:message].nil? && row[:message].include?("duplicated document file")
+          if !row[:message].nil? && row[:message].include?("duplicated document found")
             error_duplicated_doc = true
           end
         end
@@ -127,7 +127,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
     end
 
     context "with valid zip file" do
-      let(:src) {"test/samples/contributions/contrib_doc.zip"}
+      let(:src) {"#{Rails.root}/test/samples/contributions/contrib_doc.zip"}
       let(:dest) {ContributionsHelper.contribution_import_zip_file(contribution)}
 
       it "returns array of file full path" do
@@ -166,7 +166,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
 
     context "when zip is present and valid" do
       it "returns string message indicates success" do
-        src = "test/samples/contributions/contrib_doc.zip"
+        src = "#{Rails.root}/test/samples/contributions/contrib_doc.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
         FileUtils.mkdir_p(ContributionsHelper.contribution_dir(contribution))
         FileUtils.cp(src, dest)
@@ -179,7 +179,7 @@ RSpec.describe ContributionsHelper, :type => :helper do
 
     context "when zip is error" do
       it "returns string message indicates failure" do
-        src = "test/samples/contributions/contrib_doc.error.zip"
+        src = "#{Rails.root}/test/samples/contributions/contrib_doc.error.zip"
         dest = ContributionsHelper.contribution_import_zip_file(contribution)
         FileUtils.mkdir_p(File.dirname(dest))
         FileUtils.cp(src, dest)

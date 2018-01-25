@@ -19,22 +19,22 @@
 /.idea
 /coverage
 
+
 # Ignore local development collection storage
-dev/**
+/dev/**
 
 # Ignore local public files
-public/assets/**
-public/collections/**
-public/uploads/**
+/public/assets/**
+/public/collections/**
 
 # Ignore activemq, which can be installed manually
-apache-activemq-5.8.0/**
+/apache-activemq-5.8.0/**
 
 # Ignore submodule jetty
-jetty/**
+/jetty/**
 
 # Ignore test directory
-test/**
+# test/**
 
 *.swp
 
@@ -46,3 +46,4 @@ Vagrantfile
 
 tags
 /data
+#!/app/views/collections/

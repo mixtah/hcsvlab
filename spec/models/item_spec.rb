@@ -13,3 +13,18 @@ describe Item do
   end
 
 end
+
+describe Item, 'validation' do
+  it {should validate_uniqueness_of(:handle)}
+  it {should validate_presence_of(:handle)}
+
+  it {should validate_presence_of(:uri)}
+
+  it {should validate_presence_of(:collection_id)}
+end
+
+describe Item, 'association' do
+  it {should have_many(:documents)}
+
+  it {should belong_to(:collection)}
+end

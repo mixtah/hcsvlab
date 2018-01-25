@@ -1,6 +1,14 @@
 require 'spec_helper'
 
 describe Role do
+
+  it "has a valid factory" do
+    expect(FactoryGirl.create(:role)).to be_valid
+    expect(FactoryGirl.create(:role_admin)).to be_valid
+    expect(FactoryGirl.create(:role_data_owner)).to be_valid
+    expect(FactoryGirl.create(:role_researcher)).to be_valid
+  end
+
   describe "Associations" do
     it { should have_many(:users) }
   end
@@ -33,4 +41,13 @@ describe Role do
     end
   end
 
+end
+
+describe Role, 'validation' do
+  it {should validate_presence_of(:name)}
+  it {should validate_uniqueness_of(:name)}
+end
+
+describe Role, 'Association' do
+  it {should have_many(:users)}
 end

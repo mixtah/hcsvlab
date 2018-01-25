@@ -11,7 +11,7 @@ def ingest_sample(user_email, collection, identifier)
   Rake.application = rake
   rake.init
   rake.load_rakefile
-  rake["fedora:ingest_one"].invoke(user_email, rdf_file)
+  rake["fedora:ingest_one"].invoke(rdf_file, user_email)
 
   json = {:cmd => "index", :arg => "#{Item.last.id}"}
   Solr_Worker.new.on_message(JSON.generate(json).to_s)

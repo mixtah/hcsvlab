@@ -30,32 +30,88 @@ class CollectionsController < ApplicationController
   #
   #
   def index
-    @collections = collections_by_name
-
     respond_to do |format|
-      format.html
-      format.json
+      format.html {
+        if user_signed_in?
+          @my_collections = my_collections
+        end
+
+        @collections = collections_by_user_type
+      }
+      format.json {
+        if user_signed_in?
+          @collections = my_collections
+        end
+
+        # @collections << collections_by_name
+        @collections << collections_by_user_type
+      }
     end
   end
 
+  # Show collection details according to 3 factors:
+  #
+  # 1. user type: guest, registered user (owner/non-owner), admin
+  # 2. collection status: draft, released, finalised
+  # 3. collection private: true, false
+  #
+  #
   def show
 
     @collection = Collection.find_by_name(params[:id])
 
-    if @collection.nil? || @collection.name.nil?
-      respond_to do |format|
-        format.html {
-          flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
-          redirect_to collections_path}
-        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
-      end
-    else
-      @attachment_url = collection_attachments_path(@collection.id)
+    access_rlt = CollectionsHelper.collection_accessible?(@collection, current_user)
 
-      respond_to do |format|
-        format.html {render :show}
-        format.json {}
-      end
+    if access_rlt.nil?
+      msg = "Collection does not exist with the given id: #{params[:id]}"
+      logger.info "show: #{msg}"
+      resource_not_found(Exception.new(msg))
+      return
+    end
+
+    case access_rlt[:show]
+      when 10
+        # Need login to proceed.
+        msg = "Please log in to access collection '#{params[:id]}'"
+        logger.info "show: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 20
+        #   Need draft access permission to proceed.
+        msg = "Please contact admin/collection-owner to access draft collection '#{params[:id]}'"
+        logger.info "show: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 30
+        #   Need private access permission to proceed.
+        msg = "Please accept licence agreement of collection '#{@collection.name}' to proceed."
+        logger.info "show: #{msg}"
+        redirect_to account_licence_agreements_url, :notice => msg
+        return
+      when 0
+        # you reach here, you can see
+        #
+        # prepare collection title
+        begin
+          @collection_title = @collection.collection_properties.select{|p| p.property == MetadataHelper::PFX_TITLE}.first.value
+        rescue Exception => e
+          logger.error "show: can't retrieve collection title from collection_properties, use collection name instead"
+          @collection_title = @collection.name
+        end
+
+
+        @attachment_url = collection_attachments_path(@collection.id)
+
+        respond_to do |format|
+          format.html {render :show}
+          format.json {}
+        end
+      else
+        #     what can be anything else?
+        msg = "unknown access permission found [#{access_rlt[:show]}]"
+        logger.error "show: #{msg}"
+        internal_error(Exception.new(msg))
+        return
     end
   end
 
@@ -78,10 +134,30 @@ class CollectionsController < ApplicationController
   end
 
   #
+  # List all collections by user type (guest/collection owner/admin)
+  #
+  def collections_by_user_type
+    if !user_signed_in?
+      Collection.only_released_and_finalised.order(:name)
+    else
+      if current_user.is_superuser?
+        Collection.where("owner_id != ?", current_user.id).order(:name)
+      else
+        (Collection.only_released_and_finalised.where("owner_id != ?", current_user.id).order(:name) + CollectionsHelper.draft_collection_by_user(current_user)).uniq
+      end
+    end
+  end
+
+  #
   # List all collections by name (include collection in collection_list)
   #
   def collections_by_name
     Collection.order(:name)
+  end
+
+  # List all current user's collections
+  def my_collections
+    Collection.where(owner_id: current_user.id)
   end
 
   def lists_by_name
@@ -111,10 +187,10 @@ class CollectionsController < ApplicationController
     collection = Collection.find(params[:id])
     private = params[:privacy]
     collection.set_privacy(private)
-    if private=="false"
+    if private == "false"
       UserLicenceRequest.where(:request_id => collection.id.to_s).destroy_all
     end
-    private=="true" ? state="requiring approval" : state="not requiring approval"
+    private == "true" ? state = "requiring approval" : state = "not requiring approval"
     flash[:notice] = "#{collection.name} has been successfully marked as #{state}"
     redirect_to licences_path
   end
@@ -184,11 +260,6 @@ class CollectionsController < ApplicationController
             :collection_name => 'collection name'
           }
         )
-
-        # Validate and sanitise OLAC metadata fields
-        # olac_metadata = validate_collection_olac_metadata(params)
-
-        # logger.debug "olac_metadata=#{olac_metadata}"
 
         # Validate and sanitise additional metadata fields
         additional_metadata = validate_collection_additional_metadata(params)
@@ -373,33 +444,60 @@ class CollectionsController < ApplicationController
     end
   end
 
-  # def edit_collection
-  #   begin
-  #     collection = validate_collection(params[:id], params[:api_key])
-  #
-  #
-  #     validate_jsonld(params[:collection_metadata])
-  #     new_metadata = format_update_collection_metadata(collection, params[:collection_metadata], params[:replace])
-  #     # write_metadata_graph(new_metadata, collection.rdf_file_path, format=:ttl)
-  #     MetadataHelper::update_rdf_graph(collection.name, new_metadata)
-  #
-  #     @success_message = "Updated collection #{collection.name}"
-  #   rescue ResponseError => e
-  #     respond_with_error(e.message, e.response_code)
-  #     return # Only respond with one error at a time
-  #   end
-  # end
-
   def edit_collection
     authorize! :edit_collection, Collection
 
     @collection = Collection.find_by_name(params[:id])
 
-    if @collection.nil?
-      raise ResponseError.new(404), "A collection with the name '#{params[:id]}' not exist."
+    access_rlt = CollectionsHelper.collection_accessible?(@collection, current_user)
+
+    if access_rlt.nil?
+      msg = "Collection does not exist with the given id: #{params[:id]}"
+      logger.info "show: #{msg}"
+      resource_not_found(Exception.new(msg))
+      return
+    end
+
+    case access_rlt[:edit]
+      when 10
+        # Need login to proceed.
+        msg = "Please log in to access collection '#{params[:id]}'"
+        logger.info "edit: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 20
+        #   Need draft access permission to proceed.
+        msg = "Please contact admin/collection-owner to access draft collection '#{params[:id]}'"
+        logger.info "edit: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 30
+        #   Need private access permission to proceed.
+        msg = "Please accept licence agreement of collection '#{@collection.name}' to proceed."
+        logger.info "edit: #{msg}"
+        redirect_to account_licence_agreements_url, :notice => msg
+        return
+      when 40
+        # Need admin permission to proceed.
+        if !current_user.is_superuser?
+          msg = "Please contact admin to proceed."
+          logger.info "edit: non-admin can't edit finalised collection"
+          redirect_to root_url, :notice => msg
+          return
+        end
+      when 0
+        # you reach here, you can go on to edit
+      else
+        #     what can be anything else?
+        msg = "unknown access permission found [#{access_rlt[:edit]}]"
+        logger.error "edit: #{msg}"
+        internal_error(Exception.new(msg))
+        return
     end
 
     @collection_licences = licences
+
+    @approval_required = (@collection.private ? 'private' : 'public')
 
     # mandatory collection properties
     properties = {}
@@ -438,6 +536,11 @@ class CollectionsController < ApplicationController
     @collection_creation_date = properties.delete(MetadataHelper::PFX_CREATION_DATE)
     @collection_creator = properties.delete(MetadataHelper::PFX_CREATOR)
     @collection_abstract = properties.delete(MetadataHelper::PFX_ABSTRACT)
+
+    @collection_status_options = [
+      ['DRAFT - only you can see your own draft collection', 'DRAFT'],
+      ['RELEASED - you can still update released collection', 'RELEASED'],
+      ['FINALISED - can NOT update anymore', 'FINALISED']]
 
     # olac subject
     @olac_subject = properties.delete(MetadataHelper::PFX_OLAC_SUBJECT)
@@ -497,7 +600,7 @@ class CollectionsController < ApplicationController
       # Ingest new collection
       # name = Collection.sanitise_name(params[:collection_name])
 
-      msg = create_collection_core(name, json_ld, current_user, lic.id, @approval_required == 'private', params[:collection_text])
+      msg = create_collection_core(name, json_ld, current_user, lic.id, params[:approval_required] == 'private', params[:collection_text], params[:collection_status])
       redirect_to collection_path(id: name), notice: msg
     rescue ResponseError => e
       flash[:error] = e.message
@@ -550,6 +653,66 @@ class CollectionsController < ApplicationController
     end
   end
 
+  #
+  # Update collection's access permission to specific user (so far only implemented for "draft collection read permission")
+  #
+  def update_permission
+    collection = Collection.find_by_id(params[:id])
+
+    msg = ""
+
+    if collection.nil?
+      msg = "Collection does not exist with the given id: #{params[:id]}"
+      logger.info "update_permission: #{msg}"
+      resource_not_found(Exception.new(msg))
+      return
+    end
+
+    email_list = params[:email_list]
+    req_type = params[:request_type]
+
+    if !email_list.nil?
+      email_list = email_list.split("\r\n")
+    end
+
+    logger.debug "email_list[#{email_list}]"
+
+    ActiveRecord::Base.transaction do
+      UserLicenceRequest.destroy_all(request_id: collection.id.to_s, request_type: req_type)
+
+      email_list.each do |email|
+        user = User.find_by_email(email)
+
+        # check user exists
+        if user.nil?
+          msg = "User does not exist with the given email: #{email}"
+          logger.info "update_permission: #{msg}"
+          redirect_to user_licence_requests_path, notice: msg
+          return
+        end
+
+        if !UserLicenceRequest.exists?(request_id: collection.id.to_s, request_type: req_type, user_id: user.id)
+          UserLicenceRequest.create!(
+            request_id: collection.id,
+            request_type: req_type,
+            approved: true,
+            user_id: user.id,
+            owner_id: collection.owner.id)
+        end
+      end
+    end
+
+    msg = "Access permission of collection [#{collection.name}] updated."
+
+    logger.debug "update_permission: #{msg}"
+
+    redirect_to user_licence_requests_path, notice: msg
+
+    return
+
+  end
+
+  # ---------------------------
   private
 
   #
@@ -583,7 +746,7 @@ class CollectionsController < ApplicationController
   #                           :last_page? => current_page < num_pages
   #  )
   #end
-  
+
   # Creates a file at the specified path with the given content
   def create_file(file_path, content)
     FileUtils.mkdir_p(File.dirname file_path)
@@ -600,7 +763,7 @@ class CollectionsController < ApplicationController
   # end
 
   # Writes the collection manifest as JSON and the metadata as .n3 RDF
-  def create_metadata_and_manifest(collection_name, collection_rdf, collection_manifest={"collection_name" => collection_name, "files" => {}})
+  def create_metadata_and_manifest(collection_name, collection_rdf, collection_manifest = {"collection_name" => collection_name, "files" => {}})
 
     corpus_dir = File.join(Rails.application.config.api_collections_location, collection_name)
     FileUtils.mkdir_p(corpus_dir)
@@ -670,7 +833,7 @@ class CollectionsController < ApplicationController
 
   # Processes the metadata for each item in the supplied request parameters
   # Returns a hash containing :successes and :failures of processed items
-  def process_items(collection_name, corpus_dir, request_params, uploaded_files=[])
+  def process_items(collection_name, corpus_dir, request_params, uploaded_files = [])
     items = []
     failures = []
     request_params[:items].each do |item|
@@ -1004,7 +1167,7 @@ class CollectionsController < ApplicationController
   def override_is_part_of_corpus(item_json_ld, collection_name)
     item_json_ld["@graph"].each do |node|
       is_doc = node["@type"] == MetadataHelper::DOCUMENT.to_s || node["@type"] == MetadataHelper::FOAF_DOCUMENT.to_s
-      part_of_exists= false
+      part_of_exists = false
       unless is_doc
         ['dcterms:isPartOf', MetadataHelper::IS_PART_OF.to_s].each do |is_part_of|
           if node.has_key?(is_part_of)
@@ -1105,13 +1268,16 @@ class CollectionsController < ApplicationController
   #
   # Core functionality common to creating a collection
   #
-  def create_collection_core(name, metadata, owner, licence_id=nil, private=true, text='')
+  def create_collection_core(name, metadata, owner, licence_id = nil, private = true, text = '', status = 'DRAFT')
+    logger.debug "create_collection_core: start - name[#{name}], metadata[#{metadata}], owner[#{owner}], licence_id[#{licence_id}], private[#{private}], text[#{text}], status[#{status}]"
     metadata = MetadataHelper::update_jsonld_collection_id(
       MetadataHelper::not_empty_collection_metadata!(name, current_user.full_name, metadata), name)
     uri = metadata['@id']
     # KL: if collection exist, update
     # if Collection.find_by_uri(uri).present? # ingest skips collections with non-unique uri
     #   raise ResponseError.new(400), "A collection with the name '#{name}' already exists"
+
+    logger.debug "create_collection_core: uri[#{uri}]"
 
     collection = Collection.find_by_uri(uri)
     unless collection.nil?
@@ -1122,9 +1288,10 @@ class CollectionsController < ApplicationController
       collection.licence_id = licence_id
       collection.private = private
       collection.text = text
+      collection.status = status
       collection.save
 
-      # MetadataHelper::update_collection_metadata_from_json(name, metadata)
+      MetadataHelper::update_collection_metadata_from_json(name, metadata)
 
       "Collection '#{name}' (#{uri}) updated"
 
@@ -1146,6 +1313,9 @@ class CollectionsController < ApplicationController
       collection = Collection.find_by_name(name)
 
       collection.owner = owner
+      collection.licence_id = licence_id
+      collection.status = status
+      collection.private = private
 
       collection.save
 
@@ -1225,7 +1395,7 @@ class CollectionsController < ApplicationController
   # Validates and sanitises a set of additional metadata provided by ingest web forms
   # Expects a zipped array of additional metadata keys and values, returns a hash of sanitised metadata
   #
-  def validate_additional_metadata(additional_metadata, protected_field_keys, metadata_type="additional")
+  def validate_additional_metadata(additional_metadata, protected_field_keys, metadata_type = "additional")
     default_protected_fields = ['@id', '@type', '@context',
                                 'dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s]
     metadata_protected_fields = default_protected_fields | protected_field_keys
@@ -1265,9 +1435,9 @@ class CollectionsController < ApplicationController
   #
   def construct_item_json_ld(collection, item_name, item_title, metadata)
     item_metadata = {'@id' => Rails.application.routes.url_helpers.catalog_url(collection.name, item_name),
-                      MetadataHelper::IDENTIFIER.to_s => item_name,
-                      MetadataHelper::TITLE.to_s => item_title,
-                      MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
+                     MetadataHelper::IDENTIFIER.to_s => item_name,
+                     MetadataHelper::TITLE.to_s => item_title,
+                     MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
     }
     item_metadata.merge!(metadata) {|key, val1, val2| val1}
     {'@context' => JsonLdHelper.default_context, '@graph' => [item_metadata]}
@@ -1291,18 +1461,7 @@ class CollectionsController < ApplicationController
   # Return default licence object.
   # If no licence retrieve according to input licence id, return default licence (Creative Commons v3.0 BY) instead
   def licence(licence_id)
-    lic = nil
-    begin
-      lic = Licence.find_by_id(licence_id)
-    rescue Exception => e
-      logger.error "licence: cannot find licence by id[#{licence_id}]: #{e.message}"
-    ensure
-      if lic.nil?
-        lic = Licence.find_by_name('Creative Commons v3.0 BY')
-      end
-    end
-
-    lic
+    LicenceHelper.licence(licence_id)
   end
 
   #

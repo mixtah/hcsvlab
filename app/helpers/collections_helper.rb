@@ -9,10 +9,10 @@ module CollectionsHelper
     rlt = false
 
     if collection.nil?
-    # collection is nil, no one is the owner
+      # collection is nil, no one is the owner
     else
       if user.nil?
-      #   user is nil, nil user is not the owner
+        #   user is nil, nil user is not the owner
       else
         if collection.owner.id == user.id || user.is_superuser?
           rlt = true
@@ -147,6 +147,163 @@ module CollectionsHelper
   def self.get_sesame_repository(collection)
     server = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
     server.repository(collection.name)
+  end
+
+  # To check whether user can access collection.
+  #
+  # According to below access control table:
+  #
+  # 1. Accessible to collection list (/catalog)
+  # Status    Guest   Admin   User(Owner)   User(Non-owner)
+  # DRAFT       N       Y         Y             N*
+  # RELEASED    Y       Y         Y             Y
+  # FINALISED   Y       Y         Y             Y
+  #
+  # * Non-owner can’t see draft collection until granted permission by owner
+  #
+  # 2. Accessible to collection detail (/catalog/:id)
+  # Status    Guest   Admin   User(Owner)   User(Non-owner)
+  # DRAFT       N*1     Y         Y             N*3
+  # RELEASED    Y*2     Y         Y             Y*4
+  # FINALISED   Y*2     Y         Y             Y*4
+  #
+  # *1 require guest to log in to proceed
+  # *2 if collection set as private, guest can’t access (require login)
+  # *3 non-owner user can’t see draft collection until granted permission by owner
+  # *4 if collection set as private, user would be redirected to licence manage page to accept licence agreement (if not approved yet) or access collection directly (if already approved)
+  #
+  # 3. Accessible to collection edit (/catalog/:id/edit)
+  # Status    Guest   Admin   User(Owner)   User(Non-owner)
+  # DRAFT       N*1     Y         Y             N*3
+  # RELEASED    N*1     Y         Y             N
+  # FINALISED   N*1     Y         N*2           N
+  #
+  # *1 require guest to log in to proceed
+  # *2 need to contact admin for further edit action
+  # *3 co-edit draft feature is not implemented yet
+  #
+  # Return:
+  # {
+  #   :read => 0 - yes; other - no with return code
+  #   :show => 0 - yes; other - no with return code
+  #   :edit => 0 - yes; other - no with return code
+  # }
+  # or
+  # nil - collection is nil (user is nil means guest user)
+  #
+  # Return code:
+  # 0   - OK
+  # 10  - Need login to proceed.
+  # 20  - Need draft access permission to proceed.
+  # 30  - Need private access permission to proceed.
+  # 40  - Need admin permission to proceed.
+  #
+  def self.collection_accessible?(collection, user)
+    logger.debug "collection_accessible?: start - collection[#{collection}, user[#{user}]"
+
+    rlt = nil
+
+    if collection.nil? || collection.name.nil?
+      msg = "Collection is nil"
+      logger.warn "collection_accessible?: #{msg}"
+    else
+      # check user type
+      case
+        when user.nil?
+          # guest
+          # assume guest can read/show
+          rlt = {
+            :read => 0,
+            :show => 0,
+            :edit => 10
+          }
+
+          # check collection status
+          if collection.is_draft? || !collection.is_public?
+            rlt = {
+              :read => 10,
+              :show => 10,
+              :edit => 10
+            }
+          end
+        when user.is_superuser?
+          # admin
+          # at first, assume admin can do everything...
+          rlt = {
+            :read => 0,
+            :show => 0,
+            :edit => 0
+          }
+
+          if collection.is_finalised?
+            # even admin can't modify finalised collection directly, admin can only change collection's status from finalised to released.
+            rlt[:edit] = 40
+          end
+
+          if !collection.is_public?
+            info = user.get_collection_licence_info(collection)
+            if info[:state] != :approved
+              rlt[:show] = 30
+              rlt[:edit] = 30
+            end
+          end
+
+        when collection.owner_id == user.id
+          # collection-owner
+          logger.debug "collection_accessible?: user[#{user}] is the owner of collection[#{collection.name}]"
+          # fine, this is your collection, assume you can do everything...
+          rlt = {
+            :read => 0,
+            :show => 0,
+            :edit => 0
+          }
+
+          if (collection.is_finalised?)
+            # need admin approve to modify finalised collection
+            rlt[:edit] = 40
+          end
+        else
+          # non-collection-owner
+          # by default, you can only read/show
+          rlt = {
+            :read => 0,
+            :show => 0,
+            :edit => 10
+          }
+          # check collection status
+          if collection.is_draft?
+            # check 'draft access' permission
+            can_access_draft = draft_collection_by_user(user).include?(collection)
+            if !can_access_draft
+              rlt = {
+                :read => 20,
+                :show => 20,
+                :edit => 20
+              }
+            end
+          end
+
+          # check collection private (licence agreement)
+          if !collection.is_public?
+            info = user.get_collection_licence_info(collection)
+            if info[:state] != :approved
+              rlt[:show] = 30
+            end
+          end
+      end
+    end
+
+    logger.debug "collection_accessible?: end - rlt[#{rlt}]"
+
+    return rlt
+  end
+
+  #
+  # Retrieve accessible draft collections by user id
+  #
+  def self.draft_collection_by_user(user)
+    # Collection.joins(:user_licence_requests).where("user_licence_requests.request_id = collections.id and user_licence_requests.request_type='draft_collection_read' and user_licence_requests.user_id = '#{user.id}'")
+    Collection.joins("INNER JOIN user_licence_requests ON user_licence_requests.request_id::int8 = collections.id AND user_licence_requests.request_type = 'draft_collection_read' AND user_licence_requests.user_id = '#{user.id}'")
   end
 
 end

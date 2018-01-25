@@ -18,6 +18,7 @@ development:
 
 test:
   <<: *defaults
+  default_data_owner: data_owner@alveo.edu.au
   download_tmp_dir: /data/hcsvlab_download
   contrib_dir: /data/test/contrib
 
@@ -28,6 +29,7 @@ production:
   default_data_owner: steve.cassidy@mq.edu.au
   licence_access_request_notification_sender: steve.cassidy@mq.edu.au
   licence_access_request_response_sender: steve.cassidy@mq.edu.au
+  contrib_dir: /mnt/volume/contributions
 
 qa:
   <<: *defaults
@@ -43,6 +45,7 @@ nci:
   default_data_owner: steve.cassidy@mq.edu.au
   licence_access_request_notification_sender: steve.cassidy@mq.edu.au
   licence_access_request_response_sender: steve.cassidy@mq.edu.au
+  contrib_dir: /mnt/volume/contributions
 
 staging:
   <<: *defaults

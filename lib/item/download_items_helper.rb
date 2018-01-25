@@ -188,10 +188,10 @@ module Item::DownloadItemsHelper
     end
 
     #
-    # Retrieve filenames from documents.file_path thru items
+    # Retrieve filenames from documents.file_path thru items. Would remove duplicated filenames.
     #
     def get_filenames_from_item(item_handles, document_filter)
-      logger.debug "get_filenames_from_item: item_handles[#{item_handles}], document_filter[#{document_filter}]"
+      logger.debug "get_filenames_from_item: start - item_handles[#{item_handles}], document_filter[#{document_filter}]"
 
       rlt = []
       filenames = []
@@ -208,11 +208,14 @@ module Item::DownloadItemsHelper
         end
       end
 
+      # finally remove duplicated filenames
+      filenames = filenames.uniq
+
       Item::DownloadItemsHelper.filter_item_files(filenames, document_filter).each do |file|
         rlt << file
       end
 
-      logger.debug "get_filenames_from_item: rlt[#{rlt}]"
+      logger.debug "get_filenames_from_item: end - rlt[#{rlt}]"
 
       rlt
     end

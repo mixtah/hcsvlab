@@ -4,8 +4,6 @@
 
   = render 'display_basic_metadata'
 
-  = render 'display_additional_metadata'
-
   %hr
 
   .row-fluid
@@ -15,6 +13,10 @@
   .row-fluid
     = label_tag :collection_text, 'Collection Description:'
     = text_area_tag :collection_text, @collection_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide'
+
+  %hr
+  .row-fluid
+    = render 'display_additional_metadata'
 
   .form-actions
     = submit_tag 'Create', :class => "btn btn-primary"

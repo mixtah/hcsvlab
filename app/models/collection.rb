@@ -21,12 +21,11 @@ class Collection < ActiveRecord::Base
   scope :not_in_list, where(collection_list_id: nil)
   scope :only_public, where(private: false)
   scope :only_private, where(private: true)
+  scope :only_released_and_finalised, where("status='RELEASED' or status='FINALISED'")
 
   validates :name, presence: true, uniqueness: {case_sensitive: false}
   validates :uri, presence: true
-  # TODO: collection_enhancement at least has 6 standard properties: 5 dcterms, 1 olac
-  # validates :collection_properties, length: {minimum: 6}
-
+  validates :status, presence: true
 
   def self.sanitise_name(name)
     # Spaces shouldn't be used since Sesame uses the name within the metadata URI
@@ -57,6 +56,18 @@ class Collection < ActiveRecord::Base
 
   def is_public?
     !private?
+  end
+
+  def is_draft?
+    status == "DRAFT"
+  end
+
+  def is_released?
+    status == "RELEASED"
+  end
+
+  def is_finalised?
+    status == "FINALISED"
   end
 
   #
@@ -101,8 +112,4 @@ class Collection < ActiveRecord::Base
     Kramdown::Document.new(text.nil? ? '' : text).to_html
   end
 
-  # TODO: to find associated document by file name, use in contribution
-  def find_associated_document_by_file_name
-
-  end
 end
