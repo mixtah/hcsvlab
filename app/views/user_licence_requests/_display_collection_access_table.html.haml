@@ -4,7 +4,8 @@
       %thead
         %tr
           %th Collection
-          %th Access Draft
+          %th Status
+          %th Access Draft (one email per line)
           %th Update
       %tbody
         - @collection_data.each_with_index do |collection, index|
@@ -12,6 +13,8 @@
           = form_tag("/admin/collections/#{collection[:id]}/update_permission", method: 'post', id: "update_access_form_#{index}") do
             %td
               = collection[:name]
+            %td
+              = collection[:status]
             %td
               = text_area_tag :email_list, collection[:email_list].join("\n"), :rows => '3', :style => 'height: 100%; width: 80%;'
             %td

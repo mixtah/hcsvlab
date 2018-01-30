@@ -79,6 +79,8 @@
 - if documents.empty?
   %em This Item has no documents
 - else
+  - documents.sort_by! do |d|
+    - d[MetadataHelper::IDENTIFIER]
   - is_cooee = document[MetadataHelper::short_form(MetadataHelper::COLLECTION)][0] == "cooee"
   - type_format = get_type_format(document, is_cooee)
   %table.document-table.table.table-striped{:border => "0"}

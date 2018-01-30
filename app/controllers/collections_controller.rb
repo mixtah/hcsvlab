@@ -95,7 +95,7 @@ class CollectionsController < ApplicationController
         begin
           @collection_title = @collection.collection_properties.select{|p| p.property == MetadataHelper::PFX_TITLE}.first.value
         rescue Exception => e
-          logger.error "show: can't retrieve collection title from collection_properties, use collection name instead"
+          logger.error "show: can't retrieve collection title from collection_properties due to [#{e.message}], use collection name instead"
           @collection_title = @collection.name
         end
 
