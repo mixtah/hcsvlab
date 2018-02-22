@@ -240,7 +240,7 @@ module CollectionsHelper
             rlt[:edit] = 40
           end
 
-          if !collection.is_public?
+          if !collection.is_public? && (collection.owner_id != user.id)
             info = user.get_collection_licence_info(collection)
             if info[:state] != :approved
               rlt[:show] = 30

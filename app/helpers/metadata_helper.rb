@@ -480,13 +480,13 @@ module MetadataHelper
 
     # already updated config (deploy/nci.rb, staging.rb), to remove below codes later
     id = UrlGenerator.new.collection_url(collection_name)
-    if (id.start_with?("http://app.alveo.edu.au"))
-      id.sub!("http://app.alveo.edu.au", "https://app.alveo.edu.au")
-    end
-
-    if (id.start_with?("http://staging.alveo.edu.au"))
-      id.sub!("http://staging.alveo.edu.au", "https://staging.alveo.edu.au")
-    end
+    # if (id.start_with?("http://app.alveo.edu.au"))
+    #   id.sub!("http://app.alveo.edu.au", "https://app.alveo.edu.au")
+    # end
+    #
+    # if (id.start_with?("http://staging.alveo.edu.au"))
+    #   id.sub!("http://staging.alveo.edu.au", "https://staging.alveo.edu.au")
+    # end
 
     collection_metadata["@id"] = id
 

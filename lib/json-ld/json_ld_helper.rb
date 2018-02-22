@@ -131,7 +131,7 @@ module JsonLdHelper
   #
   def self.format_document_source_metadata(doc_source)
     # Escape any filename symbols which need to be replaced with codes to form a valid URI
-    {'@id' => "file://#{URI.escape(doc_source)}"}
+    {'@id' => "#{URI.escape(doc_source)}"}
   end
 
 end

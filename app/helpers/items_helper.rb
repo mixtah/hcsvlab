@@ -231,7 +231,6 @@ module ItemsHelper
   #
   def format_document_source_metadata(doc_source)
     # Escape any filename symbols which need to be replaced with codes to form a valid URI
-    # {'@id' => "file://#{URI.escape(doc_source)}"}
     JsonLdHelper.format_document_source_metadata(doc_source)
   end
 
@@ -349,6 +348,8 @@ module ItemsHelper
   #
   def get_doc_subject_uri_from_sesame(document, repository)
     document_uri = nil
+    is_doc_found = false
+
     item_documents = RDF::Query.execute(repository) do
       pattern [RDF::URI.new(document.item.uri), MetadataHelper::DOCUMENT, :object]
     end
@@ -359,7 +360,14 @@ module ItemsHelper
       doc_ids.each do |doc_id|
         if doc_id[:doc_id] == document.file_name
           document_uri = doc[:object]
+          is_doc_found = true
+
+          break
         end
+      end
+
+      if is_doc_found
+        break
       end
     end
     # raise 'Could not obtain document URI from Sesame' if document_uri.nil?
@@ -738,7 +746,6 @@ module ItemsHelper
         'dc:abstract',
         'dcterms:abstract',
         MetadataHelper::ABSTRACT.to_s,
-        'marcrel:OWN',
         MetadataHelper::LOC_OWNER.to_s]
 
       validate_additional_metadata(params[:additional_key].zip(params[:additional_value]), protected_collection_fields)

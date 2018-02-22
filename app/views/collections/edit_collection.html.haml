@@ -24,11 +24,6 @@
     .row-fluid
       = render 'display_additional_metadata'
 
-    %hr
-    .row-fluid
-      = label_tag :status_text, 'Status:'
-      = select_tag :collection_status, options_for_select(@collection_status_options, @collection.status)
-
     = submit_tag 'hidden', :style => "display:none"
 
   %hr

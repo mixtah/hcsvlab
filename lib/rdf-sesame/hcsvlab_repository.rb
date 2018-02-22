@@ -55,10 +55,19 @@ module RDF::Sesame
     end
 
     def send_statements(context, data)
+      # patch for http://app.alveo.edu.au => https://app.alveo.edu.au
+      old_str = "http://app.alveo.edu.au"
+      new_str = "https://app.alveo.edu.au"
+      data.gsub!(old_str, new_str)
+
+      logger.debug "send_statements: data[#{data}]"
+
       statements_options = {}
       statements_options[:context] = "<#{context.to_s}>" if !context.nil?
 
       response = server.post(self.path(:statements, statements_options), data, 'Content-Type' => 'application/x-turtle;charset=UTF-8')
+
+      logger.debug "send_statement: response[#{response.message}]"
       raise Exception.new(response.message) unless "204".eql?(response.code)
     end
 

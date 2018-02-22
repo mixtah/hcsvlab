@@ -2,81 +2,85 @@ require 'find'
 require "#{Rails.root}/lib/rdf-sesame/hcsvlab_server.rb"
 require "#{Rails.root}/app/helpers/metadata_helper"
 
+APP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/hcsvlab-web_config.yml")[Rails.env] unless defined? APP_CONFIG
 SESAME_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/sesame.yml")[Rails.env] unless defined? SESAME_CONFIG
 STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 SESAME_SERVER = RDF::Sesame::HcsvlabServer.new(SESAME_CONFIG["url"].to_s)
-
+METADATA_DIR = {
+  "austalk" => "/mnt/volume/austalk/austalk-published/metadata"
+}
 
 #
 # Check collection integrity
 #
 # 1. Retrieve all/part item entries from DB according to specific collection, then handle items one by one;
 # 2. Check item entry from Sesame, if all passed, go on; otherwise next;
-# 3. Check item entry from Solr
 #
 def check_integrity(collection_name)
-  logger.debug "check_integrity: start - collection_name[#{collection_name}]"
   start_time = Time.now
 
   collection = Collection.find_by_name(collection_name)
   if collection.nil?
     rlt = "collection with name '#{collection_name}' not found."
-    logger.info "check_integrity: end - rlt[#{rlt}]"
 
     return rlt
   end
 
-  repo = SESAME_SERVER.repository(collection.name)
+  out_file = File.open(File.join(File.expand_path("~/tmp"), "#{collection_name}.handle"), "w")
 
-  batch_size = 10000
+  # retrieve total item count from db
+  sql = "select count(*) from items where collection_id=#{collection.id}"
+  total_items = ActiveRecord::Base.connection.execute(sql).as_json.first['count'].to_i
 
-  # retrieve item entries from DB
-  items = Item.select("id, handle, uri").where("collection_id = #{collection.id}").order("id asc").limit(batch_size)
-  items.each_with_index do |item, index|
-    puts "#{index+1}/#{batch_size} - processing #{items.handle} ... \r"
-    #   retrieve document info from sesame and db according to item.uri
-    sesame_docs = retrieve_doc_by_item_uri(repo, item.uri)
-    db_docs = Document.where("item_id=#{item.id}").order("file_path asc")
+  # retrieve total doc count from db
+  sql = "select count(*) from items i, documents d where i.id=d.item_id and i.collection_id=#{collection.id}"
+  total_docs = ActiveRecord::Base.connection.execute(sql).as_json.first['count'].to_i
 
-    if array_compare(sesame_docs, db_docs)
-    #   db vs sesame ok
+  puts "Found #{total_items} items with #{total_docs} documents in collection '#{collection_name}'"
 
-    # doc size and path match, next to check file exist
-      sesame_docs.each do |doc|
-        if File.exist?(doc) && File.file?(doc)
-        #   doc check passed
-        else
-          msg = "item[#{item.id}, #{item.handle}]-document[#{doc.id}, #{doc.file_path}]: file not exist."
-          logger.error "msg"
-          puts msg.red
-        end
-      end
-    else
-      msg = "item[#{item.id}, #{item.handle}]-documents #{db_docs} not match sesame documents #{sesame_docs}."
-      logger.error "msg"
-      puts msg.red
+  batch_size = 2000
 
-      next
+  # test purpose
+  # total_items = 2
+
+  # retrieve item handle from DB
+  (0..total_items - 1).step(batch_size).each do |i|
+    items = Item.select("handle").where("collection_id = #{collection.id}").order("handle asc").limit(batch_size).offset(i)
+    items.each_with_index do |item, index|
+      progress = ((i + index + 1) * 1.0 / total_items) * 100
+      printf "#{i + index + 1}/#{total_items} - processing #{item.handle} ... (%2.2f%%)\r", progress
+
+      out_file << "#{item.handle}\n"
     end
-
   end
+
+  out_file.close
 
   end_time = Time.now
   duration = (end_time - start_time) / 1.second
-  rlt = "Task finished at #{end_time} and last #{duration} seconds."
+  msg = "Retrieving item handle finished at #{end_time} and last #{duration} seconds. Out file: #{File.absolute_path(out_file)}"
+  puts msg
 
-  logger.debug "check_integrity: end - rlt[#{rlt}]"
+  return check_item(File.absolute_path(out_file))
 
-  return rlt
+
 end
 
 def array_compare(array1, array2)
   rlt = false
 
-  if (array1.size == array2.size) && (array1&array2 = array2)
-    rlt = true
+  if array1.size != array2.size
+    return rlt
   end
 
+  array1.each do |a|
+    a.gsub!("file://", "")
+    if !array2.include?(a)
+      return rlt
+    end
+  end
+
+  rlt = true
   return rlt
 end
 
@@ -84,19 +88,15 @@ def retrieve_doc_by_item_uri(repo, uri)
   rlt = []
 
   begin
-    query = RDF::Query.new do
-      pattern [RDF::URI.new(uri), MetadataHelper::INDEXABLE_DOCUMENT, :indexable_doc]
-      pattern [:indexable_doc, MetadataHelper::SOURCE, :source]
-    end
+    docs = repo.query(:subject => RDF::URI.new(uri), :predicate => RDF::URI.new(MetadataHelper::DOCUMENT))
 
-    docs = repo.query(query)
+    docs.each do |result|
+      document = result.to_hash[:object]
 
-    docs.each do |doc|
-      path = URI(res[:source]).path
-      # if File.exists? path and File.file? path
-      #   item.primary_text_path = path
-      #   item.save
-      # end
+      doc_info = repo.query(:subject => document).to_hash[document]
+
+      path = doc_info[MetadataHelper::SOURCE][0].to_s unless doc_info[MetadataHelper::SOURCE].nil?
+
       rlt << path
     end
   rescue => e
@@ -104,6 +104,308 @@ def retrieve_doc_by_item_uri(repo, uri)
   end
 
   return rlt.sort
+end
+
+#
+# Check item data integrity.
+#
+# file format:
+# 1. one item handle per line. e.g.,
+# austalk:4_882_2_5_007
+# austalk:4_882_2_9_003
+#
+# Check procedure:
+#
+# 0. check item => document size
+# 1. check item handle match document file name prefix
+# 2. check document file exist
+# 3. check DB document vs Sesame document (if failed check metadata file exist and complete)
+def check_item(file_name)
+  rlt = "done"
+  out_file = open("#{file_name}.out", 'w')
+  puts "Input file #{file_name} is ready"
+  puts "Output file #{file_name}.out is ready"
+
+  start_time = Time.now
+
+  total_items = File.readlines(file_name).size
+  total_err_items = 0
+
+  repo = nil
+
+  File.readlines(file_name).each_with_index do |line, index|
+    handle = line.split("|").first.chomp
+    collection_name = handle.split(":").first.to_s
+    progress = ((index + 1) * 1.0 / total_items) * 100
+    printf "#{index + 1}/#{total_items} - processing #{handle} ... (%2.2f%%)\r", progress
+    item = Item.find_by_handle(handle)
+
+    if item.nil?
+      total_err_items += 1
+      msg = "#{handle}| not found"
+      out_file << "#{msg}\n"
+
+      next
+    end
+
+    if item.documents.size == 0
+      total_err_items += 1
+      msg = "#{handle}|type-1| document not found."
+      out_file << "#{msg}\n"
+
+      next
+    end
+
+    is_item_err = false
+
+    #   check item.documents
+    db_docs = []
+
+    item.documents.each do |doc|
+      # validate db document file name
+      if validate_doc_filename(handle, doc.file_path)
+        if File.file?(doc.file_path)
+          db_docs << doc.file_path
+        else
+          msg = "#{handle}|type-2| #{doc.file_path} not found"
+          out_file << "#{msg}\n"
+
+          is_item_err = true
+        end
+      else
+        msg = "#{handle}|type-3| #{doc.file_path} filename invalid: inconsistent with handle"
+        out_file << "#{msg}\n"
+
+        is_item_err = true
+
+      end
+    end
+
+    if is_item_err
+      total_err_items += 1
+      next
+    end
+
+    #   check sesame documents
+    if repo.nil?
+      repo = SESAME_SERVER.repository(collection_name)
+    end
+
+    sesame_docs = retrieve_doc_by_item_uri(repo, item.uri)
+    is_ignore_item = false
+    # validate sesame doc
+    sesame_docs.each do |doc|
+      if doc.starts_with?("/data/contrib/") || doc.starts_with?("file:///")
+        #   mark as err, but not write to out_file
+        is_ignore_item = true
+        break
+      end
+    end
+
+    if is_ignore_item
+      msg = "#{handle}|type-4| sesame documents with wrong source, but still work, just ignore at this moment"
+      out_file << "#{msg}\n"
+      next
+    end
+
+    if array_compare(sesame_docs, db_docs)
+      #   db vs sesame ok
+    else
+      msg = "#{handle}|type-5| documents #{db_docs} not match sesame documents #{sesame_docs}"
+      total_err_items += 1
+      # check metadata file to provide further info for investigation
+      # assume each file has at least 6 entries of metadata, so from ch1 to ch6, at least 36 entries
+      basic_metadata_entry_size = 6 * 6
+
+      db_docs.each do |doc|
+        if doc.include?("/audio/")
+          #   check metadata file
+          metadata_file = item_metadata_file(doc)
+          if File.file?(metadata_file) && File.readlines(metadata_file).size >= basic_metadata_entry_size
+            #   metadata file is OK
+            msg += ", metadata file[#{metadata_file}] is ok"
+
+            break
+          else
+            msg += ", #{doc} => #{metadata_file}, file not found or incomplete"
+          end
+        end
+      end
+
+      out_file << "#{msg}\n"
+      next
+    end
+
+  end
+
+  out_file.close
+  end_time = Time.now
+  duration = (end_time - start_time) / 1.second
+  rlt = "Task finished at #{end_time} and last #{duration} seconds. Total error item(s): #{total_err_items}. Out file: #{file_name}.out"
+
+  return rlt
+end
+
+#
+# Fix inconsistent item.
+#
+# file format:
+# 1. one item handle per line. e.g.,
+# austalk:4_882_2_5_007
+# austalk:4_882_2_9_003
+def fix_item(file_name)
+  rlt = "done"
+  out_file = open("#{file_name}.out", 'w')
+  start_time = Time.now
+
+  total_items = File.readlines(file_name).size
+  total_err_items = 0
+
+  repo = nil
+
+  File.readlines(file_name).each_with_index do |line, index|
+    handle = line.split("|").first.chomp
+    collection_name = handle.split(":").first.to_s
+    progress = ((index + 1) * 1.0 / total_items) * 100
+    printf "#{index + 1}/#{total_items} - processing #{handle} ... (%2.2f%%)\r", progress
+    item = Item.find_by_handle(handle)
+
+    if item.nil?
+      total_err_items += 1
+      msg = "#{handle}| not found"
+      out_file << "#{msg}\n"
+      next
+    end
+
+    #   check item.documents
+    is_err_item = false
+    doc_file_path = nil
+
+    if item.documents.size == 0
+      total_err_items += 1
+      msg = "#{handle}| 0 document in DB"
+      out_file << "#{msg}\n"
+
+      is_err_item = true
+
+      # don't go further
+      next
+    end
+
+    item.documents.each do |doc|
+      if File.file?(doc.file_path)
+        if doc.file_path.include?("/audio/")
+          # only use file within /audio/ as doc file, don't use downsampled file
+          doc_file_path = doc.file_path
+        end
+      else
+        msg = "#{handle}| #{doc.file_path} file not found"
+        out_file << "#{msg}\n"
+
+        is_err_item = true
+      end
+    end
+
+    if is_err_item
+      #   current item contains err doc, no further process
+      total_err_items += 1
+      next
+    end
+
+    metadata_file = item_metadata_file(doc_file_path)
+    if !File.file?(metadata_file)
+      msg = "#{handle}| #{doc_file_path} => #{metadata_file} not found\n"
+      out_file << "#{msg}\n"
+
+      is_err_item = true
+    else
+      #   ingest to sesame
+      if repo.nil?
+        repo = SESAME_SERVER.repository(collection_name)
+      end
+
+      begin
+        repo.insert_from_rdf_files(metadata_file)
+      rescue Exception => e
+        msg = "#{handle}| ingest to sesame fail[#{e.message}]"
+        out_file << "#{msg}\n"
+
+        is_err_item = true
+        next
+      end
+    end
+
+    if is_err_item
+      #   current item contains err doc, no further process
+      total_err_items += 1
+      next
+    end
+
+    #   update solr according to sesame
+
+  end
+
+  end_time = Time.now
+  duration = (end_time - start_time) / 1.second
+  rlt = "Task finished at #{end_time} and last #{duration} seconds. Total error item(s): #{total_err_items}. Out file: #{file_name}.out"
+
+  return rlt
+end
+
+#
+# Get metadata file for specific item's document file.
+#
+# So far only handle austalk collection.
+#
+# e.g.,
+#
+# doc file: /mnt/volume/austalk/austalk-published/audio/CDUD/4_421/3/words-3-2/4_421_3_33_242-ch1-maptask.wav
+# metadata file: /mnt/volume/austalk/austalk-published/metadata/CDUD/4_421/3/words-3-2/4_421_3_33_242-files.nt
+#
+def item_metadata_file(doc_file)
+  rlt = nil
+
+  metadata_file_dir = METADATA_DIR["austalk"]
+  doc_path = File.dirname(doc_file).to_s
+  prefix = File.basename(doc_file).split("-").first.to_s
+
+  begin
+    # check whether last character is integer
+    # occasionally prefix ends with 'A' to 'H'
+    Integer(prefix[-1])
+  rescue ArgumentError => e
+    prefix = prefix[0..-2]
+  end
+
+  str = "/audio/"
+  doc_path = doc_path.split(str).last.to_s
+
+  rlt = metadata_file_dir + "/" + doc_path + "/" + prefix + "-files.nt"
+
+  return rlt
+end
+
+# validate db document file name
+#
+# Document file name must match handle according to some rules.
+#
+# e.g., handle is austalk:xxx, file name must be:
+#
+# /mnt/volume/.../xxx-???.*
+#
+def validate_doc_filename(handle, doc)
+  rlt = false
+
+  prefix = "/" + handle.split(":").last.chomp
+
+  if doc.include?(prefix)
+    rlt = true
+  end
+
+  # logger.debug "handle[#{handle}], doc[#{doc}], rlt[#{rlt}]"
+
+  return rlt
+
 end
 
 # -----------------------------------------

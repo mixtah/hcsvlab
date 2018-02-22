@@ -54,10 +54,13 @@
           %li.nav-header Metadata
           - metadata_fields.each do |field|
             - if field.first[0] != "Abstract" && field.first[0] != "RDF Type" && field.first[0] != "SPARQL Endpoint"
+              - value = field.first[1].to_s
+              - if current_user.nil? && field.first[0] == "Creator"
+                - value = value.gsub(/\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/, '*email hidden*')
               %li
                 %strong
                   #{field.first[0]}:
-                #{field.first[1]}
+                #{value}
 
       = render partial: 'display_attachment_sidebar', locals: {attachment_url: @attachment_url}
 
@@ -65,5 +68,11 @@
     .span8
       .row-fluid
         = @collection.html_text.html_safe
+
+      .row-fluid
+        - if @collection.items.size == 0
+          There are 0 item within this collection
+        - else
+          = link_to "There are #{@collection.items.size} item(s) within this collection", catalog_index_path("f[collection_name_facet][]" => "#{@collection.name}")
 
 = render 'shared/nectar_attribution'

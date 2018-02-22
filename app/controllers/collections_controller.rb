@@ -220,6 +220,11 @@ class CollectionsController < ApplicationController
     @licence_id = params[:licence_id]
     @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
 
+    @collection_status_options = [
+      ['DRAFT - only you can see your own draft collection', 'DRAFT'],
+      ['RELEASED - you can still update released collection', 'RELEASED'],
+      ['FINALISED - can NOT update anymore', 'FINALISED']]
+
     # mandatory params
     @collection_language = params[:collection_language]
     @collection_language = 'eng - English' if @collection_language.nil?
@@ -243,12 +248,20 @@ class CollectionsController < ApplicationController
       @collection_owner = nil
       @collection_abstract = ""
       @collection_text = nil
+      @approval_required = 'public'
 
       #   load content only for Get
       @olac_subject_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH
 
       @additional_metadata = {}
       @additional_metadata_options = metadata_names_mapping
+
+      @collection_creator = current_user.full_name + "(#{current_user.email})"
+      @collection_owner = current_user
+
+      if current_user.is_superuser?
+        @approved_owners = approved_collection_owners
+      end
 
     end
 
@@ -271,7 +284,7 @@ class CollectionsController < ApplicationController
         json_ld = {
           '@context' => JsonLdHelper.default_context,
           '@type' => 'dcmitype:Collection',
-          MetadataHelper::LOC_OWNER.to_s => @collection_owner,
+          MetadataHelper::CREATOR.to_s => @collection_creator,
           MetadataHelper::LICENCE.to_s => (lic ? lic.name : ""),
           MetadataHelper::OLAC_SUBJECT.to_s => @olac_subject,
           MetadataHelper::ABSTRACT.to_s => @collection_abstract
@@ -414,6 +427,11 @@ class CollectionsController < ApplicationController
   end
 
   def delete_item_core(item)
+    # check collection status
+    if item.collection.is_finalised?
+      return "Cannot modify finalised collection or its item/document."
+    end
+
     remove_item(item, item.collection)
     "Deleted the item #{item.get_name} (and its documents) from collection #{item.collection.name}"
   end
@@ -448,6 +466,8 @@ class CollectionsController < ApplicationController
     authorize! :edit_collection, Collection
 
     @collection = Collection.find_by_name(params[:id])
+
+    @collection_owner = @collection.owner
 
     access_rlt = CollectionsHelper.collection_accessible?(@collection, current_user)
 
@@ -520,7 +540,6 @@ class CollectionsController < ApplicationController
     end
 
     @collection_title = properties.delete(MetadataHelper::PFX_TITLE)
-    @collection_owner = properties.delete(MetadataHelper::PFX_OWNER)
     @collection_language = properties.delete(MetadataHelper::PFX_LANGUAGE)
     @collection_languages = Language.all.map {|l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"]}.to_h
 
@@ -541,6 +560,10 @@ class CollectionsController < ApplicationController
       ['DRAFT - only you can see your own draft collection', 'DRAFT'],
       ['RELEASED - you can still update released collection', 'RELEASED'],
       ['FINALISED - can NOT update anymore', 'FINALISED']]
+
+    if current_user.is_superuser?
+      @approved_owners = approved_collection_owners
+    end
 
     # olac subject
     @olac_subject = properties.delete(MetadataHelper::PFX_OLAC_SUBJECT)
@@ -587,7 +610,6 @@ class CollectionsController < ApplicationController
         MetadataHelper::LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
         MetadataHelper::CREATED.to_s => params[:collection_creation_date].nil? ? '' : params[:collection_creation_date],
         MetadataHelper::CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
-        MetadataHelper::LOC_OWNER.to_s => params[:collection_owner].nil? ? '' : params[:collection_owner],
         MetadataHelper::OLAC_SUBJECT.to_s => params[:olac_subject].nil? ? '' : params[:olac_subject],
         MetadataHelper::LICENCE.to_s => lic.name,
         MetadataHelper::ABSTRACT.to_s => params[:collection_abstract].nil? ? '' : params[:collection_abstract]
@@ -600,7 +622,19 @@ class CollectionsController < ApplicationController
       # Ingest new collection
       # name = Collection.sanitise_name(params[:collection_name])
 
-      msg = create_collection_core(name, json_ld, current_user, lic.id, params[:approval_required] == 'private', params[:collection_text], params[:collection_status])
+      # check owner
+      owner = current_user
+      if !params[:collection_owner].nil?
+        owner = User.find_by_id(params[:collection_owner])
+        if owner.nil?
+          msg = "Can't find collection owner by '#{params[:collection_owner]}'"
+          redirect_to collection_path(id: name), notice: msg
+
+          return
+        end
+      end
+
+      msg = create_collection_core(name, json_ld, owner, lic.id, params[:approval_required] == 'private', params[:collection_text], params[:collection_status])
       redirect_to collection_path(id: name), notice: msg
     rescue ResponseError => e
       flash[:error] = e.message
@@ -909,7 +943,6 @@ class CollectionsController < ApplicationController
   #
   def format_document_source_metadata(doc_source)
     # Escape any filename symbols which need to be replaced with codes to form a valid URI
-    # {'@id' => "file://#{URI.escape(doc_source)}"}
     JsonLdHelper.format_document_source_metadata(doc_source)
   end
 
@@ -1268,8 +1301,9 @@ class CollectionsController < ApplicationController
   #
   # Core functionality common to creating a collection
   #
-  def create_collection_core(name, metadata, owner, licence_id = nil, private = true, text = '', status = 'DRAFT')
+  def create_collection_core(name, metadata, owner, licence_id = nil, private = true, text = '', status = 'RELEASED')
     logger.debug "create_collection_core: start - name[#{name}], metadata[#{metadata}], owner[#{owner}], licence_id[#{licence_id}], private[#{private}], text[#{text}], status[#{status}]"
+
     metadata = MetadataHelper::update_jsonld_collection_id(
       MetadataHelper::not_empty_collection_metadata!(name, current_user.full_name, metadata), name)
     uri = metadata['@id']
@@ -1354,9 +1388,7 @@ class CollectionsController < ApplicationController
         MetadataHelper::TITLE.to_s,
         'dc:abstract',
         'dcterms:abstract',
-        MetadataHelper::ABSTRACT.to_s,
-        'marcrel:OWN',
-        MetadataHelper::LOC_OWNER.to_s]
+        MetadataHelper::ABSTRACT.to_s]
 
       validate_additional_metadata(params[:additional_key].zip(params[:additional_value]), protected_collection_fields)
     else
@@ -1485,6 +1517,12 @@ class CollectionsController < ApplicationController
 
   def skip_trackable
     request.env['devise.skip_trackable'] = true
+  end
+
+  # collection owner = superuser + data_owner
+  # select options, "owner full name" => "owner id"
+  def approved_collection_owners
+    (User.approved_data_owners + User.approved_superusers).map{|o| ["#{o.full_name}", "#{o.id}"]}.sort!.to_h
   end
 
 end

@@ -743,12 +743,10 @@ module Blacklight::BlacklightHelperBehavior
   def collection_show_fields(collection)
     graph = collection.rdf_graph
     fields = graph.statements.map {|i| {collection_label(MetadataHelper::short_form(i.predicate)) => collection_value(graph, i.predicate)}}.uniq
-    fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
 
-    logger.debug "collection_show_fields fields=#{fields}"
-
+    # fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
+    # logger.debug "collection_show_fields fields=#{fields}"
     fields
-
   end
 
   def collection_label(key)

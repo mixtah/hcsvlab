@@ -26,6 +26,7 @@ class User < ActiveRecord::Base
   validates :status, presence: true
   validates :email, presence: true, uniqueness: {case_sensitive: false}
   validates :role, presence: true
+  validates :first_name, uniqueness: {scope: :last_name, case_sensitive: false}
 
   with_options :if => :password_required? do |v|
     v.validates :password, :password_format => true
@@ -38,6 +39,7 @@ class User < ActiveRecord::Base
   scope :approved, where(:status => 'A').order(:email)
   scope :deactivated_or_approved, where("status = 'D' or status = 'A' ").order(:email)
   scope :approved_superusers, joins(:role).merge(User.approved).merge(Role.superuser_roles)
+  scope :approved_data_owners, joins(:role).merge(User.approved).merge(Role.data_owner_roles)
   scope :approved_researchers, joins(:role).merge(User.approved).merge(Role.researcher_roles)
 
   after_initialize do |user|
@@ -204,6 +206,25 @@ class User < ActiveRecord::Base
 
   def full_name
     "#{first_name} #{last_name}".strip
+  end
+
+  def self.find_by_full_name(full_name)
+    rlt = nil
+
+    if full_name.nil?
+      return rlt
+    end
+
+    name_ar = full_name.split(" ")
+    if name_ar.size != 2
+      return nil
+    end
+
+    first_name = name_ar.first.chomp.upcase
+    last_name = name_ar.last.chomp.upcase
+
+    User.where("upper(first_name) = ? and upper(last_name) = ?", first_name, last_name).first
+
   end
 
   def cannot_own_data?

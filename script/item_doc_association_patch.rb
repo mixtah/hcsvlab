@@ -23,7 +23,7 @@ CSV.foreach(csv_file, headers: true).with_index(1) do |csv_line, i|
   doc_filename = File.basename(doc_filepath)
 
   progress = (i*1.0 / total_lines) * 100
-  printf "Processing document[%s]...(%2.2f%%) \r", progress, doc_id
+  printf "Processing document[%s]...(%2.2f%%) \r", doc_id, progress
 
   # check file existence
   if File.exists?(doc_filepath)

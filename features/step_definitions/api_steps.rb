@@ -393,7 +393,7 @@ Then /^Sesame should (not )?contain a document with file_name "(.+)" in collecti
   # query the collection repo for any statements with a source matching the document file path
   query = RDF::Query.new do
     pattern [:subject, MetadataHelper::IDENTIFIER, "#{document_file_name}"]
-    pattern [:subject, MetadataHelper::SOURCE, RDF::URI.new("file://#{file_path}")]
+    pattern [:subject, MetadataHelper::SOURCE, RDF::URI.new("#{file_path}")]
   end
   if not_exist.present?
     repository.query(query).count.should be 0
@@ -408,7 +408,7 @@ Then /^Sesame should (not )?contain a document with file_path "(.+)" in collecti
   # query the collection repo for any statements with a source matching the document file path
   query = RDF::Query.new do
     pattern [:subject, MetadataHelper::IDENTIFIER, "#{File.basename(file_path)}"]
-    pattern [:subject, MetadataHelper::SOURCE, RDF::URI.new("file://#{file_path}")]
+    pattern [:subject, MetadataHelper::SOURCE, RDF::URI.new("#{file_path}")]
   end
   if not_exist.present?
     repository.query(query).count.should be 0
