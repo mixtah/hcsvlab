@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20180221042800) do
+ActiveRecord::Schema.define(:version => 20171207032545) do
 
   create_table "attachments", :force => true do |t|
     t.string   "file"
@@ -334,7 +334,6 @@ ActiveRecord::Schema.define(:version => 20180221042800) do
 
   add_index "users", ["authentication_token"], :name => "index_users_on_authentication_token", :unique => true
   add_index "users", ["email"], :name => "index_users_on_email", :unique => true
-  add_index "users", ["first_name", "last_name"], :name => "unique_full_name_on_users", :unique => true
   add_index "users", ["reset_password_token"], :name => "index_users_on_reset_password_token", :unique => true
 
 end

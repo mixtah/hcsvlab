@@ -1522,7 +1522,7 @@ class CollectionsController < ApplicationController
   # collection owner = superuser + data_owner
   # select options, "owner full name" => "owner id"
   def approved_collection_owners
-    (User.approved_data_owners + User.approved_superusers).map{|o| ["#{o.full_name}", "#{o.id}"]}.sort!.to_h
+    (User.approved_data_owners + User.approved_superusers).map{|o| ["#{o.full_name} (#{o.email})", "#{o.id}"]}.sort!.to_h
   end
 
 end
