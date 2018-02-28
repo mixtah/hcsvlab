@@ -56,7 +56,7 @@ else
     fi
 
     cp $ROBOCHEF_PATH/config.ini.dist $ROBOCHEF_PATH/config.ini
-    echo "DOCUMENT_BASE_URL = /data/production_collections/" >> $ROBOCHEF_PATH/config.ini
+    echo "DOCUMENT_BASE_URL = file:///data/production_collections/" >> $ROBOCHEF_PATH/config.ini
     echo "CORPUS_BASEDIR = ${RAW_PATH}/" >> $ROBOCHEF_PATH/config.ini
     echo "CORPUS_OUTPUTDIR = ${PROCESSED_PATH}/" >> $ROBOCHEF_PATH/config.ini
 
