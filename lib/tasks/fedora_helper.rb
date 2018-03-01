@@ -15,7 +15,7 @@ STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env]
 #
 def ingest_one(corpus_dir, rdf_file, user_email=nil)
   logger.debug "ingest_one: begin - corpus_dir[#{corpus_dir}], rdf_file[#{rdf_file}], user_email[#{user_email}]"
-  collection_name = extract_manifesis_datat_collection(rdf_file)
+  collection_name = extract_manifest_collection(rdf_file)
   collection = check_and_create_collection(user_email, collection_name, corpus_dir, {}, File.basename(rdf_file))
   ingest_rdf_file(corpus_dir, rdf_file, true, collection)
 end
