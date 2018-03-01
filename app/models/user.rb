@@ -25,7 +25,6 @@ class User < ActiveRecord::Base
   validates :last_name, presence: true
   validates :status, presence: true
   validates :email, presence: true, uniqueness: {case_sensitive: false}
-  validates :role, presence: true
 
   with_options :if => :password_required? do |v|
     v.validates :password, :password_format => true
