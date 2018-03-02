@@ -11,7 +11,7 @@
         %th Collection
         %th Abstract
         - if !current_user.nil? && current_user.is_superuser?
-          %th Author
+          %th Owner
           %th Status
     %tbody
       - @collections.each do |collection|

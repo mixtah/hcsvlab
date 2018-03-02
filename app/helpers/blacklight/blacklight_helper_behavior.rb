@@ -745,7 +745,9 @@ module Blacklight::BlacklightHelperBehavior
     fields = graph.statements.map {|i| {collection_label(MetadataHelper::short_form(i.predicate)) => collection_value(graph, i.predicate)}}.uniq
 
     # fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
-    # logger.debug "collection_show_fields fields=#{fields}"
+    fields << {'Owner' => "#{@collection.owner.full_name} (#{@collection.owner.email})"}
+    # logger.debug "collection_show_fields: #{fields.inspect}"
+
     fields
   end
 

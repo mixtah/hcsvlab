@@ -1,6 +1,6 @@
 = render partial: 'display_breadcrumb', locals: {nav_links: {'collections' => collections_path, "#{@collection.name}" => nil}}
 
-- metadata_fields = collection_show_fields(@collection)
+- metadata_fields = collection_show_fields(@collection).sort_by{|h| h.first[0]}
 - collection_status = ""
 - if CollectionsHelper.is_owner(current_user, @collection) || (!current_user.nil? && current_user.is_superuser?)
   - collection_status = " (#{@collection.status})"
@@ -53,14 +53,18 @@
         %ul.nav.nav-list.text-left
           %li.nav-header Metadata
           - metadata_fields.each do |field|
-            - if field.first[0] != "Abstract" && field.first[0] != "RDF Type" && field.first[0] != "SPARQL Endpoint"
-              - value = field.first[1].to_s
-              - if current_user.nil? && field.first[0] == "Creator"
-                - value = value.gsub(/\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/, '*email hidden*')
-              %li
-                %strong
-                  #{field.first[0]}:
-                #{value}
+            - key = field.first[0]
+            - if key == "Abstract" || key == "RDF Type" || key == "SPARQL Endpoint"
+              - next
+            - if key == "OLAC_subject_facet"
+              - key = "Subject"
+            - value = field.first[1].to_s
+            - if current_user.nil? && (key == "Creator" || key == "Owner")
+              - value = value.gsub(/\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/, '*email hidden*')
+            %li
+              %strong
+                #{key}:
+              #{value}
 
       = render partial: 'display_attachment_sidebar', locals: {attachment_url: @attachment_url}
 
@@ -70,9 +74,8 @@
         = @collection.html_text.html_safe
 
       .row-fluid
-        - if @collection.items.size == 0
-          There are 0 item within this collection
-        - else
-          = link_to "There are #{@collection.items.size} item(s) within this collection", catalog_index_path("f[collection_name_facet][]" => "#{@collection.name}")
+        Contains #{@collection.items.size} item(s)
+        - if @collection.items.size > 0
+          = link_to "Browse", catalog_index_path("f[collection_name_facet][]" => "#{@collection.name}")
 
 = render 'shared/nectar_attribution'
