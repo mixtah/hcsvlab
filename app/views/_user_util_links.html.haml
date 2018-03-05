@@ -30,8 +30,7 @@
             %li= link_to 'Delete API Key', account_delete_token_path, :method => :delete, :confirm => 'Are you sure you want to delete your token? You will no longer be able to perform API actions.'
           %li.divider
           %li{:class => li_class}
-            %a#zc_copy_token{"data-clipboard-text" => current_user.authentication_token, :href => "#"}
-              Copy to Clipboard
+            %a#clipboard_copy_token{"data-clipboard-text" => current_user.authentication_token, :href => "#"}Copy to Clipboard
           %li{:class => li_class}
             = link_to 'Download API Key', account_api_key_path
       - if current_user.is_superuser? || current_user.is_data_owner?
@@ -40,7 +39,7 @@
       %li.divider
       %li= link_to "Help", "http://alveo.edu.au/help", :target => "_blank"
       %li= link_to "View Usage Metrics", view_metrics_path
-      %li= link_to "Report An Issue", new_issue_report_path(:url => request.original_url)
+      %li= link_to "Report To Admin", new_issue_report_path(:url => request.original_url)
     %li.divider
     - if has_user_authentication_provider?
       - if current_user
@@ -49,19 +48,22 @@
         = link_to t('blacklight.header_links.login'), new_user_session_path
 :javascript
   $(document).ready(function () {
-    if (!$('#zc_copy_token').closest('li').hasClass('disabled')) {
-      var clip = new ZeroClipboard($('#zc_copy_token'));
-      clip.on('complete', function (client, args) {
+    if (!$('#clipboard_copy_token').closest('li').hasClass('disabled')) {
+
+      var clipboard = new Clipboard("#clipboard_copy_token");
+
+      clipboard.on('success', function(e) {
         alert("API Key copied to clipboard");
       });
-      clip.on('mouseover', function(){
-        $('#zc_copy_token').addClass("hovered");
-        $('#zc_copy_token').closest('.dropdown-submenu').addClass('open');
+
+      clipboard.on('error', function(e) {
+        console.error('Action:', e.action);
+        console.error('Trigger:', e.trigger);
       });
-      clip.on('mouseout', function(){
-        $('#zc_copy_token').removeClass("hovered");
-      });
+
     }
+
+    //------------
 
     $('.dropdown-menu li a').mouseover(function (e) {
       e.stopPropagation();
@@ -69,25 +71,11 @@
         $(this).removeClass('open');
       });
       $(this).parent().addClass('open');
+
     });
 
-    // $('.dropdown-toggle').click(function (e) {
-    //   $(this).parent().find('li').each(function () {
-    //     $(this).removeClass('open');
-    //   });
-    // });
   });
 
-  // $('#api_token_submenu a, #api_token_submenu').hover(function (e) {
-  //   if($('#global-zeroclipboard-html-bridge').is(':hover')){
-  //     $('#zc_copy_token').addClass("hovered");
-  //     $('#zc_copy_token').closest('.dropdown-submenu').children('a').addClass('hovered');
-  //     $('#zc_copy_token').closest('.dropdown-submenu').addClass('open');
-  //   } else {
-  //     $('#zc_copy_token').removeClass("hovered");
-  //     $('#zc_copy_token').closest('.dropdown-submenu').children('a').removeClass('hovered');
-  //   }
-  // });
 
 
 

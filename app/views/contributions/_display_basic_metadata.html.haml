@@ -1,0 +1,35 @@
+- if @contribution.nil?
+  .row-fluid
+    .span4
+      = label_tag :contribution_name, 'Name/Title:'
+      = text_field_tag :contribution_name, @contribution_name, placeholder: 'contribution name/title', required: true
+    .span4
+      %label{:for => "Related Collection:"}
+        Related Collection:
+      = select_tag :contribution_collection, options_for_select(@contribution_collections, ""), id: 'contribution_collection'
+  .row-fluid
+    * A unique numerical identifier will be generated for your contribution.
+- else
+  .row-fluid
+    .span4
+      = label_tag :contribution_name, 'Name/Title:'
+      = text_field_tag :contribution_name, @contribution.name, disabled: true
+    .span4
+      =label_tag :contribution_collection, 'Related Collection:'
+      = text_field_tag :contribution_collection, @contribution.collection.name, disabled: true
+  .row-fluid
+    .span4
+      = label_tag :contribution_creator, 'Owner:'
+      = text_field_tag :contribution_creator, @contribution.owner.full_name, disabled: true
+    .span4
+      = label_tag :contribution_created, 'Created Date:'
+      = text_field_tag :contribution_created, @contribution.created_at, disabled: true
+
+
+:javascript
+
+  $("#contribution_collection").select2({
+    placeholder: "Please select a collection",
+    width: 'resolve'
+  })
+

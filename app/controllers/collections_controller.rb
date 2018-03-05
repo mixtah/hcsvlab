@@ -3,17 +3,16 @@ require Rails.root.join('lib/api/response_error')
 require Rails.root.join('lib/api/request_validator')
 require Rails.root.join('lib/json-ld/json_ld_helper.rb')
 require Rails.root.join('app/helpers/metadata_helper')
+require Rails.root.join('app/helpers/items_helper')
+
 # require 'metadata_helper'
 require 'fileutils'
-
 
 class CollectionsController < ApplicationController
 
   STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env] unless defined? STOMP_CONFIG
 
-  # include MetadataHelper
-
-  # Don't bother updating _sign_in_at fields for every API request 
+  # Don't bother updating _sign_in_at fields for every API request
   prepend_before_filter :skip_trackable # , only: [:add_items_to_collection, :add_document_to_item]
   before_filter :authenticate_user!, except: [:index, :show]
 
@@ -24,38 +23,95 @@ class CollectionsController < ApplicationController
   set_tab :collection
 
   include RequestValidator
+  include ItemsHelper
 
   PER_PAGE_RESULTS = 20
   #
   #
   #
   def index
-    @collections = collections_by_name
-
     respond_to do |format|
-      format.html
-      format.json
+      format.html {
+        if user_signed_in?
+          @my_collections = my_collections
+        end
+
+        @collections = collections_by_user_type
+      }
+      format.json {
+        if user_signed_in?
+          @collections = my_collections
+        end
+
+        # @collections << collections_by_name
+        @collections << collections_by_user_type
+      }
     end
   end
 
+  # Show collection details according to 3 factors:
+  #
+  # 1. user type: guest, registered user (owner/non-owner), admin
+  # 2. collection status: draft, released, finalised
+  # 3. collection private: true, false
+  #
+  #
   def show
 
     @collection = Collection.find_by_name(params[:id])
 
-    if @collection.nil? || @collection.name.nil?
-      respond_to do |format|
-        format.html {
-          flash[:error] = "Collection does not exist with the given id: #{params[:id]}"
-          redirect_to collections_path}
-        format.json {render :json => {:error => "not-found"}.to_json, :status => 404}
-      end
-    else
-      @attachment_url = collection_attachments_path(@collection.id)
+    access_rlt = CollectionsHelper.collection_accessible?(@collection, current_user)
 
-      respond_to do |format|
-        format.html {render :show}
-        format.json {}
-      end
+    if access_rlt.nil?
+      msg = "Collection does not exist with the given id: #{params[:id]}"
+      logger.info "show: #{msg}"
+      resource_not_found(Exception.new(msg))
+      return
+    end
+
+    case access_rlt[:show]
+      when 10
+        # Need login to proceed.
+        msg = "Please log in to access collection '#{params[:id]}'"
+        logger.info "show: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 20
+        #   Need draft access permission to proceed.
+        msg = "Please contact admin/collection-owner to access draft collection '#{params[:id]}'"
+        logger.info "show: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 30
+        #   Need private access permission to proceed.
+        msg = "Please accept licence agreement of collection '#{@collection.name}' to proceed."
+        logger.info "show: #{msg}"
+        redirect_to account_licence_agreements_url, :notice => msg
+        return
+      when 0
+        # you reach here, you can see
+        #
+        # prepare collection title
+        begin
+          @collection_title = @collection.collection_properties.select{|p| p.property == MetadataHelper::PFX_TITLE}.first.value
+        rescue Exception => e
+          logger.error "show: can't retrieve collection title from collection_properties due to [#{e.message}], use collection name instead"
+          @collection_title = @collection.name
+        end
+
+
+        @attachment_url = collection_attachments_path(@collection.id)
+
+        respond_to do |format|
+          format.html {render :show}
+          format.json {}
+        end
+      else
+        #     what can be anything else?
+        msg = "unknown access permission found [#{access_rlt[:show]}]"
+        logger.error "show: #{msg}"
+        internal_error(Exception.new(msg))
+        return
     end
   end
 
@@ -78,10 +134,30 @@ class CollectionsController < ApplicationController
   end
 
   #
+  # List all collections by user type (guest/collection owner/admin)
+  #
+  def collections_by_user_type
+    if !user_signed_in?
+      Collection.only_released_and_finalised.order(:name)
+    else
+      if current_user.is_superuser?
+        Collection.where("owner_id != ?", current_user.id).order(:name)
+      else
+        (Collection.only_released_and_finalised.where("owner_id != ?", current_user.id).order(:name) + CollectionsHelper.draft_collection_by_user(current_user)).uniq
+      end
+    end
+  end
+
+  #
   # List all collections by name (include collection in collection_list)
   #
   def collections_by_name
     Collection.order(:name)
+  end
+
+  # List all current user's collections
+  def my_collections
+    Collection.where(owner_id: current_user.id)
   end
 
   def lists_by_name
@@ -111,10 +187,10 @@ class CollectionsController < ApplicationController
     collection = Collection.find(params[:id])
     private = params[:privacy]
     collection.set_privacy(private)
-    if private=="false"
+    if private == "false"
       UserLicenceRequest.where(:request_id => collection.id.to_s).destroy_all
     end
-    private=="true" ? state="requiring approval" : state="not requiring approval"
+    private == "true" ? state = "requiring approval" : state = "not requiring approval"
     flash[:notice] = "#{collection.name} has been successfully marked as #{state}"
     redirect_to licences_path
   end
@@ -138,11 +214,16 @@ class CollectionsController < ApplicationController
     @collection_title = params[:collection_title]
     @collection_owner = params[:collection_owner]
     @collection_text = params[:collection_text]
-    @collection_abstract = params[:collection_abstract]
+    @collection_abstract = params[:collection_abstract].nil? ? "" : params[:collection_abstract].gsub(/\r\n/, ' ').gsub(/"/, '\"')
     @approval_required = params[:approval_required]
     @approval_required = 'private' if request.get?
     @licence_id = params[:licence_id]
     @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
+
+    @collection_status_options = [
+      ['DRAFT - only you can see your own draft collection', 'DRAFT'],
+      ['RELEASED - you can still update released collection', 'RELEASED'],
+      ['FINALISED - can NOT update anymore', 'FINALISED']]
 
     # mandatory params
     @collection_language = params[:collection_language]
@@ -165,14 +246,22 @@ class CollectionsController < ApplicationController
       @collection_creation_date = nil
       @collection_creator = nil
       @collection_owner = nil
-      @collection_abstract = nil
+      @collection_abstract = ""
       @collection_text = nil
+      @approval_required = 'public'
 
       #   load content only for Get
       @olac_subject_options = MetadataHelper::OLAC_LINGUISTIC_SUBJECT_HASH
 
       @additional_metadata = {}
       @additional_metadata_options = metadata_names_mapping
+
+      @collection_creator = current_user.full_name + "(#{current_user.email})"
+      @collection_owner = current_user
+
+      if current_user.is_superuser?
+        @approved_owners = approved_collection_owners
+      end
 
     end
 
@@ -182,22 +271,8 @@ class CollectionsController < ApplicationController
           params,
           {
             :collection_name => 'collection name'
-            # :collection_title => 'collection title',
-            # :collection_language => 'collection language',
-            # :collection_creation_date => 'collection creation date',
-            # :collection_creator => 'collection creator',
-            # :collection_owner => 'collection owner',
-            # :collection_olac_name => 'collection OLAC linguistic subject',
-            # :collection_olac_value => 'collection OLAC linguistic subject value',
-            # :collection_abstract => 'collection abstract'
-            # :collection_text => 'collection description'
           }
         )
-
-        # Validate and sanitise OLAC metadata fields
-        # olac_metadata = validate_collection_olac_metadata(params)
-
-        # logger.debug "olac_metadata=#{olac_metadata}"
 
         # Validate and sanitise additional metadata fields
         additional_metadata = validate_collection_additional_metadata(params)
@@ -207,9 +282,9 @@ class CollectionsController < ApplicationController
 
         # Construct collection Json-ld
         json_ld = {
-          '@context' => JsonLdHelper::default_context,
+          '@context' => JsonLdHelper.default_context,
           '@type' => 'dcmitype:Collection',
-          MetadataHelper::LOC_OWNER.to_s => @collection_owner,
+          MetadataHelper::CREATOR.to_s => @collection_creator,
           MetadataHelper::LICENCE.to_s => (lic ? lic.name : ""),
           MetadataHelper::OLAC_SUBJECT.to_s => @olac_subject,
           MetadataHelper::ABSTRACT.to_s => @collection_abstract
@@ -265,14 +340,13 @@ class CollectionsController < ApplicationController
     @additional_metadata = zip_additional_metadata(params[:additional_key], params[:additional_value])
     if request.post?
       begin
+        # Raise an exception if required fields are empty
         validate_required_web_fields(params, {:item_name => 'item name', :item_title => 'item title'})
-        item_name = validate_item_name_unique(@collection, Item.sanitise_name(params[:item_name]))
-        additional_metadata = validate_item_additional_metadata(params)
-        json_ld = construct_item_json_ld(@collection, item_name, params[:item_title], additional_metadata)
 
-        # Write the item metadata to a rdf file and ingest the file
-        processed_items = process_items(@collection.name, @collection.corpus_dir, {:items => [{'metadata' => json_ld}]})
-        msg = add_item_core(@collection, processed_items[:successes])
+        # Raise an exception if item is not unique in the collection
+        item_name = validate_item_name_unique(@collection, Item.sanitise_name(params[:item_name]))
+
+        msg = add_item(params, item_name, @collection)
         msg = "Created new item: #{msg.first}" # Format the item creation message
 
         redirect_to catalog_path(collection: @collection.name, itemId: item_name), notice: msg
@@ -282,6 +356,9 @@ class CollectionsController < ApplicationController
     end
   end
 
+  #
+  # POST "catalog/:collectionId/:itemId"
+  #
   def add_document_to_item
     begin
       collection = validate_collection(params[:collectionId], params[:api_key])
@@ -293,9 +370,9 @@ class CollectionsController < ApplicationController
       doc_content = params[:document_content]
       uploaded_file = params[:file]
       uploaded_file = uploaded_file.first if uploaded_file.is_a? Array
-      doc_filename = MetadataHelper::get_dc_identifier(doc_metadata) # the document filename is the document id
+      doc_filename = MetadataHelper.get_dc_identifier(doc_metadata) # the document filename is the document id
       doc_metadata = format_and_validate_add_document_request(collection.corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
-      @success_message = add_document_core(collection, item, doc_metadata, doc_filename)
+      @success_message = CollectionsHelper.add_document_core(collection, item, doc_metadata, doc_filename)
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
       return # Only respond with one error at a time
@@ -305,6 +382,7 @@ class CollectionsController < ApplicationController
   def web_add_document
     collection = Collection.find_by_name(params[:collection])
     authorize! :web_add_document, collection
+
     @language = params[:language]
     @language = 'eng - English' if @language.nil?
     @languages = Language.all.collect {|l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"]}
@@ -318,7 +396,7 @@ class CollectionsController < ApplicationController
         additional_metadata = validate_document_additional_metadata(params)
         uploaded_file_path = upload_document_using_multipart(collection.corpus_dir, uploaded_file.original_filename, uploaded_file, collection.name)
         json_ld = construct_document_json_ld(collection, item, params[:language], uploaded_file_path, additional_metadata)
-        msg = add_document_core(collection, item, json_ld, uploaded_file_path)
+        msg = CollectionsHelper.add_document_core(collection, item, json_ld, uploaded_file_path)
         redirect_to catalog_path(collection: collection.name, itemId: item.get_name), notice: msg
       rescue ResponseError => e
         flash[:error] = e.message
@@ -349,6 +427,11 @@ class CollectionsController < ApplicationController
   end
 
   def delete_item_core(item)
+    # check collection status
+    if item.collection.is_finalised?
+      return "Cannot modify finalised collection or its item/document."
+    end
+
     remove_item(item, item.collection)
     "Deleted the item #{item.get_name} (and its documents) from collection #{item.collection.name}"
   end
@@ -358,20 +441,11 @@ class CollectionsController < ApplicationController
       collection = validate_collection(params[:collectionId], params[:api_key])
       item = validate_item_exists(collection, params[:itemId])
       document = validate_document_exists(item, params[:filename])
-      @success_message = delete_doc_core(collection, item, document)
+      @success_message = CollectionHelper.delete_document_core(collection, item, document)
     rescue ResponseError => e
       respond_with_error(e.message, e.response_code)
       return # Only respond with one error at a time
     end
-  end
-
-  def delete_doc_core (collection, item, document)
-    remove_document(document, collection)
-    delete_item_from_solr(item.id)
-    item.indexed_at = nil
-    item.save
-    update_item_in_solr(item)
-    "Deleted the document #{params[:filename]} from item #{params[:itemId]} in collection #{params[:collectionId]}"
   end
 
   def delete_document_via_web_app
@@ -380,7 +454,7 @@ class CollectionsController < ApplicationController
       item = Item.find_by_handle(Item.format_handle(params[:collectionId], params[:itemId]))
       collection = item.collection
       document = item.documents.find_by_file_name(params[:filename])
-      msg = delete_doc_core(collection, item, document)
+      msg = CollectionsHelper.delete_document_core(collection, item, document)
       redirect_to catalog_path(params[:collectionId], params[:itemId]), notice: msg
     rescue ResponseError => e
       Rails.logger.error e.message
@@ -388,34 +462,62 @@ class CollectionsController < ApplicationController
     end
   end
 
-  # TODO: collection_enhancement
-  # def edit_collection
-  #   begin
-  #     collection = validate_collection(params[:id], params[:api_key])
-  #
-  #
-  #     validate_jsonld(params[:collection_metadata])
-  #     new_metadata = format_update_collection_metadata(collection, params[:collection_metadata], params[:replace])
-  #     # write_metadata_graph(new_metadata, collection.rdf_file_path, format=:ttl)
-  #     MetadataHelper::update_rdf_graph(collection.name, new_metadata)
-  #
-  #     @success_message = "Updated collection #{collection.name}"
-  #   rescue ResponseError => e
-  #     respond_with_error(e.message, e.response_code)
-  #     return # Only respond with one error at a time
-  #   end
-  # end
-
   def edit_collection
     authorize! :edit_collection, Collection
 
     @collection = Collection.find_by_name(params[:id])
 
-    if @collection.nil?
-      raise ResponseError.new(404), "A collection with the name '#{params[:id]}' not exist."
+    @collection_owner = @collection.owner
+
+    access_rlt = CollectionsHelper.collection_accessible?(@collection, current_user)
+
+    if access_rlt.nil?
+      msg = "Collection does not exist with the given id: #{params[:id]}"
+      logger.info "show: #{msg}"
+      resource_not_found(Exception.new(msg))
+      return
+    end
+
+    case access_rlt[:edit]
+      when 10
+        # Need login to proceed.
+        msg = "Please log in to access collection '#{params[:id]}'"
+        logger.info "edit: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 20
+        #   Need draft access permission to proceed.
+        msg = "Please contact admin/collection-owner to access draft collection '#{params[:id]}'"
+        logger.info "edit: #{msg}"
+        authorization_error(Exception.new(msg))
+        return
+      when 30
+        #   Need private access permission to proceed.
+        msg = "Please accept licence agreement of collection '#{@collection.name}' to proceed."
+        logger.info "edit: #{msg}"
+        redirect_to account_licence_agreements_url, :notice => msg
+        return
+      when 40
+        # Need admin permission to proceed.
+        if !current_user.is_superuser?
+          msg = "Please contact admin to proceed."
+          logger.info "edit: non-admin can't edit finalised collection"
+          redirect_to root_url, :notice => msg
+          return
+        end
+      when 0
+        # you reach here, you can go on to edit
+      else
+        #     what can be anything else?
+        msg = "unknown access permission found [#{access_rlt[:edit]}]"
+        logger.error "edit: #{msg}"
+        internal_error(Exception.new(msg))
+        return
     end
 
     @collection_licences = licences
+
+    @approval_required = (@collection.private ? 'private' : 'public')
 
     # mandatory collection properties
     properties = {}
@@ -438,7 +540,6 @@ class CollectionsController < ApplicationController
     end
 
     @collection_title = properties.delete(MetadataHelper::PFX_TITLE)
-    @collection_owner = properties.delete(MetadataHelper::PFX_OWNER)
     @collection_language = properties.delete(MetadataHelper::PFX_LANGUAGE)
     @collection_languages = Language.all.map {|l| ["#{l.code} - #{l.name}", "#{l.code} - #{l.name}"]}.to_h
 
@@ -454,6 +555,15 @@ class CollectionsController < ApplicationController
     @collection_creation_date = properties.delete(MetadataHelper::PFX_CREATION_DATE)
     @collection_creator = properties.delete(MetadataHelper::PFX_CREATOR)
     @collection_abstract = properties.delete(MetadataHelper::PFX_ABSTRACT)
+
+    @collection_status_options = [
+      ['DRAFT - only you can see your own draft collection', 'DRAFT'],
+      ['RELEASED - you can still update released collection', 'RELEASED'],
+      ['FINALISED - can NOT update anymore', 'FINALISED']]
+
+    if current_user.is_superuser?
+      @approved_owners = approved_collection_owners
+    end
 
     # olac subject
     @olac_subject = properties.delete(MetadataHelper::PFX_OLAC_SUBJECT)
@@ -494,13 +604,12 @@ class CollectionsController < ApplicationController
 
       # Construct collection Json-ld
       json_ld = {
-        '@context' => JsonLdHelper::default_context,
+        '@context' => JsonLdHelper.default_context,
         '@type' => 'dcmitype:Collection',
         MetadataHelper::TITLE.to_s => params[:collection_title].nil? ? '' : params[:collection_title],
         MetadataHelper::LANGUAGE.to_s => params[:collection_language].nil? ? '' : params[:collection_language],
         MetadataHelper::CREATED.to_s => params[:collection_creation_date].nil? ? '' : params[:collection_creation_date],
         MetadataHelper::CREATOR.to_s => params[:collection_creator].nil? ? '' : params[:collection_creator],
-        MetadataHelper::LOC_OWNER.to_s => params[:collection_owner].nil? ? '' : params[:collection_owner],
         MetadataHelper::OLAC_SUBJECT.to_s => params[:olac_subject].nil? ? '' : params[:olac_subject],
         MetadataHelper::LICENCE.to_s => lic.name,
         MetadataHelper::ABSTRACT.to_s => params[:collection_abstract].nil? ? '' : params[:collection_abstract]
@@ -513,7 +622,19 @@ class CollectionsController < ApplicationController
       # Ingest new collection
       # name = Collection.sanitise_name(params[:collection_name])
 
-      msg = create_collection_core(name, json_ld, current_user, lic.id, @approval_required == 'private', params[:collection_text])
+      # check owner
+      owner = current_user
+      if !params[:collection_owner].nil?
+        owner = User.find_by_id(params[:collection_owner])
+        if owner.nil?
+          msg = "Can't find collection owner by '#{params[:collection_owner]}'"
+          redirect_to collection_path(id: name), notice: msg
+
+          return
+        end
+      end
+
+      msg = create_collection_core(name, json_ld, owner, lic.id, params[:approval_required] == 'private', params[:collection_text], params[:collection_status])
       redirect_to collection_path(id: name), notice: msg
     rescue ResponseError => e
       flash[:error] = e.message
@@ -545,7 +666,7 @@ class CollectionsController < ApplicationController
       logger.debug "remove directory #{corpus_dir}"
       FileUtils.remove_dir(corpus_dir, true)
 
-      flash[:notice] = "Collection with the name '#{name} has been removed successfully.'"
+      flash[:notice] = "Collection with the name '#{name}' has been removed successfully."
       redirect_to :collections
     end
 
@@ -566,6 +687,66 @@ class CollectionsController < ApplicationController
     end
   end
 
+  #
+  # Update collection's access permission to specific user (so far only implemented for "draft collection read permission")
+  #
+  def update_permission
+    collection = Collection.find_by_id(params[:id])
+
+    msg = ""
+
+    if collection.nil?
+      msg = "Collection does not exist with the given id: #{params[:id]}"
+      logger.info "update_permission: #{msg}"
+      resource_not_found(Exception.new(msg))
+      return
+    end
+
+    email_list = params[:email_list]
+    req_type = params[:request_type]
+
+    if !email_list.nil?
+      email_list = email_list.split("\r\n")
+    end
+
+    logger.debug "email_list[#{email_list}]"
+
+    ActiveRecord::Base.transaction do
+      UserLicenceRequest.destroy_all(request_id: collection.id.to_s, request_type: req_type)
+
+      email_list.each do |email|
+        user = User.find_by_email(email)
+
+        # check user exists
+        if user.nil?
+          msg = "User does not exist with the given email: #{email}"
+          logger.info "update_permission: #{msg}"
+          redirect_to user_licence_requests_path, notice: msg
+          return
+        end
+
+        if !UserLicenceRequest.exists?(request_id: collection.id.to_s, request_type: req_type, user_id: user.id)
+          UserLicenceRequest.create!(
+            request_id: collection.id,
+            request_type: req_type,
+            approved: true,
+            user_id: user.id,
+            owner_id: collection.owner.id)
+        end
+      end
+    end
+
+    msg = "Access permission of collection [#{collection.name}] updated."
+
+    logger.debug "update_permission: #{msg}"
+
+    redirect_to user_licence_requests_path, notice: msg
+
+    return
+
+  end
+
+  # ---------------------------
   private
 
   #
@@ -616,8 +797,7 @@ class CollectionsController < ApplicationController
   # end
 
   # Writes the collection manifest as JSON and the metadata as .n3 RDF
-  # TODO: collection_enhancement
-  def create_metadata_and_manifest(collection_name, collection_rdf, collection_manifest={"collection_name" => collection_name, "files" => {}})
+  def create_metadata_and_manifest(collection_name, collection_rdf, collection_manifest = {"collection_name" => collection_name, "files" => {}})
 
     corpus_dir = File.join(Rails.application.config.api_collections_location, collection_name)
     FileUtils.mkdir_p(corpus_dir)
@@ -637,13 +817,11 @@ class CollectionsController < ApplicationController
 
   # Creates a combined metadata.rdf file and returns the path of that file.
   # The file name takes the form of 'item1-item2-itemN-metadata.rdf'
-  # TODO: collection_enhancement
   def create_combined_item_rdf(corpus_dir, item_names, item_rdf)
     create_item_rdf(corpus_dir, item_names.join("-"), item_rdf)
   end
 
   # creates an item-metadata.rdf file and returns the path of that file
-  # TODO: collection_enhancement
   def create_item_rdf(corpus_dir, item_name, item_rdf)
     filename = File.join(corpus_dir, item_name + '-metadata.rdf')
     create_file(filename, item_rdf)
@@ -666,7 +844,6 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads a document given as json content
-  # TODO: collection_enhancement
   def upload_document_using_json(corpus_dir, file_basename, json_content)
     absolute_filename = File.join(corpus_dir, file_basename)
     Rails.logger.debug("Writing uploaded document contents to new file #{absolute_filename}")
@@ -675,7 +852,6 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads a document given as a http multipart uploaded file or responds with an error if appropriate
-  # TODO: collection_enhancement
   def upload_document_using_multipart(corpus_dir, file_basename, file, collection_name)
     absolute_filename = File.join(corpus_dir, file_basename)
     if !file.is_a? ActionDispatch::Http::UploadedFile
@@ -691,8 +867,7 @@ class CollectionsController < ApplicationController
 
   # Processes the metadata for each item in the supplied request parameters
   # Returns a hash containing :successes and :failures of processed items
-  # TODO: collection_enhancement
-  def process_items(collection_name, corpus_dir, request_params, uploaded_files=[])
+  def process_items(collection_name, corpus_dir, request_params, uploaded_files = [])
     items = []
     failures = []
     request_params[:items].each do |item|
@@ -720,7 +895,6 @@ class CollectionsController < ApplicationController
   end
 
   # Uploads any documents in the item metadata and returns a copy of the item metadata with its metadata graph updated
-  # TODO: collection_enhancement
   def process_item_documents_and_update_graph(corpus_dir, item_metadata)
     unless item_metadata["documents"].nil?
       item_metadata["documents"].each do |document|
@@ -769,7 +943,7 @@ class CollectionsController < ApplicationController
   #
   def format_document_source_metadata(doc_source)
     # Escape any filename symbols which need to be replaced with codes to form a valid URI
-    {'@id' => "file://#{URI.escape(doc_source)}"}
+    JsonLdHelper.format_document_source_metadata(doc_source)
   end
 
   # Updates the source of a specific document
@@ -809,7 +983,6 @@ class CollectionsController < ApplicationController
   end
 
   # Processes files uploaded as part of a multipart request
-  # TODO: collection_enhancement
   def process_uploaded_files(corpus_dir, collection_name, files)
     uploaded_files = []
     files.each do |uploaded_file|
@@ -903,24 +1076,7 @@ class CollectionsController < ApplicationController
     document_uri
   end
 
-  # Removes a document from the database, filesystem, Sesame and Solr
-  def remove_document(document, collection)
-    delete_file(document.file_path)
-    delete_document_from_sesame(document, get_sesame_repository(collection))
-    delete_document_from_solr(document.id)
-    document.destroy # Remove document and document audits from database
-  end
-
-  # Removes an item and its documents from the database, filesystem, Sesame and Solr
-  def remove_item(item, collection)
-    delete_item_from_filesystem(item)
-    delete_from_sesame(item, collection)
-    delete_item_from_solr(item[:handle])
-    item.destroy # Remove from database (item, its documents and their document audits)
-  end
-
   # Removes the metadata and document files for an item
-  # TODO: collection_enhancement
   def delete_item_from_filesystem(item)
     item_name = item.get_name
     delete_file(File.join(item.collection.corpus_dir, "#{item_name}-metadata.rdf"))
@@ -944,14 +1100,14 @@ class CollectionsController < ApplicationController
   end
 
   # Attempts to delete a file or logs any exceptions raised
-  def delete_file(file_path)
-    begin
-      File.delete(file_path)
-    rescue => e
-      Rails.logger.error e.inspect
-      false
-    end
-  end
+  # def delete_file(file_path)
+  #   begin
+  #     File.delete(file_path)
+  #   rescue => e
+  #     Rails.logger.error e.inspect
+  #     false
+  #   end
+  # end
 
   # KL
   # Writes a metadata RDF graph
@@ -1027,24 +1183,24 @@ class CollectionsController < ApplicationController
 
   # Returns an Alveo formatted collection full URL
   def format_collection_url(collection_name)
-    collection_url(collection_name)
+    Rails.application.routes.url_helpers.collection_url(collection_name)
   end
 
   # Returns an Alevo formatted item full URL
   def format_item_url(collection_name, item_name)
-    catalog_url(collection_name, item_name)
+    Rails.application.routes.url_helpers.catalog_url(collection_name, item_name)
   end
 
   # Retuns an Alveo formatted document full URL
   def format_document_url(collection_name, item_name, document_name)
-    catalog_document_url(collection_name, item_name, document_name)
+    Rails.application.routes.url_helpers.catalog_document_url(collection_name, item_name, document_name)
   end
 
   # Overrides the jsonld is_part_of_corpus with the collection's Alveo url
   def override_is_part_of_corpus(item_json_ld, collection_name)
     item_json_ld["@graph"].each do |node|
       is_doc = node["@type"] == MetadataHelper::DOCUMENT.to_s || node["@type"] == MetadataHelper::FOAF_DOCUMENT.to_s
-      part_of_exists= false
+      part_of_exists = false
       unless is_doc
         ['dcterms:isPartOf', MetadataHelper::IS_PART_OF.to_s].each do |is_part_of|
           if node.has_key?(is_part_of)
@@ -1078,8 +1234,6 @@ class CollectionsController < ApplicationController
     end
     jsonld_metadata
   end
-
-
 
   # #Updates the @id of a collection in JSON-LD to the Alveo catalog URL for that collection
   # def update_jsonld_collection_id(collection_metadata, collection_name)
@@ -1120,7 +1274,6 @@ class CollectionsController < ApplicationController
   end
 
   # Performs add document validations and returns the formatted metadata with the automatically generated metadata fields
-  # TODO: collection_enhancement
   def format_and_validate_add_document_request(corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
     validate_add_document_request(corpus_dir, collection, doc_metadata, doc_filename, doc_content, uploaded_file)
     doc_metadata = format_add_document_metadata(corpus_dir, collection, item, doc_metadata, doc_filename, doc_content, uploaded_file)
@@ -1130,7 +1283,6 @@ class CollectionsController < ApplicationController
   end
 
   # Format the add document metadata and add doc to file system
-  # TODO: collection_enhancement
   def format_add_document_metadata(corpus_dir, collection, item, document_metadata, document_filename, document_content, uploaded_file)
     # Update the document @id to the Alveo catalog URI
     document_metadata = update_jsonld_document_id(document_metadata, collection.name, item.get_name)
@@ -1145,52 +1297,21 @@ class CollectionsController < ApplicationController
     document_metadata
   end
 
-  # Creates a document in the database from Json-ld document metadata
-  def create_document(item, document_json_ld)
-    expanded_metadata = JSON::LD::API.expand(document_json_ld).first
-    file_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
-    file_name = File.basename(file_path)
-    doc_type = expanded_metadata[MetadataHelper::TYPE.to_s]
-    doc_type = doc_type.first['@value'] unless doc_type.nil?
-    document = item.documents.find_or_initialize_by_file_name(file_name)
-    if document.new_record?
-      begin
-        document.file_path = file_path
-        document.doc_type = doc_type
-        document.mime_type = mime_type_lookup(file_name)
-        document.item = item
-        document.item_id = item.id
-        document.save
-        logger.info "#{doc_type} Document = #{document.id.to_s}" unless Rails.env.test?
-      rescue Exception => e
-        logger.error("Error creating document: #{e.message}")
-      end
-    else
-      raise ResponseError.new(412), "A file named #{file_name} is already in use by another document of item #{item.get_name}"
-    end
-  end
-
-  # Adds a document to Sesame and updates the corresponding item in Solr
-  def add_and_index_document(item, document_json_ld)
-    add_and_index_document_in_sesame(item.id, document_json_ld)
-
-    # Reindex item in Solr
-    delete_item_from_solr(item.id)
-    item.indexed_at = nil
-    item.save
-    update_item_in_solr(item)
-  end
 
   #
   # Core functionality common to creating a collection
   #
-  def create_collection_core(name, metadata, owner, licence_id=nil, private=true, text='')
+  def create_collection_core(name, metadata, owner, licence_id = nil, private = true, text = '', status = 'RELEASED')
+    logger.debug "create_collection_core: start - name[#{name}], metadata[#{metadata}], owner[#{owner}], licence_id[#{licence_id}], private[#{private}], text[#{text}], status[#{status}]"
+
     metadata = MetadataHelper::update_jsonld_collection_id(
       MetadataHelper::not_empty_collection_metadata!(name, current_user.full_name, metadata), name)
     uri = metadata['@id']
     # KL: if collection exist, update
     # if Collection.find_by_uri(uri).present? # ingest skips collections with non-unique uri
     #   raise ResponseError.new(400), "A collection with the name '#{name}' already exists"
+
+    logger.debug "create_collection_core: uri[#{uri}]"
 
     collection = Collection.find_by_uri(uri)
     unless collection.nil?
@@ -1201,9 +1322,10 @@ class CollectionsController < ApplicationController
       collection.licence_id = licence_id
       collection.private = private
       collection.text = text
+      collection.status = status
       collection.save
 
-      # MetadataHelper::update_collection_metadata_from_json(name, metadata)
+      MetadataHelper::update_collection_metadata_from_json(name, metadata)
 
       "Collection '#{name}' (#{uri}) updated"
 
@@ -1212,9 +1334,9 @@ class CollectionsController < ApplicationController
         raise ResponseError.new(400), "Licence with id #{licence_id} does not exist"
       end
 
-      MetadataHelper::create_manifest(name)
+      MetadataHelper.create_manifest(name)
 
-      MetadataHelper::update_collection_metadata_from_json(name, metadata)
+      MetadataHelper.update_collection_metadata_from_json(name, metadata)
 
       # corpus_dir = MetadataHelper::corpus_dir_by_name(name)
 
@@ -1225,6 +1347,9 @@ class CollectionsController < ApplicationController
       collection = Collection.find_by_name(name)
 
       collection.owner = owner
+      collection.licence_id = licence_id
+      collection.status = status
+      collection.private = private
 
       collection.save
 
@@ -1238,15 +1363,6 @@ class CollectionsController < ApplicationController
   #
   def add_item_core(collection, item_id_and_file_hash)
     ingest_items(collection.corpus_dir, item_id_and_file_hash)
-  end
-
-  #
-  # Core functionality common to add document ingest (via api and web app)
-  #
-  def add_document_core(collection, item, document_metadata, document_filename)
-    create_document(item, document_metadata)
-    add_and_index_document(item, document_metadata)
-    "Added the document #{File.basename(document_filename)} to item #{item.get_name} in collection #{collection.name}"
   end
 
   #
@@ -1272,9 +1388,7 @@ class CollectionsController < ApplicationController
         MetadataHelper::TITLE.to_s,
         'dc:abstract',
         'dcterms:abstract',
-        MetadataHelper::ABSTRACT.to_s,
-        'marcrel:OWN',
-        MetadataHelper::LOC_OWNER.to_s]
+        MetadataHelper::ABSTRACT.to_s]
 
       validate_additional_metadata(params[:additional_key].zip(params[:additional_value]), protected_collection_fields)
     else
@@ -1313,7 +1427,7 @@ class CollectionsController < ApplicationController
   # Validates and sanitises a set of additional metadata provided by ingest web forms
   # Expects a zipped array of additional metadata keys and values, returns a hash of sanitised metadata
   #
-  def validate_additional_metadata(additional_metadata, protected_field_keys, metadata_type="additional")
+  def validate_additional_metadata(additional_metadata, protected_field_keys, metadata_type = "additional")
     default_protected_fields = ['@id', '@type', '@context',
                                 'dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s]
     metadata_protected_fields = default_protected_fields | protected_field_keys
@@ -1352,28 +1466,20 @@ class CollectionsController < ApplicationController
   # Constructs Json-ld for a new item
   #
   def construct_item_json_ld(collection, item_name, item_title, metadata)
-    item_metadata = {'@id' => catalog_url(collection.name, item_name),
+    item_metadata = {'@id' => Rails.application.routes.url_helpers.catalog_url(collection.name, item_name),
                      MetadataHelper::IDENTIFIER.to_s => item_name,
                      MetadataHelper::TITLE.to_s => item_title,
                      MetadataHelper::IS_PART_OF.to_s => {'@id' => collection.uri}
     }
     item_metadata.merge!(metadata) {|key, val1, val2| val1}
-    {'@context' => JsonLdHelper::default_context, '@graph' => [item_metadata]}
+    {'@context' => JsonLdHelper.default_context, '@graph' => [item_metadata]}
   end
 
   #
   # Constructs Json-ld for a new document
   #
   def construct_document_json_ld(collection, item, language, document_file, metadata)
-    document_metadata = {'@id' => catalog_document_url(collection.name, item.get_name, File.basename(document_file)),
-                         '@type' => MetadataHelper::DOCUMENT.to_s,
-                         MetadataHelper::LANGUAGE.to_s => language,
-                         MetadataHelper::IDENTIFIER.to_s => File.basename(document_file),
-                         MetadataHelper::SOURCE.to_s => format_document_source_metadata(document_file),
-                         MetadataHelper::EXTENT.to_s => File.size(document_file)
-    }
-    document_metadata.merge!(metadata) {|key, val1, val2| val1}
-    {'@context' => JsonLdHelper::default_context}.merge(document_metadata)
+    JsonLdHelper.construct_document_json_ld(collection, item, language, document_file, metadata)
   end
 
   def zip_additional_metadata(meta_field_names, meta_field_values)
@@ -1387,18 +1493,7 @@ class CollectionsController < ApplicationController
   # Return default licence object.
   # If no licence retrieve according to input licence id, return default licence (Creative Commons v3.0 BY) instead
   def licence(licence_id)
-    lic = nil
-    begin
-      lic = Licence.find_by_id(licence_id)
-    rescue Exception => e
-      logger.error "licence: cannot find licence by id[#{licence_id}]: #{e.message}"
-    ensure
-      if lic.nil?
-        lic = Licence.find_by_name('Creative Commons v3.0 BY')
-      end
-    end
-
-    lic
+    LicenceHelper.licence(licence_id)
   end
 
   #
@@ -1420,9 +1515,14 @@ class CollectionsController < ApplicationController
     rlt
   end
 
-  private
   def skip_trackable
     request.env['devise.skip_trackable'] = true
+  end
+
+  # collection owner = superuser + data_owner
+  # select options, "owner full name" => "owner id"
+  def approved_collection_owners
+    (User.approved_data_owners + User.approved_superusers).map{|o| ["#{o.full_name} (#{o.email})", "#{o.id}"]}.sort!.to_h
   end
 
 end

@@ -26,6 +26,7 @@
           %th.licence Licence
           %th.revoke_access Revoke Access
           %th.terms Licence Terms
+          %th.terms status
       %tbody
         - @collections.each_with_index do |collection, index|
           %tr{class: collection.collection_list.nil? ? "" : "groupedCollection" }
@@ -91,6 +92,8 @@
                     #licence_terms_content{:readonly => "true"}= collection.licence.text.html_safe
                   .modal-footer
                     %a.btn.btn-primary{"aria-hidden" => "true()", "data-dismiss" => "modal"} Close
+            %td.terms
+              = collection.status
 
 
 

@@ -19,16 +19,12 @@ class User < ActiveRecord::Base
   has_many :document_audits
 
 # Setup accessible attributes (status/approved flags should NEVER be accessible by mass assignment)
-  attr_accessible :email, :password, :password_confirmation, :first_name, :last_name, :status
+  attr_accessible :email, :password, :password_confirmation, :first_name, :last_name, :status, :role_id
 
-  validates_presence_of :first_name
-  validates_presence_of :last_name
-  validates_presence_of :email
-  validates_presence_of :status
-
-  validates_length_of :first_name, :maximum => 255
-  validates_length_of :last_name, :maximum => 255
-  validates_length_of :email, :maximum => 255
+  validates :first_name, presence: true
+  validates :last_name, presence: true
+  validates :status, presence: true
+  validates :email, presence: true, uniqueness: {case_sensitive: false}
 
   with_options :if => :password_required? do |v|
     v.validates :password, :password_format => true
@@ -41,6 +37,7 @@ class User < ActiveRecord::Base
   scope :approved, where(:status => 'A').order(:email)
   scope :deactivated_or_approved, where("status = 'D' or status = 'A' ").order(:email)
   scope :approved_superusers, joins(:role).merge(User.approved).merge(Role.superuser_roles)
+  scope :approved_data_owners, joins(:role).merge(User.approved).merge(Role.data_owner_roles)
   scope :approved_researchers, joins(:role).merge(User.approved).merge(Role.researcher_roles)
 
   after_initialize do |user|

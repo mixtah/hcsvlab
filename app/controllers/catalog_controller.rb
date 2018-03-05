@@ -25,10 +25,10 @@ class CatalogController < ApplicationController
 
   # doorkeeper_authorize! should protect sparqlQuery (Endpoint)
   #before_filter :doorkeeper_authorize!, only: [:sparqlQuery]
-  
+
   #excepting :sparqlQuery 
   before_filter :authenticate_user!, :except => [:annotation_context, :searchable_fields]
-  
+
   include Blacklight::Catalog
   include Hydra::Controller::ControllerBehavior
   include Blacklight::BlacklightHelperBehavior
@@ -371,6 +371,7 @@ class CatalogController < ApplicationController
     unless @item.nil?
       render 'catalog/processing_show' and return if @processing_index
 
+      logger.debug "show: params[#{params.inspect}]"
 
       @response, @document = get_solr_response_for_doc_id
 
@@ -396,18 +397,26 @@ class CatalogController < ApplicationController
       end
       return
     end
+
     respond_to do |format|
       format.html {setup_next_and_previous_documents}
       format.json {}
       # Add all dynamically added (such as by document extensions)
       # export formats.
       if @document
+        begin
+          @item_info = create_display_info_hash(@document, @user_annotations)
+          @document.export_formats.each_key do |format_name|
+            # It's important that the argument to send be a symbol;
+            # if it's a string, it makes Rails unhappy for unclear reasons.
+            format.send(format_name.to_sym) {render :text => @document.export_as(format_name), :layout => false}
+          end
+        rescue Exception => e
+          msg = "show: #{e.message}"
+          logger.error msg
+          internal_error(e)
 
-        @item_info = create_display_info_hash(@document, @user_annotations)
-        @document.export_formats.each_key do |format_name|
-          # It's important that the argument to send be a symbol;
-          # if it's a string, it makes Rails unhappy for unclear reasons.
-          format.send(format_name.to_sym) {render :text => @document.export_as(format_name), :layout => false}
+          return
         end
       end
     end
@@ -594,11 +603,7 @@ class CatalogController < ApplicationController
       Rails.logger.debug("Time for retrieving primary text for #{params[:id]} took: (#{'%.1f' % ((bench_end.to_f - bench_start.to_f)*1000)}ms)")
     rescue Exception => e
       logger.error("primary_text: #{e.message}")
-      respond_to do |format|
-        format.html {flash[:error] = "Sorry, internal error (#{e.message})"
-        redirect_to root_path and return}
-        format.any {render :json => {:error => "internal error (#{e.message})"}.to_json, :status => 500}
-      end
+      internal_error(e)
     end
   end
 
@@ -612,8 +617,11 @@ class CatalogController < ApplicationController
       # check if document exists in JSON metadata from Sesame/Solr
       # This is set during Solr indexing based on a variety of metadata from Solr and Sesame
       # See add_json_metadata_field in solr_worker.rb
-      metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
-      doc = nil if doc.present? and metadata.blank?
+
+      # KL - ignore checking item.json_metadata
+      # item.id and document.file_name can guarantee the proper permission for document download
+      # metadata = Item.where(handle: params[:id]).where("json_metadata like ?", "%#{doc.file_path}%")
+      # doc = nil if doc.present? and metadata.blank?
 
       if doc.present?
 
@@ -647,9 +655,10 @@ class CatalogController < ApplicationController
       Rails.logger.error(e.backtrace)
       # Fall through to return Not Found
     end
+
     respond_to do |format|
       #format.html { raise ActionController::RoutingError.new('Not Found') }
-      format.html {flash[:error] = "Sorry, you have requested a document that doesn't exist."
+      format.html {flash[:error] = "Sorry, you have requested a document[#{params[:filename]}] (under item[#{params[:id]}]) that doesn't exist."
       redirect_to catalog_path(params[:id]) and return}
       format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
     end
@@ -944,7 +953,10 @@ class CatalogController < ApplicationController
         @processing_index = true
         flash.keep(:notice)
       end
-    rescue ActiveRecord::RecordNotFound
+
+      logger.debug "check_item_indexed: @processing_index[#{@processing_index}]"
+    rescue ActiveRecord::RecordNotFound => e
+      logger.debug "check_item_indexed: ActiveRecord::RecordNotFound[#{e.message}], @processing_index[#{@processing_index}]"
       return
     end
   end
@@ -956,16 +968,23 @@ class CatalogController < ApplicationController
     begin
       enforce_show_permissions(opts) unless @processing_index
     rescue Hydra::AccessDenied => e
+      logger.error "wrapped_enforce_show_permissions: opts[#{opts}], Hydra::AccessDenied[#{e.inspect}, subject:#{e.subject}]"
       respond_to do |format|
         format.html {raise e}
         format.any {render :json => {:error => "access-denied"}.to_json, :status => 403}
       end
     rescue Blacklight::Exceptions::InvalidSolrID => e
+      logger.error "wrapped_enforce_show_permissions: opts[#{opts}], Blacklight::Exceptions::InvalidSolrID[#{e.inspect}], subject[#{e.subject}]"
       respond_to do |format|
         format.html {resource_not_found(Blacklight::Exceptions::InvalidSolrID.new("Sorry, you have requested a document that doesn't exist.")) and return}
         format.any {render :json => {:error => "not-found"}.to_json, :status => 404}
       end
+    rescue Exception => e
+      logger.error "wrapped_enforce_show_permissions: #{e.message}"
+      internal_error(Exception.new(e.message))
     end
+
+    logger.debug "wrapped_enforce_show_permissions: end - opts[#{opts}]"
   end
 
   #

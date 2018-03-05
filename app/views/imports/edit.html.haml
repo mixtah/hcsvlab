@@ -1,0 +1,133 @@
+- if @import.extracted?
+  %h2 Import Options
+
+  = form_tag({controller: 'imports', action: 'update'}, class: 'form-horizontal import-form', method: :put) do
+
+    %dl.dl-horizontal.mt-20
+      %dt.p-10 File:
+      %dd.p-10 #{@import.filename}
+      %dt.p-10 Common Metadata:
+      %dd.p-10 
+        %table.table
+          - @metadata.each do |key,value|
+            %tr
+              %td #{key}
+              %td #{value}
+    
+    %h3
+      Import options
+    
+    %p.my-20
+      %strong
+        Found #{@zip.total_files} documents in #{@size} items.
+
+    - if @zip.warnings.size > 0
+      .alert.alert-error.permanent
+        %p
+          %strong
+            Warning:
+        %ul
+          - @zip.warnings.each do |w|
+            %li #{w}
+    
+    %table.table
+      %tr
+        %td{style: "width: 200px"}
+          = label_tag :option_folders_as_item_names, 'Use folders as item names'
+        %td
+          = check_box_tag :option_folders_as_item_names, true, @options['folders_as_item_names']
+          .help-text
+            When checked, your items will be named according to the sub-folders in your zip file.
+      %tr
+        %td
+          = label_tag :option_item_name_at_folder_depth, 'Item names at folder depth'
+        %td
+          = select_tag :option_item_name_at_folder_depth, options_for_select([1,2,3,4,5], @options['item_name_at_folder_depth'])
+          .help-text
+            Select how many directory levels deep your item names appear as folders.
+
+      %tr
+        %td
+          = label_tag :option_meta_in_filename, 'Extract item metadata from file names'
+        %td
+          = check_box_tag :option_meta_in_filename, true, @options['meta_in_filename']
+          .help-text
+            Reveals additional options to enable metadata extraction from the name of individual files.
+      
+      %tr.meta-in-filename-options
+        %td
+          = label_tag :option_meta_delimiter, 'Delimiter character'
+        %td
+          = text_field_tag :option_meta_delimiter, @options['meta_delimiter'] || ".", maxlength: 1, size: 2, class: 'span1'
+          .help-text
+            Choose the character in your filenames that separates metadata fields, e.g. "." or "_"
+
+      %tr.meta-in-filename-options
+        %td
+          = label_tag :option_num_meta_fields, 'Number of fields'
+        %td
+          = select_tag :option_num_meta_fields, options_for_select([1,2,3,4,5], @options['num_meta_fields'])
+          .help-text
+            We should expect this number of metadata fields in each document file name.
+
+      %tr.meta-in-filename-options
+        %td
+          = label_tag :option_meta_fields, 'Field names'
+        %td
+          .meta-fields
+            - if @options['meta_fields'].is_a?(Array)
+              - i = 0
+              - @options['meta_fields'].each do |value|
+                - next if i >= @options['num_meta_fields']
+                = text_field_tag 'option_meta_fields[]', value, class: 'span2 meta-field', id: "meta-field-#{i}"
+                %span.meta-delimiter
+                  = @options['meta_delimiter']
+                - i = i + 1
+          .help-text
+            Name the metadata fields expected in each document file name, e.g. <code>olac:speaker</code>.
+            You may leave fields blank if you don't want to use that portion of the filename for metadata.
+
+    .form-actions
+      = link_to 'Cancel', collection_path(@collection.name), :class => "btn"
+      = submit_tag 'Preview options', :class => "btn"
+      = submit_tag 'Confirm import', :class => "btn btn-primary"
+  
+  %p.my-20 Showing the first #{@limit} items of #{@size}.
+
+  %table.table
+    %tr
+      %th Item
+      %th Document
+      %th Filename
+      %th Type
+      %th Size
+      -# If we have extra item metadata, show the columns
+      -# We're assuming all the items have the same fields
+      - if @item_metadata_fields.is_a?(Array)
+        - @item_metadata_fields.each do |f|
+          %th #{f}
+
+    - @docs.first(@limit).each do |item,documents|
+      %tr
+        %th.item-header
+          %strong #{item}
+        %th.item-header{colspan: 4}
+        - @item_metadata_fields.each do |f|
+          - if @item_metadata[item] and @item_metadata[item][f]
+            %td.item-header #{@item_metadata[item][f]}
+        - documents.keys.each do |basename|
+          %tr
+            %td 
+            %td #{@docs[item][basename][:meta]['dcterms:title']}
+            %td #{basename}
+            %td #{@docs[item][basename][:meta]['dcterms:type']}
+            %td #{number_to_human_size @docs[item][basename][:meta]['dcterms:extent']}
+            %td{colspan: @item_metadata_fields.size}
+
+  %p.my-20 Showing the first #{@limit} items of #{@size}.
+
+- else
+  %h2 Please wait, extracting..
+  <meta http-equiv="refresh" content="5">
+
+= render 'shared/nectar_attribution'

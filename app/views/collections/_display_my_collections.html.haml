@@ -1,0 +1,22 @@
+
+
+- if @my_collections.empty?
+  %li
+    %h5 Empty
+
+- unless @my_collections.empty?
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Collection
+        %th Abstract
+        %th Status
+    %tbody
+      - @my_collections.each do |collection|
+        %tr
+          %td
+            %a{:href => "#{collection_path(collection.name)}"} #{collection.name}
+          %td
+            #{MetadataHelper::load_metadata_from_collection(collection.name)[MetadataHelper::PFX_ABSTRACT]}
+          %td
+            = collection.status

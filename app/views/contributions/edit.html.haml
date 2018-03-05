@@ -1,0 +1,57 @@
+= render partial: 'display_breadcrumb', locals: {nav_links: {'contributions' => contrib_index_path, "#{@contribution.name}" => nil}}
+
+.container-fluid
+  .row-fluid
+    .page-header
+      %h2=  @contribution.name
+
+  = form_tag({controller: 'contributions', action: 'update'}, multipart: true, method: 'put', :id => 'update_contribution_form') do
+
+    = render 'display_basic_metadata'
+
+    %hr
+
+    .row-fluid
+      = label_tag :contribution_abstract, 'Contribution Abstract:'
+      = text_area_tag :contribution_abstract, @contribution_metadata["dcterms:abstract"], :rows => '5', :style => 'height: 100%; width: 100%;'
+
+    .row-fluid
+      = label_tag :contribution_text, 'Contribution Description:'
+      = text_area_tag :contribution_text, @contribution.description, :style => 'height: 100%; width: 100%;'
+
+    -#.row-fluid
+    -#  = label_tag :file_text, 'Upload Contribution Document:'
+    -#  = file_field_tag :file
+
+    = submit_tag 'hidden', :style => "display:none"
+    = hidden_field_tag :id, "#{@contribution.id}"
+
+  -#.row-fluid
+  -#  = render 'display_contribution_mappings'
+
+  .form-actions
+    = submit_tag 'Update', :class => "btn btn-primary", :id => 'update_contribution_btn'
+    = submit_tag 'Reset',  :class => "btn btn-warning", :id => 'reset_contribution_btn'
+    = link_to 'Cancel', contrib_show_path(@contribution.id), :class => "btn"
+
+
+= render 'shared/nectar_attribution'
+
+:javascript
+  $(document).ready(function() {
+    var formId = 'update_contribution_form';
+
+    $("#update_contribution_btn").click(function() {
+      $('#' + formId).submit();
+    });
+
+    $("#reset_contribution_btn").click(function() {
+      $('#' + formId)[0].reset();
+    });
+
+    var simplemde = new SimpleMDE({
+      element: $("#contribution_text")[0]
+    });
+
+  });
+

@@ -10,6 +10,16 @@ describe Collection do
     # CollectionProperty.delete_all
   end
 
+  it "has a valid factory" do
+    expect(FactoryGirl.create(:collection)).to be_valid
+  end
+
+  it "has correct association with user" do
+    coll = FactoryGirl.create(:collection, :owner => FactoryGirl.create(:user_data_owner))
+    user = coll.owner
+    expect(user.role.name).to eq(Role::DATA_OWNER_ROLE)
+  end
+
   describe "Collection Descriptive Metadata" do
     it "should persist metadata about a Collection" do
       coll = Collection.new
@@ -35,12 +45,17 @@ describe Collection do
     expect(c.errors[:name]).to include("can't be blank")
   end
 
-  it "is invalid with a duplicate name" do
+  it "is invalid with a duplicated name" do
     uni_name = "unique GCSAUSE"
     create(:collection, name: uni_name)
-    c = build(:collection, name: uni_name)
-    c.valid?
-    expect(c.errors[:name]).to include("has already been taken")
+    # c = build(:collection, name: uni_name)
+    # c.valid?
+    # puts c.inspect
+    # expect(c.errors[:name]).to include("has already been taken")
+
+    expect {
+      c = build(:collection, name: uni_name)
+    }.to raise_error(ActiveRecord::RecordInvalid, 'Validation failed: Name has already been taken')
   end
 
   it "is valid without a text" do
@@ -58,7 +73,7 @@ describe Collection do
   end
 
 
-  describe "has at least 6 properties" , :focus => true do
+  describe "has at least 6 properties", :focus => true do
     context "exactly 6 properties" do
       it "is valid when has 6 properties" do
         collection = create(:collection)
@@ -84,4 +99,22 @@ describe Collection do
     end
   end
 
+end
+
+describe Collection, 'validation' do
+  it {should validate_uniqueness_of(:name)}
+  it {should validate_presence_of(:name)}
+
+  it {should validate_presence_of(:uri)}
+  it {should validate_presence_of(:status)}
+end
+
+describe Collection, 'association' do
+  it {should have_many(:items)}
+  it {should have_many(:collection_properties)}
+  it {should have_many(:attachments)}
+
+  it {should belong_to(:owner)}
+  it {should belong_to(:collection_list)}
+  it {should belong_to(:licence)}
 end
