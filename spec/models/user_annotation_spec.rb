@@ -7,16 +7,18 @@ describe UserAnnotation do
   SESAME_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/sesame.yml")[Rails.env] unless defined? SESAME_CONFIG
 
   before(:each) do
-    user = FactoryGirl.create(:user, email: APP_CONFIG["default_data_owner"])
-    user.role = FactoryGirl.create(:role, name: Role::SUPERUSER_ROLE)
-    user.save!
+    @user = FactoryGirl.create(:user_data_owner, email: APP_CONFIG["default_data_owner"])
+    # @user.role = FactoryGirl.create(:role, name: Role::SUPERUSER_ROLE)
+    # @user.save!
   end
 
   describe 'Successfully uploaded annotation' do
 
     it 'Should successfully upload an annotation collection in the right context' do
-      ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      ingest_sample(@user.email, "cooee", "1-001")
+
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
+
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_annotation_sample.json", tempfile: ANNOTATION_SAMPLE_FILE})
 
@@ -29,7 +31,7 @@ describe UserAnnotation do
       annotationCollectionId = createdAnnotation.annotationCollectionId
 
       createdAnnotation.item_identifier.should eq "cooee:1-001"
-      createdAnnotation.user.email.should eq "hcsvlab_test_user@intersect.org.au"
+      createdAnnotation.user.email.should eq "hcsvlab_test_user@alveo.edu.au"
       createdAnnotation.original_filename.should eq "upload_annotation_sample.json"
       annotationCollectionId.should_not be nil
 
@@ -70,8 +72,8 @@ describe UserAnnotation do
     end
 
     it 'Should correctly assign annotation values' do
-      ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      ingest_sample(@user.email, "cooee", "1-001")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_annotation_sample.json", tempfile: ANNOTATION_SAMPLE_FILE})
 
@@ -121,15 +123,13 @@ describe UserAnnotation do
         mapResult[RDF::URI("http://purl.org/dada/schema/0.2#type")].to_s.should eq "pageno"
         mapResult[RDF::URI("http://purl.org/dada/schema/0.2#start")].should eq mapResult[RDF::URI("http://purl.org/dada/schema/0.2#end")]
       end
-
-
     end
   end
 
   describe 'Unsuccessfully uploaded annotation' do
     it 'should raise an exception if the graph section is empty or not present' do
-      ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      ingest_sample(@user.email, "cooee", "1-001")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_empty_graph_annotation_sample.json",
                                                              tempfile: "#{Rails.root}/test/samples/annotations/upload_empty_graph_annotation_sample.json"})
@@ -139,8 +139,8 @@ describe UserAnnotation do
     end
 
     it 'should raise an exception if the context section is wrong' do
-      ingest_sample("cooee", "1-001")
-      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@intersect.org.au")
+      ingest_sample(@user.email, "cooee", "1-001")
+      user = FactoryGirl.create(:user, :status => 'A', :email => "hcsvlab_test_user@alveo.edu.au")
 
       uploadedFile = ActionDispatch::Http::UploadedFile.new({filename:"upload_empty_graph_annotation_sample.json",
                                                              tempfile: "#{Rails.root}/test/samples/annotations/wrong_context_annotation_sample.json"})

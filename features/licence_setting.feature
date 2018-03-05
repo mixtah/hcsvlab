@@ -6,20 +6,20 @@ Feature: Managing Collection Lists and Licences
     Given I have the usual roles and permissions
     Given I have users
       | email                        | first_name | last_name |
-      | data_owner@intersect.org.au  | dataOwner  | One       |
-      | data_owner2@intersect.org.au | dataOwner  | Two       |
-      | research@intersect.org.au    | research   | student   |
-    Given "data_owner@intersect.org.au" has role "data owner"
-    And "data_owner2@intersect.org.au" has role "data owner"
-    And "research@intersect.org.au" has role "researcher"
+      | data_owner@alveo.edu.au  | dataOwner  | One       |
+      | data_owner2@alveo.edu.au | dataOwner  | Two       |
+      | research@alveo.edu.au    | research   | student   |
+    Given "data_owner@alveo.edu.au" has role "data owner"
+    And "data_owner2@alveo.edu.au" has role "data owner"
+    And "research@alveo.edu.au" has role "researcher"
     And I ingest "cooee:1-001"
     And I ingest "auslit:adaessa"
     And I ingest "ice:S2B-035"
     And Collections ownership is
       | collection | owner_email                  |
-      | ice        | data_owner2@intersect.org.au |
+      | ice        | data_owner2@alveo.edu.au |
     And I ingest licences
-    And I am logged in as "data_owner@intersect.org.au"
+    And I am logged in as "data_owner@alveo.edu.au"
     And I am on the licences page
 
   @javascript
@@ -55,7 +55,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit     |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit     |
     And The Collection table should have
       | collection | collection_list   | licence     | licence_terms |
       | cooee      |                   | Add Licence |               |
@@ -71,7 +71,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections   |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit,cooee |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit,cooee |
     And The Collection table should have
       | collection | collection_list   | licence | licence_terms |
   @javascript
@@ -85,7 +85,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit     |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit     |
     And The Collection table should have
       | collection | collection_list   | licence     | licence_terms |
       | cooee      |                   | Add Licence |               |
@@ -98,8 +98,8 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit     |
-      | Collection List 2 | data_owner@intersect.org.au | Add Licence |               | cooee       |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit     |
+      | Collection List 2 | data_owner@alveo.edu.au | Add Licence |               | cooee       |
     And The Collection table should have
       | collection | collection_list   | licence | licence_terms |
 
@@ -114,7 +114,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               |
     Then I check "allnonecheckbox"
     And I follow "Add selected to Collection list"
     And I follow "Create New Collection List"
@@ -127,7 +127,7 @@ Feature: Managing Collection Lists and Licences
     Then I click "Close"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit     |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit     |
     And The Collection table should have
       | collection | collection_list   | licence     | licence_terms |
       | cooee      |                   | Add Licence |               |
@@ -157,7 +157,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit     |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit     |
     And The Collection table should have
       | collection | collection_list   | licence     | licence_terms |
       | cooee      |                   | Add Licence |               |
@@ -165,7 +165,7 @@ Feature: Managing Collection Lists and Licences
     And I follow "Creative Commons v3.0 BY-NC"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence                     | licence_terms      | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Creative Commons v3.0 BY-NC | View Licence Terms | austlit     |
+      | Collection List 1 | data_owner@alveo.edu.au | Creative Commons v3.0 BY-NC | View Licence Terms | austlit     |
     And The Collection table should have
       | collection | collection_list   | licence                     | licence_terms      |
       | cooee      |                   | Add Licence                 |                    |
@@ -181,7 +181,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And The Collection Lists table should have
       | collection_list   | owner                       | licence     | licence_terms | collections |
-      | Collection List 1 | data_owner@intersect.org.au | Add Licence |               | austlit     |
+      | Collection List 1 | data_owner@alveo.edu.au | Add Licence |               | austlit     |
     And The Collection table should have
       | collection | collection_list   | licence     | licence_terms |
       | cooee      |                   | Add Licence |               |
@@ -255,7 +255,7 @@ Feature: Managing Collection Lists and Licences
     Then I should see "Licence name 'AusNC Terms of Use' already exists"
 
     And I am logged out
-    And I am logged in as "data_owner2@intersect.org.au"
+    And I am logged in as "data_owner2@alveo.edu.au"
     And I am on the licences page
     And The Collection table should have
       | collection | collection_list | licence     | licence_terms |
@@ -303,13 +303,13 @@ Feature: Managing Collection Lists and Licences
     Then I click on the privacy remove icon for the 1st collection
     Then I should see "austlit has been successfully marked as requiring approval"
     And I have added a licence to private Collection "austlit"
-    And I follow "data_owner@intersect.org.au"
+    And I follow "data_owner@alveo.edu.au"
     And I follow "Logout"
-    And I am logged in as "research@intersect.org.au"
+    And I am logged in as "research@alveo.edu.au"
     And I am on the licence agreements page
     Then the Review and Acceptance of Licence Terms table should have
       | title   | collection | owner                       | state      |
-      | austlit | 1          | data_owner@intersect.org.au | Unapproved |
+      | austlit | 1          | data_owner@alveo.edu.au | Unapproved |
     And I should see "Review Licence Terms"
     And I should see "Request Access"
     And I should not see "Preview & Accept Licence Terms"
@@ -318,11 +318,11 @@ Feature: Managing Collection Lists and Licences
   Scenario: Change a collection's privacy status with pending licence requests
     When I have users
       | email                       | first_name | last_name |
-      | researcher@intersect.org.au | researcher | One       |
-    And "researcher@intersect.org.au" has role "researcher"
+      | researcher@alveo.edu.au | researcher | One       |
+    And "researcher@alveo.edu.au" has role "researcher"
     Then I click on the privacy remove icon for the 1st collection
     And I should see "austlit has been successfully marked as requiring approval"
-    And there is a licence request for collection "austlit" by "researcher@intersect.org.au"
+    And there is a licence request for collection "austlit" by "researcher@alveo.edu.au"
     Then I click on the privacy remove icon for the 1st collection
     And I should see "austlit has been successfully marked as not requiring approval"
     And I am on the licence requests page
@@ -332,8 +332,8 @@ Feature: Managing Collection Lists and Licences
   Scenario: Change a collection list's privacy status with pending licence requests
     When I have users
       | email                       | first_name | last_name |
-      | researcher@intersect.org.au | researcher | One       |
-    And "researcher@intersect.org.au" has role "researcher"
+      | researcher@alveo.edu.au | researcher | One       |
+    And "researcher@alveo.edu.au" has role "researcher"
     When I check "allnonecheckbox"
     And I follow "Add selected to Collection list"
     And I follow "Create New Collection List"
@@ -341,19 +341,19 @@ Feature: Managing Collection Lists and Licences
     And I fill in "Name" with "Collection List 1"
     And I check "collection_list_private"
     And I press "Create Collection List"
-    And there is a licence request for collection list "Collection List 1" by "researcher@intersect.org.au"
+    And there is a licence request for collection list "Collection List 1" by "researcher@alveo.edu.au"
     And I click on the privacy remove icon for the 1st collection list
     And I should see "Collection List 1 has been successfully marked as not requiring approval"
     And I am on the licence requests page
     Then I should see "No requests to display"
     And I have added a licence to Collection List "Collection List 1"
-    And I follow "data_owner@intersect.org.au"
+    And I follow "data_owner@alveo.edu.au"
     And I follow "Logout"
-    And I am logged in as "research@intersect.org.au"
+    And I am logged in as "research@alveo.edu.au"
     And I am on the licence agreements page
     Then the Review and Acceptance of Licence Terms table should have
       | title             | collection | owner                       | state        |
-      | Collection List 1 | 2          | data_owner@intersect.org.au | Not Accepted |
+      | Collection List 1 | 2          | data_owner@alveo.edu.au | Not Accepted |
     And I should see "Preview & Accept Licence Terms"
     And I should not see "Review Licence Terms"
     And I should not see "Request Access"
@@ -362,8 +362,8 @@ Feature: Managing Collection Lists and Licences
   Scenario: Delete a collection list with pending licence requests
     When I have users
       | email                       | first_name | last_name |
-      | researcher@intersect.org.au | researcher | One       |
-    And "researcher@intersect.org.au" has role "researcher"
+      | researcher@alveo.edu.au | researcher | One       |
+    And "researcher@alveo.edu.au" has role "researcher"
     When I check "allnonecheckbox"
     And I follow "Add selected to Collection list"
     And I follow "Create New Collection List"
@@ -371,7 +371,7 @@ Feature: Managing Collection Lists and Licences
     And I fill in "Name" with "Collection List 1"
     And I check "collection_list_private"
     And I press "Create Collection List"
-    And there is a licence request for collection list "Collection List 1" by "researcher@intersect.org.au"
+    And there is a licence request for collection list "Collection List 1" by "researcher@alveo.edu.au"
     And I click on the remove icon for the 1st collection list
     And I should see "Collection list Collection List 1 deleted successfully"
     And I am on the licence requests page
@@ -381,18 +381,18 @@ Feature: Managing Collection Lists and Licences
   Scenario: Revoke access to a collection
     When I have users
       | email                        | first_name | last_name |
-      | researcher1@intersect.org.au | researcher | One       |
-      | researcher2@intersect.org.au | researcher | Two       |
-    And "researcher1@intersect.org.au" has role "researcher"
-    And "researcher2@intersect.org.au" has role "researcher"
-    And I have user "researcher1@intersect.org.au" with the following groups
+      | researcher1@alveo.edu.au | researcher | One       |
+      | researcher2@alveo.edu.au | researcher | Two       |
+    And "researcher1@alveo.edu.au" has role "researcher"
+    And "researcher2@alveo.edu.au" has role "researcher"
+    And I have user "researcher1@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | austlit        | read       |
     And I click Add Licence for the 1st collection
     And I follow "Creative Commons v3.0 BY-NC"
     And I click on the privacy remove icon for the 1st collection
     And I should see "austlit has been successfully marked as requiring approval"
-    And there is a licence request for collection "austlit" by "researcher2@intersect.org.au"
+    And there is a licence request for collection "austlit" by "researcher2@alveo.edu.au"
     And I follow "Revoke Access"
     Then I should see "Are you sure you want to revoke access to austlit for all users?"
     And I follow element with id "revoke_access0"
@@ -404,11 +404,11 @@ Feature: Managing Collection Lists and Licences
   Scenario: Revoke access to a collection list
     When I have users
       | email                        | first_name | last_name |
-      | researcher1@intersect.org.au | researcher | One       |
-      | researcher2@intersect.org.au | researcher | Two       |
-    And "researcher1@intersect.org.au" has role "researcher"
-    And "researcher2@intersect.org.au" has role "researcher"
-    And I have user "researcher1@intersect.org.au" with the following groups
+      | researcher1@alveo.edu.au | researcher | One       |
+      | researcher2@alveo.edu.au | researcher | Two       |
+    And "researcher1@alveo.edu.au" has role "researcher"
+    And "researcher2@alveo.edu.au" has role "researcher"
+    And I have user "researcher1@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | austlit        | read       |
     And I choose the 1st Collection in the list
@@ -421,7 +421,7 @@ Feature: Managing Collection Lists and Licences
     And I press "Create Collection List"
     And I click Add Licence for the 1st collection list
     And I follow "Creative Commons v3.0 BY-NC"
-    And there is a licence request for collection list "Collection List 1" by "researcher2@intersect.org.au"
+    And there is a licence request for collection list "Collection List 1" by "researcher2@alveo.edu.au"
     And I follow "Revoke Access"
     Then I should see "Are you sure you want to revoke access to Collection List 1 for all users?"
     And I follow element with id "revoke_list_access0"
@@ -431,7 +431,7 @@ Feature: Managing Collection Lists and Licences
 
   @javascript
   Scenario: Can see all collections
-    When I have 15 licences belonging to "data_owner@intersect.org.au"
+    When I have 15 licences belonging to "data_owner@alveo.edu.au"
     And I am on the licences page
     Then I should see "Licence 01"
     And I should see "Licence 02"

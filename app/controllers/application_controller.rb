@@ -81,18 +81,24 @@ class ApplicationController < ActionController::Base
   def api_check
     if request.format == "json"
       # KL: ignore attachment upload
-      logger.debug "api_check: fullpath=#{request.fullpath}"
+      logger.debug "api_check: request.fullpath[#{request.fullpath}]"
+
+      # if user from oauth2, current_user is nil, so need to retrieve user from token
+      current_resource_owner = current_user
+      if current_resource_owner.nil?
+        current_resource_owner = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+      end
 
       unless request.fullpath.include? "/attachments"
         call = UserApiCall.new(:request_time => Time.now)
         call.item_list = params[:controller] == "item_lists"
-        call.user = current_user
+        call.user = current_resource_owner
         call.save
       end
     end
   end
 
-  # Adds a few additional behaviors into the application controller 
+  # Adds a few additional behaviors into the application controller
    include Blacklight::Controller
   # Please be sure to impelement current_user and user_session. Blacklight depends on 
   # these methods in order to perform user specific actions. 

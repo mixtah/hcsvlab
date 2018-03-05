@@ -1,16 +1,28 @@
-#header-navbar-fixed-top.navbar.navbar-fixed-top
+#header-navbar-fixed-top.navbar-fixed-top.navbar
   .navbar-inner
     .container
       .row-fluid
-        = link_to "#{PROJECT_NAME}", root_path, :class => "brand"
-        %ul.nav
-          %li{class: activepath_fuzzy?("collections") }
-            = link_to "Collections", root_path
-          %li{ class: activepath_fuzzy?("catalog") }
-            = link_to "Discover", catalog_index_path
-          %li{ class: activepath_fuzzy?("item_lists") }
-            = link_to "Item Lists", item_lists_path
-          %li
-            = link_to "Help", "http://alveo.edu.au/help", :target => "_blank"
-        %ul.nav.pull-right
-          = render :partial => '/user_util_links'
+        = link_to "#{PROJECT_NAME}".html_safe, root_path, :class => "brand span1"
+        -#= link_to "#{PROJECT_NAME} #{image_tag('/assets/hcsvlab.png')}".html_safe, root_path, :class => "span1"
+        .span10
+          .row{:style => "border-bottom: 1px solid white"}
+            %ul.nav
+              %li
+                = link_to "Alveo", "http://alveo.edu.au"
+              %li{ class: activepath_fuzzy?("collections") }
+                = link_to "Collections", root_path
+              %li
+                = link_to "Galaxy", "http://galaxy.alveo.edu.au/", :target => "_blank"
+              %li
+                = link_to "Help", "http://alveo.edu.au/help", :target => "_blank"
+            %ul.nav.pull-right
+              = render :partial => '/user_util_links'
+          .row
+            %ul.nav
+              %li{class: activepath_fuzzy?("catalog") }
+                = link_to "Discover", header_discover_path
+              %li{ class: activepath_fuzzy?("item_lists") }
+                = link_to "Item Lists", item_lists_path
+              %li{ class: activepath_fuzzy?("contrib_index") }
+                = link_to "Contributions", contrib_index_path
+

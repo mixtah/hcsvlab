@@ -3,15 +3,17 @@ HcsvlabWeb::Application.configure do
   # replace this with your tracker code
   GA.tracker = "UA-49039039-5"
 
+  # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
   config.action_mailer.default_url_options = { :host => 'app.alveo.edu.au' }
+  Rails.application.routes.default_url_options[:host] = 'app.alveo.edu.au'
 
   config.galaxy_url = 'http://130.56.244.157:8081/root'
 
   # Base directory where user contributed annotations will be stored
-  config.user_annotations_location = "/data/contributed_annotations/"
+  config.user_annotations_location = "/mnt/volume/alveo-production-data"
 
   # Base directory where api created collections will be stored
-  config.api_collections_location = "/data/collections/"
+  config.api_collections_location = "/mnt/volume/alveo-production-data"
 
   # Settings specified here will take precedence over those in config/application.rb
 
@@ -44,7 +46,7 @@ HcsvlabWeb::Application.configure do
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for nginx
 
   # See everything in the log (default is :info)
-  # config.log_level = :debug
+  config.log_level = :warn
 
   # Prepend all log lines with the following tags
   # config.log_tags = [ :subdomain, :uuid ]

@@ -30,15 +30,14 @@ module RequestValidator
     collection
   end
 
+  #
+  # Only validate collection name. Other fields would be set default value later if not provided as this moment
+  #
   def validate_new_collection(collection_metadata, collection_name, licence_id, private)
-    if collection_name.blank? || collection_name.length > 255 || collection_metadata.nil?
-      invalid_name = (collection_name.nil? || collection_name.blank? || collection_name.length > 255)
-      invalid_metadata = collection_metadata.nil?
-      err_message = nil
-      err_message = "name parameter" if invalid_name
-      err_message = "metadata parameter" if invalid_metadata
-      err_message = "name and metadata parameters" if invalid_name && invalid_metadata
-      err_message << " not found" unless err_message.nil?
+    if collection_name.nil? || collection_name.blank? || collection_name.length > 255
+
+      err_message = "name parameter"
+
       raise ResponseError.new(400), err_message
     end
   end
@@ -114,7 +113,7 @@ module RequestValidator
       is_foaf_doc = node["@type"] == "foaf:Document" || node["@type"] == MetadataHelper::FOAF_DOCUMENT.to_s
       is_doc = is_ausnc_doc || is_foaf_doc
       unless is_doc
-        ['dc:identifier', 'dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_identifier|
+        ['dcterms:identifier', MetadataHelper::IDENTIFIER.to_s].each do |dc_identifier|
           dc_identifiers.push(node[dc_identifier]) if node.has_key?(dc_identifier)
         end
       end
@@ -149,7 +148,7 @@ module RequestValidator
       end
     end
 
-    # If the item documents contain both a dc:source and dc:identifier, check that they are the same
+    # If the item documents contain both a dcterms:source and dcterms:identifier, check that they are the same
     expanded_item = JSON::LD::API.expand(item_json['metadata']).first
     unless expanded_item[MetadataHelper::DOCUMENT.to_s].nil?
       expanded_item[MetadataHelper::DOCUMENT.to_s].each do |document|
@@ -157,7 +156,7 @@ module RequestValidator
           dc_id = document[MetadataHelper::IDENTIFIER.to_s].last['@value']
           dc_source = File.basename(document[MetadataHelper::SOURCE.to_s].last['@id'])
           unless dc_id == dc_source
-            raise ResponseError.new(400), "Document dc:identifier #{dc_id} doesn't match the document source file name #{dc_source}"
+            raise ResponseError.new(400), "Document dcterms:identifier #{dc_id} doesn't match the document source file name #{dc_source}"
           end
         end
       end
@@ -200,7 +199,7 @@ module RequestValidator
     validate_new_document_file(corpus_dir, uploaded_file.original_filename, collection)
   end
 
-  # Validates all the document filenames match (in the @id, dc:identifier, dc:source)
+  # Validates all the document filenames match (in the @id, dcterms:identifier, dcterms:source)
   def validate_document_source(document_json_ld)
     expanded_metadata = JSON::LD::API.expand(document_json_ld).first
     source_path = URI(expanded_metadata[MetadataHelper::SOURCE.to_s].first['@id']).path
@@ -208,7 +207,7 @@ module RequestValidator
     rdf_subject_basename = File.basename(expanded_metadata['@id'])
     meta_id = expanded_metadata[MetadataHelper::IDENTIFIER.to_s].first['@value']
     raise ResponseError.new(400), "Document file name in @id doesn't match the document source file name" if meta_source_basename != rdf_subject_basename
-    raise ResponseError.new(400), "Document dc:identifier doesn't match the document source file name" if meta_source_basename != meta_id
+    raise ResponseError.new(400), "Document dcterms:identifier doesn't match the document source file name" if meta_source_basename != meta_id
   end
 
 end

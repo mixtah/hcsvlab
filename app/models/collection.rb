@@ -1,5 +1,6 @@
 require "#{Rails.root}/lib/solr/solr_helper.rb"
 # require "#{Rails.root}/app/helpers/metadata_helper.rb"
+require 'kramdown'
 
 class Collection < ActiveRecord::Base
 
@@ -8,11 +9,10 @@ class Collection < ActiveRecord::Base
   COLLECTION_TEXT = :text
   COLLECTION_URI = :uri
 
-  # TODO: collection_enhancement dependent: :destroy?
-  has_many :items
+  has_many :items, dependent: :destroy, inverse_of: :collection
 
-  has_many :collection_properties, dependent: :destroy
-  has_many :attachments, dependent: :destroy
+  has_many :collection_properties, dependent: :destroy, inverse_of: :collection
+  has_many :attachments, dependent: :destroy, inverse_of: :collection
 
   belongs_to :owner, class_name: 'User'
   belongs_to :collection_list
@@ -89,13 +89,20 @@ class Collection < ActiveRecord::Base
   # ---------------------------------------------------------------------------
   #
 
-  # TODO: collection_enhancement
-  # file => ref
   def rdf_graph
     # raise "Could not find collection metadata file" unless File.exist?(self.rdf_file_path)
     # RDF::Graph.load(self.rdf_file_path, :format => :ttl, :validate => true)
 
     MetadataHelper::load_rdf_graph(self.name)
+
+  end
+
+  def html_text
+    Kramdown::Document.new(text.nil? ? '' : text).to_html
+  end
+
+  # TODO: to find associated document by file name, use in contribution
+  def find_associated_document_by_file_name
 
   end
 end

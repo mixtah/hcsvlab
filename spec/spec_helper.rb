@@ -1,5 +1,7 @@
 require 'simplecov'
 require 'simplecov-rcov'
+require 'devise'
+require 'rspec/json_expectations'
 
 # disable code coverage
 ENV["NO_COVERAGE"] = 'true'
@@ -17,6 +19,10 @@ require 'rspec/rails'
 Dir[Rails.root.join("spec/support/**/*.rb")].each {|f| require f}
 
 RSpec.configure do |config|
+
+  # For Devise <= 4.1.0
+  config.include Devise::TestHelpers, :type => :controller
+
   # ## Mock Framework
   #
   # If you prefer to use mocha, flexmock or RR, uncomment the appropriate line:
@@ -77,6 +83,7 @@ RSpec.configure do |config|
     clear_jetty
   end
 end
+
 class Warden::SessionSerializer
   def serialize(record)
     record

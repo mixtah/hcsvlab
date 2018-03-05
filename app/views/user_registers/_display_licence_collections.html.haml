@@ -37,7 +37,7 @@
           %td.collection
             =k[:type] == :collection ? "1" : k[:item].collections.size
           %td.owner
-            =k[:item].owner.email
+            =k[:item].owner.nil? ? 'unknown' : k[:item].owner.email
           %td.state
             =k[:state_label]
           %td.actions

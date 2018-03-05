@@ -84,5 +84,6 @@ module HcsvlabWeb
     # The default is set to nil which will display a deprecation error.
     # If set to false we'll skip enforcing available locales altogether (old behaviour).
     config.i18n.enforce_available_locales = false
+
   end
 end

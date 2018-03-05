@@ -1,0 +1,15 @@
+%table.table.table-hover
+  %thead
+    %tr
+      %th Item
+      %th Document
+      %th Type
+  %tbody
+    - @contribution_mapping.each do |m|
+      %tr
+        %td
+          %a{:href => "#{item_path(@contribution.collection.name, m[:item_name])}"} #{m[:item_name]}
+        %td
+          %a{:href => "#{catalog_document_path(@contribution.collection.name, m[:item_name], m[:document_file_name])}"} #{m[:document_file_name]}
+        %td
+          #{m[:document_doc_type]}

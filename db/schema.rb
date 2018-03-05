@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20170202101231) do
+ActiveRecord::Schema.define(:version => 20171016004643) do
 
   create_table "attachments", :force => true do |t|
     t.string   "file"
@@ -63,6 +63,32 @@ ActiveRecord::Schema.define(:version => 20170202101231) do
     t.datetime "created_at",         :null => false
     t.datetime "updated_at",         :null => false
   end
+
+  create_table "contribution_mappings", :force => true do |t|
+    t.integer  "contribution_id"
+    t.integer  "item_id"
+    t.integer  "document_id"
+    t.datetime "created_at",      :null => false
+    t.datetime "updated_at",      :null => false
+  end
+
+  add_index "contribution_mappings", ["contribution_id", "document_id"], :name => "index_contribution_mappings_on_contribution_id_and_document_id", :unique => true
+  add_index "contribution_mappings", ["contribution_id"], :name => "index_contribution_mappings_on_contribution_id"
+  add_index "contribution_mappings", ["document_id"], :name => "index_contribution_mappings_on_document_id"
+  add_index "contribution_mappings", ["item_id"], :name => "index_contribution_mappings_on_item_id"
+
+  create_table "contributions", :force => true do |t|
+    t.string   "name"
+    t.integer  "owner_id"
+    t.integer  "collection_id"
+    t.text     "description"
+    t.datetime "created_at",    :null => false
+    t.datetime "updated_at",    :null => false
+  end
+
+  add_index "contributions", ["collection_id"], :name => "index_contributions_on_collection_id"
+  add_index "contributions", ["name"], :name => "index_contributions_on_name", :unique => true
+  add_index "contributions", ["owner_id"], :name => "index_contributions_on_owner_id"
 
   create_table "document_audits", :force => true do |t|
     t.integer  "document_id"
@@ -116,7 +142,7 @@ ActiveRecord::Schema.define(:version => 20170202101231) do
     t.text     "json_metadata"
   end
 
-  add_index "items", ["handle"], :name => "index_items_on_handle"
+  add_index "items", ["handle"], :name => "index_items_on_handle", :unique => true
   add_index "items", ["uri"], :name => "index_items_on_uri"
 
   create_table "items_in_item_lists", :force => true do |t|

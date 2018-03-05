@@ -33,6 +33,9 @@ apache-activemq-5.8.0/**
 # Ignore submodule jetty
 jetty/**
 
+# Ignore test directory
+test/**
+
 *.swp
 
 # Not everyone has a Mac...

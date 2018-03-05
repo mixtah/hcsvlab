@@ -20,7 +20,7 @@ import json
 import tempfile
 import subprocess
 
-API_URL = "https://alveo-qa.intersect.org.au"
+API_URL = "https://alveo-qa.alveo.edu.aurg.au"
 ASCP_COMMAND = "ascp"
 ASCP_KEY = "~/asperaweb_id_dsa.openssh"
 

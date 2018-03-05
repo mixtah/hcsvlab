@@ -1,0 +1,34 @@
+%h2 Create Contribution
+
+= form_tag({controller: 'contributions', action: 'create'}, method: 'post', :id => 'create_contribution_form') do
+
+  = render 'display_basic_metadata'
+
+  %hr
+
+  .row-fluid
+    = label_tag :contribution_abstract, 'Contribution Abstract:'
+    = text_area_tag :contribution_abstract, @contribution_abstract, :rows => '5', :style => 'height: 100%; width: 100%;', placeholder: "This is the simple abstract for the contribution, within 255 letters. Will present in contribution index page."
+
+  .row-fluid
+    = label_tag :contribution_text, 'Contribution Description:'
+    = text_area_tag :contribution_text, @contribution_text, placeholder: 'for markdown tips, please refer to https://simplemde.com/markdown-guide'
+
+  -#.row-fluid
+  -#  = render 'display_attachment'
+
+  .form-actions
+    = submit_tag 'Create', :class => "btn btn-primary"
+    = submit_tag 'Reset', :name => 'reset', :type => :reset, :class => "btn btn-warning"
+    = link_to 'Cancel', contrib_index_path, :class => "btn"
+
+= render 'shared/nectar_attribution'
+
+:javascript
+  $(document).ready(function() {
+
+    var simplemde = new SimpleMDE({ element: $("#contribution_text")[0] });
+
+  });
+
+

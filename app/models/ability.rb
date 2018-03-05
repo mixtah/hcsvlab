@@ -9,7 +9,7 @@ class Ability
   def initialize(user)
 
     # From Hydra::Ability.initialize
-    @current_user = user || User.new # guest user (not logged in)
+    @current_user = user || User.new # visitor (not logged in)
     @user = @current_user # just in case someone was using this in an override. Just don't.
     @session = session
     @cache = Hydra::PermissionsCache.new
@@ -31,7 +31,7 @@ class Ability
 
     alias_action :aspera_transfer_spec, :to => :read
 
-    # KL: allow guest to continue, so don't need to check user role
+    # KL: allow visitor to continue, so don't need to check user role
     # return if user.nil? || ! defined?(user.role)
     return if user.nil?
 
@@ -45,9 +45,6 @@ class Ability
     is_data_owner = user.is_data_owner?
     is_researcher = user.is_researcher?
 
-    # KL:
-    is_guest = user.is_guest?
-
     user_id = user.id
 
     if is_superuser
@@ -59,7 +56,7 @@ class Ability
       can :approve, User
     end
 
-    unless is_guest
+    if user.role
       can :accept_licence_terms, User
       can :send_licence_request, User
     end
@@ -79,28 +76,31 @@ class Ability
     elsif is_researcher
       can :read, Blacklight::Catalog
       cannot :manage, Licence
-      # KL: new role, guest
-    elsif is_guest
+    else
+      # visitor
       can :read, Blacklight::Catalog
     end
 
     ############################################################
     ##          PERMISSIONS OVER ITEM LIST                    ##
     ############################################################
-    if is_guest
-      can :read, ItemList, shared: true
-    else
+
+    if is_superuser || is_data_owner || is_researcher
+      # role
       can :manage, ItemList, :user_id => user_id
       can :read, ItemList, shared: true
       can :frequency_search, ItemList, shared: true
       can :concordance_search, ItemList, shared: true
+    else
+      # visitor
+      can :read, ItemList, shared: true
     end
 
 
     ############################################################
     ##          PERMISSIONS OVER COLLECTIONS                  ##
     ############################################################
-    unless is_guest
+    if is_superuser || is_data_owner || is_researcher
       can :add_licence_to_collection, Collection, owner_id: user_id
 
       can :change_collection_privacy, Collection, owner_id: user_id
@@ -121,24 +121,30 @@ class Ability
       # User can read a collection only if he/she is the owner or if he/she was granted
       # with read or edit access to that collection
       can :read, Collection
-
+    else
+      #   visitor
+      can :read, Collection
     end
 
     # User can edit a collection only if he/she is the owner or if he/she was granted
     # with edit access to that collection
-    #can :edit, Collection do |aCollection|
+    # can :edit, Collection do |aCollection|
     #  (user.id.eql? aCollection.owner_id) or
     #      ((user.groups & aCollection.edit_groups).length > 0)
     #end
 
-    if is_data_owner or is_superuser
+    if is_data_owner || is_superuser
       can :create, Collection
       can :web_create_collection, Collection
       can :edit_collection, Collection
       can :update_collection, Collection
-      can :delete_collection, Collection
     else
       cannot :create, Collection
+    end
+
+    #  Only superuser can delete collection
+    if is_superuser
+      can :delete_collection, Collection
     end
 
     ############################################################
@@ -158,6 +164,27 @@ class Ability
     ############################################################
     if is_data_owner or is_superuser
       can :read, DocumentAudit
+    end
+
+    ############################################################
+    ##          PERMISSIONS OVER CONTRIBUTIONS                ##
+    ############################################################
+    if is_superuser || is_data_owner || is_researcher
+      can :read, Contribution
+    else
+      #   visitor
+      can :read, Contribution
+    end
+
+    if is_superuser || is_data_owner || is_researcher
+      can :create, Contribution
+      can :edit_contribution, Contribution
+      can :update_contribution, Contribution
+    end
+
+    #  Only superuser can delete Contribution
+    if is_superuser
+      can :delete_contribution, Contribution
     end
   end
 

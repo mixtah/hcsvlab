@@ -33,3 +33,8 @@ when 'production'
       script "galaxy_backup.sh"
     end
 end
+
+# house keeping tmp dir
+every :day, :at => '12:00am' do
+  runner "Item::DownloadItemsHelper.tmp_dir_cleaning"
+end

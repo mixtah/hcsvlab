@@ -1,0 +1,38 @@
+= render partial: 'display_breadcrumb', locals: {nav_links: {'contributions' => contrib_index_path, "#{@contribution.name}" => nil}}
+
+- metadata_fields = @contribution_metadata
+
+.container-fluid
+  .row-fluid
+    .page-header
+      .row-fluid
+        .span4
+          .pull-left
+            %h2=@contribution.name
+        .span8
+          .pull-right
+            - if ContributionsHelper::is_owner(current_user, @contribution)
+              = link_to "Edit Contribution", contrib_edit_path, id: 'edit_contribution', :class => "btn btn-primary"
+
+            - if can? :delete_contribution, @contribution
+              = link_to "Delete Contribution", contrib_delete_path, method: :delete, id: 'delete_contribution', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current contribution?"}
+
+
+  .row-fluid
+    .span3{:style => "overflow-wrap:break-word;"}
+      .well.sidebar-nav
+        %ul.nav.nav-list.text-left
+          %li.nav-header Metadata
+          - metadata_fields.each do |field|
+            - if field.first.to_s != "Abstract"
+              %li
+                %strong
+                  #{field.first.to_s}:
+                #{field.last.to_s}
+
+    .span1
+    .span8
+      .row-fluid
+        = @contribution.html_text.html_safe
+
+

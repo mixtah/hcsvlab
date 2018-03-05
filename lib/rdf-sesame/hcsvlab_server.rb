@@ -90,7 +90,7 @@ module RDF::Sesame
       repos = {}
       repositories.each_pair do |id, repo|
 
-        # We need to buid a new instance in order to be able to use our methods.
+        # We need to build a new instance in order to be able to use our methods.
         castedRepo = HcsvlabRepository.new({
                                                :server   => self,
                                                :uri      => repo.uri,

@@ -8,18 +8,18 @@ Feature: Managing Item Lists
     Given I have the usual roles and permissions
     Given I have users
       | email                        | first_name | last_name |
-      | researcher@intersect.org.au  | Researcher | One       |
-      | researcher1@intersect.org.au | Researcher | One       |
-      | data_owner@intersect.org.au  | Data       | Owner     |
-    Given "researcher@intersect.org.au" has role "researcher"
-    Given "researcher1@intersect.org.au" has role "researcher"
-    Given "data_owner@intersect.org.au" has role "data owner"
+      | researcher@alveo.edu.au  | Researcher | One       |
+      | researcher1@alveo.edu.au | Researcher | One       |
+      | data_owner@alveo.edu.au  | Data       | Owner     |
+    Given "researcher@alveo.edu.au" has role "researcher"
+    Given "researcher1@alveo.edu.au" has role "researcher"
+    Given "data_owner@alveo.edu.au" has role "data owner"
     Given I ingest "cooee:1-001"
     Given I ingest "cooee:1-002"
-    Given I have user "researcher@intersect.org.au" with the following groups
+    Given I have user "researcher@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | cooee          | read       |
-    Given I am logged in as "researcher@intersect.org.au"
+    Given I am logged in as "researcher@alveo.edu.au"
     Given I have done a search with collection "cooee"
     Then I should see the applied facet "Collection" with the value "cooee"
     And I should get exactly 2 results
@@ -72,7 +72,7 @@ Feature: Managing Item Lists
 
   @javascript
   Scenario: Adding 0 items to an existing item list
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name          |
       | Existing Test |
     And the item list "Existing Test" has items hcsvlab:1
@@ -97,9 +97,9 @@ Feature: Managing Item Lists
   Scenario: Accessing other user's Item Lists
     Given I have users
       | email                  | first_name | last_name |
-      | other@intersect.org.au | Researcher | One       |
-    And "other@intersect.org.au" has role "researcher"
-    And "other@intersect.org.au" has item lists
+      | other@alveo.edu.au | Researcher | One       |
+    And "other@alveo.edu.au" has role "researcher"
+    And "other@alveo.edu.au" has item lists
       | name   |
       | Test 1 |
     And I am on the item list page for "Test 1"
@@ -108,9 +108,9 @@ Feature: Managing Item Lists
   Scenario: Accessing other user's shared Item Lists
     Given I have users
       | email                  | first_name | last_name |
-      | other@intersect.org.au | Researcher | One       |
-    And "other@intersect.org.au" has role "researcher"
-    And "other@intersect.org.au" has item lists
+      | other@alveo.edu.au | Researcher | One       |
+    And "other@alveo.edu.au" has role "researcher"
+    And "other@alveo.edu.au" has item lists
       | name   | shared |
       | Test 1 | true   |
     And the item list "Test 1" has items cooee:1-001, cooee:1-002
@@ -120,7 +120,7 @@ Feature: Managing Item Lists
     And I should see "cooee:1-002"
 
   Scenario: Renaming an item list
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name        |
       | Rename Test |
     And the item list "Rename Test" has items cooee:1-001
@@ -133,7 +133,7 @@ Feature: Managing Item Lists
     And I should see "New Name"
 
   Scenario: Renaming an item list with invalid name
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name        |
       | Rename Test |
     And the item list "Rename Test" has items cooee:1-001
@@ -146,7 +146,7 @@ Feature: Managing Item Lists
     And I should see "Rename Test"
 
   Scenario: Renaming an item list to an already existing name
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name        |
       | Rename Test |
       | Exists Test |
@@ -160,7 +160,7 @@ Feature: Managing Item Lists
     And I should see "Rename Test"
 
   Scenario: Clearing an Item List
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name       |
       | Clear Test |
     And the item list "Clear Test" has items cooee:1-001, cooee:1-002
@@ -171,7 +171,7 @@ Feature: Managing Item Lists
     And I should see "2 cleared from item list Clear Test"
 
   Scenario: Deleting an Item List
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name        |
       | Delete Test |
     And the item list "Delete Test" has items cooee:1-001, cooee:1-002
@@ -182,7 +182,7 @@ Feature: Managing Item Lists
     And I should see "Item list Delete Test deleted successfully"
 
   Scenario: User should be able to share his own item lists
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name       |
       | Share Test |
     Given the item list "Share Test" has items cooee:1-001, cooee:1-002
@@ -191,7 +191,7 @@ Feature: Managing Item Lists
     And I should have the link "Share"
 
   Scenario: Sharing an Item List
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name       |
       | Share Test |
     And the item list "Share Test" has items cooee:1-001, cooee:1-002
@@ -201,7 +201,7 @@ Feature: Managing Item Lists
     And I should see "Item list Share Test is shared. Any user in the application will be able to see it."
 
   Scenario: Stop sharing an Item List
-    And "researcher@intersect.org.au" has item lists
+    And "researcher@alveo.edu.au" has item lists
       | name       | shared |
       | Share Test | true   |
     And the item list "Share Test" has items cooee:1-001, cooee:1-002
@@ -211,7 +211,7 @@ Feature: Managing Item Lists
     And I should see "Item list Share Test is not being shared anymore."
 
   Scenario: Stop sharing an Item List should no be possible for item list that does not belong to me
-    Given "researcher1@intersect.org.au" has item lists
+    Given "researcher1@alveo.edu.au" has item lists
       | name       | shared |
       | Share Test | true   |
     Given the item list "Share Test" has items cooee:1-001, cooee:1-002
@@ -222,10 +222,10 @@ Feature: Managing Item Lists
   Scenario: User should see a message when he has no access right to every item in the shared item list
     Given I ingest "auslit:adaessa"
     Given I ingest "auslit:bolroma"
-    Given I have user "researcher1@intersect.org.au" with the following groups
+    Given I have user "researcher1@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | cooee          | read       |
-    Given "researcher1@intersect.org.au" has item lists
+    Given "researcher1@alveo.edu.au" has item lists
       | name       | shared |
       | Share Test | true   |
     Given the item list "Share Test" has items cooee:1-001, cooee:1-002, austlit:adaessa, austlit:bolroma
@@ -234,7 +234,7 @@ Feature: Managing Item Lists
     And I should see "You only have access to 2 out of 4 Items in this shared Item List. This is because you do not have access to the following collections: austlit. To gain access to more Collections, visit the Licence Agreements page."
 
   Scenario: Sending item list to R
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has items cooee:1-001, cooee:1-002, hcsvlab:3
@@ -244,4 +244,4 @@ Feature: Managing Item Lists
     And I should see "Copy the following code into your R environment"
     And I should see "item_list <- client$get_item_list_by_id"
     And I follow "Download API key config file"
-    And I should get the API config file for "researcher@intersect.org.au"
+    And I should get the API config file for "researcher@alveo.edu.au"

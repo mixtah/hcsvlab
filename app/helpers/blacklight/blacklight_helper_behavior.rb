@@ -1,8 +1,6 @@
 # -*- encoding : utf-8 -*-
 # -*- coding: utf-8 -*-
 require 'open-uri'
-require 'kramdown'
-
 
 # Methods added to this helper will be available to all templates in the hosting application
 #
@@ -525,8 +523,14 @@ module Blacklight::BlacklightHelperBehavior
   def get_type_format(document, is_cooee)
     type = nil
     if is_cooee
-      if document.has_key?(MetadataHelper::TYPE.to_s + "_tesim")
-        document[MetadataHelper::TYPE.to_s + "_tesim"].each { |t| type = t unless t == "Original" or t == "Raw" }
+      field = MetadataHelper::TYPE.to_s + "_tesim"
+      if document.has_key?(field)
+        document[field].each { |t| type = t unless t == "Original" or t == "Raw" }
+      else
+        field = "DC_type_facet"
+        if document.has_key?(field)
+          document[field].each { |t| type = t unless t == "Original" or t == "Raw" }
+        end
       end
       if type.nil?
         type_format = '%s'
@@ -536,6 +540,7 @@ module Blacklight::BlacklightHelperBehavior
     else
       type_format = '%s'
     end
+
     type_format
   end
 
@@ -711,11 +716,6 @@ module Blacklight::BlacklightHelperBehavior
     fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
 
     logger.debug "collection_show_fields fields=#{fields}"
-
-
-    # KL: fields from collection
-    # text
-    fields << {'Description' => Kramdown::Document.new(collection.text).to_html}
 
     fields
 

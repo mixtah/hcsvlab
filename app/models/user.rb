@@ -37,13 +37,13 @@ class User < ActiveRecord::Base
   before_validation :initialize_status
 
   scope :pending_approval, where(:status => 'U').order(:email)
+
   scope :approved, where(:status => 'A').order(:email)
   scope :deactivated_or_approved, where("status = 'D' or status = 'A' ").order(:email)
   scope :approved_superusers, joins(:role).merge(User.approved).merge(Role.superuser_roles)
   scope :approved_researchers, joins(:role).merge(User.approved).merge(Role.researcher_roles)
 
   after_initialize do |user|
-    # KL: new status ["G"], new user is treated as GUEST, don't need to sign in
     # The after_initialize callback will be called whenever an Active Record object is
     # instantiated, either by directly using new or when a record is loaded from the database.
     # It can be useful to avoid the need to directly override your Active Record initialize
@@ -51,7 +51,7 @@ class User < ActiveRecord::Base
     #
     # http://guides.rubyonrails.org/active_record_callbacks.html#after-initialize-and-after-find
     if user.id.nil?
-      user.status = 'G'
+      user.status = 'U'
     end
   end
 
@@ -144,6 +144,12 @@ class User < ActiveRecord::Base
     self.status == 'R'
   end
 
+  # To judge whether current user is visitor
+  # Visitor has no user id
+  def is_visitor?
+    return self.id.nil?
+  end
+
   def deactivate
     self.status = 'D'
     save!(:validate => false)
@@ -164,11 +170,6 @@ class User < ActiveRecord::Base
 
   def is_data_owner?
     self.role == Role.find_by_name(Role::DATA_OWNER_ROLE)
-  end
-
-# KL: to judge whether current user is guest
-  def is_guest?
-    self.status == 'G'
   end
 
   def approve_access_request
@@ -213,24 +214,8 @@ class User < ActiveRecord::Base
   end
 
   def groups
-    unless is_guest?
-      # normal user
-      sql = "" "
-        SELECT c.name || '-' || ula_cl.access_type AS group_name
-        FROM collections c INNER JOIN
-          (SELECT cl.id as collection_list_id, ula.access_type as access_type
-          FROM collection_lists cl INNER JOIN user_licence_agreements ula
-          ON cl.name=ula.name WHERE ula.collection_type='collection_list' AND ula.user_id=#{self.id}) ula_cl
-        ON c.collection_list_id=ula_cl.collection_list_id
-        UNION
-        SELECT c.name || '-' || ula.access_type as group_name
-        FROM user_licence_agreements ula
-        INNER JOIN collections c
-        ON ula.name=c.name
-        WHERE ula.collection_type='collection' AND ula.user_id=#{self.id};
-      " ""
-    else
-      # guest, no user id
+    if is_visitor?
+      # visitor, no user id
       sql = "" "
         SELECT c.name || '-' || ula_cl.access_type AS group_name
         FROM collections c INNER JOIN
@@ -244,6 +229,22 @@ class User < ActiveRecord::Base
         INNER JOIN collections c
         ON ula.name=c.name
         WHERE ula.collection_type='collection';
+      " ""
+    else
+      # logged in user with user id
+      sql = "" "
+        SELECT c.name || '-' || ula_cl.access_type AS group_name
+        FROM collections c INNER JOIN
+          (SELECT cl.id as collection_list_id, ula.access_type as access_type
+          FROM collection_lists cl INNER JOIN user_licence_agreements ula
+          ON cl.name=ula.name WHERE ula.collection_type='collection_list' AND ula.user_id=#{self.id}) ula_cl
+        ON c.collection_list_id=ula_cl.collection_list_id
+        UNION
+        SELECT c.name || '-' || ula.access_type as group_name
+        FROM user_licence_agreements ula
+        INNER JOIN collections c
+        ON ula.name=c.name
+        WHERE ula.collection_type='collection' AND ula.user_id=#{self.id};
       " ""
     end
 
@@ -272,7 +273,7 @@ class User < ActiveRecord::Base
 
   def has_agreement_to_collection?(collection, access_type, exact=false)
     # if the user is the owner of the collection, then he/she does have access.
-    # think about guest with nil id
+    # think about visitor with nil id
     unless self.id.nil?
       if collection.owner_id.eql?(self.id)
         return true
@@ -292,12 +293,12 @@ class User < ActiveRecord::Base
     end
   end
 
-# think about guest with nil id
+# think about visitor with nil id
   def has_requested_collection?(id)
     user_licence_requests.where(:request_id => id.to_s).count > 0 unless id.nil?
   end
 
-# think about guest with nil id
+# think about visitor with nil id
   def requested_collection(id)
     user_licence_requests.find_by_request_id(id.to_s) unless id.nil?
   end
@@ -309,7 +310,7 @@ class User < ActiveRecord::Base
     self.user_licence_agreements.where(name: collection.name, collection_type: 'collection', access_type: access_type).delete_all
   end
 
-# think about guest with nil id
+# think about visitor with nil id
   def accept_licence_request(id)
     unless id.nil?
       if has_requested_collection?(id)
@@ -461,6 +462,11 @@ class User < ActiveRecord::Base
   private
 
   def initialize_status
+    # initialised status as 'U'
     self.status = "U" unless self.status
+  end
+
+  def User::reset_pk_seq
+    ActiveRecord::Base.connection.reset_pk_sequence!(User.table_name)
   end
 end

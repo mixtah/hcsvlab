@@ -1,8 +1,15 @@
 class UserRegistersController < Devise::RegistrationsController
   # based on https://github.com/plataformatec/devise/blob/v2.0.4/app/controllers/devise/registrations_controller.rb
 
-  prepend_before_filter :authenticate_scope!, except: [:create, :new]
+  before_filter :authenticate_user!, except: [:create, :new]
 
+  def index
+    respond_with download_details
+  end
+
+  def edit
+  end
+    
   def profile
 
   end
@@ -48,6 +55,7 @@ class UserRegistersController < Devise::RegistrationsController
   end
 
   def edit_password
+    self.resource = current_user
     respond_with resource
   end
 
@@ -66,19 +74,60 @@ class UserRegistersController < Devise::RegistrationsController
   def licence_agreements
   end
 
-  def download_token
-    if current_user.authentication_token.nil? #generate auth token if one doesn't already exist
-      current_user.reset_authentication_token!
-    end
+  #
+  # Response user's detail as file
+  #
+  def download_details
+
+    token_user = current_resource_owner
 
     file = Tempfile.new("newfile")
     hash = {}
     hash[:base_url] = root_url
-    hash[:apiKey] = current_user.authentication_token
+    hash[:first_name] = token_user.first_name
+    hash[:last_name] = token_user.last_name
+    hash[:email] = token_user.email
+    hash[:status] = token_user.status
+    hash[:apiKey] = token_user.authentication_token
+    hash[:cacheDir] = "wrassp_cache"
+    # KL - retrieve role name
+    hash[:role] = token_user.role.name
+
+    file.puts(hash.to_json)
+    file.close
+    send_file file.path, :filename => "#{PROJECT_PREFIX_NAME}.config", :disposition => "attachment"
+        
+  end
+
+  #
+  # Response api key (token) as file
+  #
+  def download_token
+
+    token_user = current_resource_owner
+
+    file = Tempfile.new("newfile")
+    hash = {}
+    hash[:base_url] = root_url
+    hash[:apiKey] = token_user.authentication_token
     hash[:cacheDir] = "wrassp_cache"
     file.puts(hash.to_json)
     file.close
     send_file file.path, :filename => "#{PROJECT_PREFIX_NAME}.config", :disposition => "attachment"
+  end
+
+  #
+  # If user login from OAuth2, current_user (from Devise) would be nil. Still we can retrieve
+  # user info from Doorkeeper's token.
+  #
+  def current_resource_owner
+    rlt = current_user
+
+    if rlt.nil?
+      rlt = User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+    end
+
+    rlt
   end
 
   def generate_token

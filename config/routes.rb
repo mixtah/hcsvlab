@@ -1,4 +1,5 @@
 HcsvlabWeb::Application.routes.draw do
+
   use_doorkeeper
 
   # This constraint specify that we are going to accept any character except '/' for an item id.
@@ -27,8 +28,13 @@ HcsvlabWeb::Application.routes.draw do
   get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
   # put 'catalog/:collection/:itemId', :to => 'catalog#update', :as => "solr_document", :constraints => catalogRoutesConstraintsIncludingJson
 
+  get 'catalog/:collection/:itemId', :to => 'catalog#show', :as => "item"
+
+  # for header navbar
+  get "discover", :to => 'catalog#index', :as => 'header_discover'
+
   # Collection definitions
-  # get "catalog", :to => 'collections#index', :as => 'collections'
+  get "catalog", :to => 'collections#index', :as => 'collections'
   get "collections", :to => 'collections#index', :as => 'collections'
   get "catalog/:id", :to => 'collections#show', :as => 'collection'
   post "catalog/:id", :to => 'collections#add_items_to_collection', :as => 'collection'
@@ -50,6 +56,14 @@ HcsvlabWeb::Application.routes.draw do
   # can proceed with own attachment id
   resources :attachments, only: [:show, :edit, :update, :destroy]
 
+  # contribution
+  get "contrib/", :to => "contributions#index", :as => "contrib_index"
+  get "contrib/new", :to => "contributions#new", :as => "contrib_new"
+  post "contrib/", :to => "contributions#create", :as => "contrib_create"
+  get "contrib/:id", :to => "contributions#show", :as => "contrib_show"
+  get "contrib/:id/edit", :to => "contributions#edit", :as => "contrib_edit"
+  put "contrib/update", :to => "contributions#update", :as => "contrib_update"
+  delete "contrib/:id", :to => "contributions#delete", :as => "contrib_delete"
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
   post "catalog", :to => 'collections#create', :as => 'collections'
@@ -84,6 +98,16 @@ HcsvlabWeb::Application.routes.draw do
   get "add-document/:collection/:itemId", :to => 'collections#web_add_document', :as => 'web_add_document'
   post "add-document/:collection/:itemId", :to => 'collections#web_add_document'
 
+  # speaker metadata
+  get "/speakers/:collection", :to => "speakers#index", :as => "speakers"
+  post "/speakers/:collection", :to => "speakers#create", :as => "create_speaker"
+
+  get "/speakers/:collection/:speaker_id", :to => "speakers#show", :as => "show_speaker"
+  # rails 3.2 only supports PUT, rails 4 supports PATCH
+  put "/speakers/:collection/:speaker_id", :to => "speakers#update", :as => "update_speaker"
+  delete "/speakers/:collection/:speaker_id", :to => "speakers#delete", :as => "delete_speaker"
+
+
   HydraHead.add_routes(self)
 
   devise_for :users, controllers: {registrations: "user_registers", passwords: "user_passwords"}
@@ -93,13 +117,14 @@ HcsvlabWeb::Application.routes.draw do
     get "/users/sign_in", :to => "devise/sessions#oauth2_new", :as => 'oauth2_sign_in'
 
     get "/users/aaf_sign_in", :to => "devise/sessions#aaf_new"
-    get "/account/", :to => "user_registers#index" #allow users to edit their own password
-    get "/account/edit", :to => "user_registers#edit" #allow users to edit their own password
+    get "/account/", :to => "user_registers#index"
+    get "/account/edit", :to => "user_registers#edit"
     get "/account/edit_password", :to => "user_registers#edit_password" #allow users to edit their own password
-    get "/account/licence_agreements", :to => "user_registers#licence_agreements" #allow users to edit their own password
-    put "/account/update_password", :to => "user_registers#update_password" #allow users to edit their own password
+    put "/account/update_password", :to => "user_registers#update_password" #allow users to update their own password
     get "/account/generate_token", :to => "user_registers#generate_token" #allow users to generate an API token
     get "/account_api_key", :to => "user_registers#download_token"
+    get "/account/get_details", :to => "user_registers#download_details"
+    get "/account/licence_agreements", :to => "user_registers#licence_agreements"
     delete "/account/delete_token", :to => "user_registers#delete_token" #allow users to delete their API token
     delete "/account/licence_agreements/:id/cancel_request", :to => "user_licence_requests#cancel_request", :as => 'cancel_request'
   end

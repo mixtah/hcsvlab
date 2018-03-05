@@ -6,16 +6,16 @@
 #    Given I have the usual roles and permissions
 #    Given I have users
 #      | email                       | first_name | last_name |
-#      | researcher@intersect.org.au | Researcher | One       |
-#      | data_owner@intersect.org.au | Data       | Owner     |
-#    Given "data_owner@intersect.org.au" has role "data owner"
-#    And "researcher@intersect.org.au" has role "researcher"
-#    And I am logged in as "researcher@intersect.org.au"
+#      | researcher@alveo.edu.au | Researcher | One       |
+#      | data_owner@alveo.edu.au | Data       | Owner     |
+#    Given "data_owner@alveo.edu.au" has role "data owner"
+#    And "researcher@alveo.edu.au" has role "researcher"
+#    And I am logged in as "researcher@alveo.edu.au"
 #
 #
 #  Scenario: View Audio in EOPAS
 #    Given I ingest "eopas_test:Audio_Eopas"
-#    Given I have user "researcher@intersect.org.au" with the following groups
+#    Given I have user "researcher@alveo.edu.au" with the following groups
 #      | collectionName | accessType |
 #      | eopas_test     | read       |
 #    And I am on the catalog page
@@ -49,7 +49,7 @@
 #
 #  Scenario: View Video in EOPAS
 #    Given I ingest "eopas_test:Video_Eopas"
-#    Given I have user "researcher@intersect.org.au" with the following groups
+#    Given I have user "researcher@alveo.edu.au" with the following groups
 #      | collectionName | accessType |
 #      | eopas_test     | read       |
 #    And I am on the catalog page

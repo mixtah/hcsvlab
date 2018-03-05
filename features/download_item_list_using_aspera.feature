@@ -7,23 +7,23 @@ Feature: Managing Item Lists
     Given I have the usual roles and permissions
     And I have users
       | email                        | first_name | last_name |
-      | researcher@intersect.org.au  | Researcher | One       |
-      | data_owner@intersect.org.au  | Data       | Owner     |
-    And "researcher@intersect.org.au" has role "researcher"
-    And "data_owner@intersect.org.au" has role "data owner"
-    And "researcher@intersect.org.au" has an api token
+      | researcher@alveo.edu.au  | Researcher | One       |
+      | data_owner@alveo.edu.au  | Data       | Owner     |
+    And "researcher@alveo.edu.au" has role "researcher"
+    And "data_owner@alveo.edu.au" has role "data owner"
+    And "researcher@alveo.edu.au" has an api token
     And I ingest "cooee:1-001"
     And I ingest "cooee:1-002"
-    And I have user "researcher@intersect.org.au" with the following groups
+    And I have user "researcher@alveo.edu.au" with the following groups
       | collectionName | accessType |
       | cooee          | read       |
-    And I am logged in as "researcher@intersect.org.au"
-    And "researcher@intersect.org.au" has item lists
+    And I am logged in as "researcher@alveo.edu.au"
+    And "researcher@alveo.edu.au" has item lists
       | name |
       | Test |
 
   Scenario: I have option to download item list using aspera
-    Given "researcher@intersect.org.au" has item lists
+    Given "researcher@alveo.edu.au" has item lists
       | name  |
       | Test1 |
     And the item list "Test1" has items cooee:1-001
@@ -38,7 +38,7 @@ Feature: Managing Item Lists
   # Note: cannot test this scenario due to external dependency on having aspera connect plugin installed on system
 
   Scenario: Get an aspera transfer specification for an empty item list
-    Given I make a JSON post request for the transfer spec page for item list "Test" with the API token for "researcher@intersect.org.au" without JSON params
+    Given I make a JSON post request for the transfer spec page for item list "Test" with the API token for "researcher@alveo.edu.au" without JSON params
     Then I should get a 200 response code
     And the JSON response should be:
     """
