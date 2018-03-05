@@ -20,4 +20,8 @@ class Licence < ActiveRecord::Base
     end
   end
 
+  def self.reset_pk_seq
+    ActiveRecord::Base.connection.reset_pk_sequence!(Licence.table_name)
+  end
+
 end

@@ -6,14 +6,18 @@ HcsvlabWeb::Application.configure do
   # This will set the default host not just for action_mailer and action_controller, but for anything using the url_helpers
   config.action_mailer.default_url_options = { :host => 'staging.alveo.edu.au' }
   Rails.application.routes.default_url_options[:host] = 'staging.alveo.edu.au'
+  Rails.application.routes.default_url_options[:protocol] = 'https'
 
-  config.galaxy_url = 'http://staging.alveo.edu.au/root'
+  config.galaxy_url = 'https://staging.alveo.edu.au/root'
 
   # Base directory where user contributed annotations will be stored
   config.user_annotations_location = "/data/contributed_annotations/"
 
   # Base directory where api created collections will be stored
   config.api_collections_location = "/data/collections/"
+
+  # Temporary directory where imports/zip files will be uploaded
+  config.upload_location = "/data/uploads/"
 
   # Settings specified here will take precedence over those in config/application.rb
 
@@ -46,7 +50,7 @@ HcsvlabWeb::Application.configure do
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for nginx
 
   # See everything in the log (default is :info)
-  config.log_level = :info
+  config.log_level = :debug
 
   # Prepend all log lines with the following tags
   # config.log_tags = [ :subdomain, :uuid ]

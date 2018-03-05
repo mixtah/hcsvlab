@@ -1,0 +1,106 @@
+= render partial: 'display_breadcrumb', locals: {nav_links: {'contributions' => contrib_index_path, "#{@contribution.name}" => nil}}
+
+- main_title = "Unknown"
+
+- if @phrase == "0"
+  - main_title = "Import from Zip"
+- else
+  - if @phrase == "1"
+    - main_title = "Review Import"
+
+-#    prepare for import preview brief
+- preview_brief = "Choose your zip file to import."
+- can_proceed_import = true
+- failed_doc = []
+
+- if @preview_result.is_a?(Array)
+
+  - @preview_result.each do |f|
+    - if !f[:message].nil? && f[:dest_file].nil?
+      - failed_doc << { :document => f[:document], :message => f[:message] }
+
+  - if @preview_result.size > 0
+    - preview_brief = %(Found #{@preview_result.count} file(s) from the uploaded zip file.)
+- else
+  - can_proceed_import = false
+  - preview_brief = "Can not proceed zip: " + @preview_result
+
+- if failed_doc.size > 0
+  - can_proceed_import = false
+
+
+.container-fluid
+  .row-fluid
+    .page-header
+      .row-fluid
+        .span4
+          .pull-left
+            %h1= @contribution.name
+        .span8
+
+  .row-fluid
+    .span2
+    .span10
+      .row-fluid
+        %table.table
+          %tbody
+            %tr
+              %td{:rowspan => "2"} Metadata
+              %td Name/Title
+              %td= @contribution.name
+            %tr
+              %td Associated Collection
+              %td= @contribution.collection.name
+
+  .row-fluid
+    %h3= main_title
+
+  .row-fluid
+    To be associated with a data file, an annotation file must have the same filename up to the extension (e.g. “4_68_4_10.wav” and “4_68_4_10.TextGrid”). You will get an error if one of the annotation files cannot be associated with one of the data files in the collection.
+
+  .row-fluid
+    .page-header
+
+  .row-fluid
+    %span.label.label-info Notice
+    = preview_brief
+
+  - if !can_proceed_import
+    .row-fluid
+      %span.label.label-important ATTENTION
+      - failed_doc.each do |fd|
+        %li= fd[:message]
+
+
+  = form_tag({controller: 'contributions', action: 'import'}, multipart: true, method: 'post', :id => 'import_contribution_form') do
+    .row-fluid
+      - if @phrase == "1"
+        - text = "Re-upload Zip:"
+      - else
+        - text = "Upload Zip:"
+      = label_tag :file_text, text
+      = file_field_tag :file, :accept => "application/zip"
+
+      = submit_tag 'hidden', :style => "display:none"
+
+    .form-actions
+      - if @phrase == "1"
+        = submit_tag 'Upload & Preview', :class => "btn btn-warning", :id => 'upload_btn', :name => "preview", :confirm => "You are going to upload a new zip file, so the previously uploaded file would be overwritten and CANNOT be recovered. Are you sure?"
+
+        - if can_proceed_import
+          = submit_tag 'Proceed Import', :class => "btn btn-danger", :id => 'import_btn'
+        - else
+          %button.btn.btn-success{:type => "button", :disabled => "disabled"} Proceed Import
+
+      - else
+        = submit_tag 'Upload & Preview', :class => "btn btn-primary", :id => 'upload_btn', :name => "preview"
+
+      = link_to 'Cancel', contrib_show_path(@contribution.id), :class => "btn"
+
+  .row-fluid
+    %h3 Files To Import
+    = render "display_contribution_preview"
+
+
+= render 'shared/nectar_attribution'
+

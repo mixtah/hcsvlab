@@ -5,4 +5,4 @@ role :app, 'staging.alveo.edu.au'
 # This is where Rails migrations will run
 role :db,  'staging.alveo.edu.au', :primary => true
 
-set :server_url, "http://staging.alveo.edu.au"
+set :server_url, "https://staging.alveo.edu.au"

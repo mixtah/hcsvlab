@@ -136,6 +136,7 @@ module Blacklight::CatalogHelperBehavior
   #
   def create_display_info_hash(document, userAnnotations=nil)
     # TODO: This method is madness... :(
+    logger.debug "create_display_info_hash: start - document[#{document}]"
     default_url_options = Rails.application.config.action_mailer.default_url_options
 
     fieldDisplayName = create_display_field_name_mapping(document)
@@ -272,12 +273,12 @@ module Blacklight::CatalogHelperBehavior
         begin
 
           query = """
-            PREFIX dc:<http://purl.org/dc/terms/>
+            PREFIX dcterms:<http://purl.org/dc/terms/>
             PREFIX ausnc:<http://ns.ausnc.org.au/schemas/ausnc_md_model/>
 
             select * where {
               <#{solr_item.uri}> ausnc:document ?doc .
-              ?doc dc:identifier '#{values[MetadataHelper::IDENTIFIER]}' .
+              ?doc dcterms:identifier '#{values[MetadataHelper::IDENTIFIER]}' .
               ?doc ?property ?value
             }
           """
@@ -346,10 +347,10 @@ module Blacklight::CatalogHelperBehavior
 
       query = "" "
         PREFIX dada:<http://purl.org/dada/schema/0.2#>
-        PREFIX dc: <http://purl.org/dc/terms/>
+        PREFIX dcterms: <http://purl.org/dc/terms/>
         SELECT *
         WHERE {
-            ?identifier dc:identifier '#{item_short_identifier}'.
+            ?identifier dcterms:identifier '#{item_short_identifier}'.
             ?annoCol dada:annotates ?identifier .
             ?anno dada:partof ?annoCol .
             ?anno a dada:Annotation .
@@ -375,6 +376,8 @@ module Blacklight::CatalogHelperBehavior
 
 
     item_info.documents = documentsData
+
+    logger.debug "create_display_info_hash: end - item_info[#{item_info.inspect}]"
 
     item_info
   end

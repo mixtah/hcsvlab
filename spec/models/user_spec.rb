@@ -1,6 +1,15 @@
 require 'spec_helper'
 
 describe User do
+
+  let(:role) {FactoryGirl.create(:role_data_owner)}
+
+  it "has a valid factory" do
+    expect(FactoryGirl.create(:user_admin)).to be_valid
+    expect(FactoryGirl.create(:user_data_owner)).to be_valid
+    expect(FactoryGirl.create(:user_researcher)).to be_valid
+  end
+
   describe "Associations" do
     it { should belong_to(:role) }
   end
@@ -15,30 +24,31 @@ describe User do
   describe "Named Scopes" do
     describe "Users Pending Approval Scope" do
       it "should return users that are unapproved ordered by email address" do
-        u1 = FactoryGirl.create(:user, :status => 'U', :email => "fasdf1@alveo.edu.au")
-        u2 = FactoryGirl.create(:user, :status => 'A')
-        u3 = FactoryGirl.create(:user, :status => 'U', :email => "asdf1@alveo.edu.au")
-        u2 = FactoryGirl.create(:user, :status => 'R')
+        # role = FactoryGirl.create(:role_data_owner)
+        u1 = FactoryGirl.create(:user, :role => role, :status => 'U', :email => "fasdf1@alveo.edu.au")
+        u2 = FactoryGirl.create(:user, :role => role, :status => 'A')
+        u3 = FactoryGirl.create(:user, :role => role, :status => 'U', :email => "asdf1@alveo.edu.au")
+        u2 = FactoryGirl.create(:user, :role => role, :status => 'R')
         User.pending_approval.should eq([u3,u1])
       end
     end
     describe "Approved Users Scope" do
       it "should return users that are approved ordered by email address" do
-        u1 = FactoryGirl.create(:user, :status => 'A', :email => "fasdf1@alveo.edu.au")
-        u2 = FactoryGirl.create(:user, :status => 'U')
-        u3 = FactoryGirl.create(:user, :status => 'A', :email => "asdf1@alveo.edu.au")
-        u4 = FactoryGirl.create(:user, :status => 'R')
-        u5 = FactoryGirl.create(:user, :status => 'D')
+        u1 = FactoryGirl.create(:user, :role => role, :status => 'A', :email => "fasdf1@alveo.edu.au")
+        u2 = FactoryGirl.create(:user, :role => role, :status => 'U')
+        u3 = FactoryGirl.create(:user, :role => role, :status => 'A', :email => "asdf1@alveo.edu.au")
+        u4 = FactoryGirl.create(:user, :role => role, :status => 'R')
+        u5 = FactoryGirl.create(:user, :role => role, :status => 'D')
         User.approved.should eq([u3,u1])
       end
     end
     describe "Deactivated or Approved Users Scope" do
       it "should return users that are approved ordered by email address" do
-        u1 = FactoryGirl.create(:user, :status => 'A', :email => "fasdf1@alveo.edu.au")
-        u2 = FactoryGirl.create(:user, :status => 'U')
-        u3 = FactoryGirl.create(:user, :status => 'A', :email => "asdf1@alveo.edu.au")
-        u4 = FactoryGirl.create(:user, :status => 'R')
-        u5 = FactoryGirl.create(:user, :status => 'D', :email => "zz@inter.org")
+        u1 = FactoryGirl.create(:user, :role => role, :status => 'A', :email => "fasdf1@alveo.edu.au")
+        u2 = FactoryGirl.create(:user, :role => role, :status => 'U')
+        u3 = FactoryGirl.create(:user, :role => role, :status => 'A', :email => "asdf1@alveo.edu.au")
+        u4 = FactoryGirl.create(:user, :role => role, :status => 'R')
+        u5 = FactoryGirl.create(:user, :role => role, :status => 'D', :email => "zz@inter.org")
         User.deactivated_or_approved.should eq([u3,u1, u5])
       end
     end
@@ -280,7 +290,7 @@ describe User do
 
     it "Should add read group to the user" do
       user = FactoryGirl.create(:user, :status => 'A')
-      collection  = FactoryGirl.create(:collection, :name=>"ace")
+      collection  = FactoryGirl.create(:collection, :name => "ace", :owner => user)
       licence = FactoryGirl.create(:licence)
       collection.licence = licence
 
@@ -291,13 +301,13 @@ describe User do
 
     it "Should remove read group to the user" do
       user = FactoryGirl.create(:user, :status => 'A')
-      collection  = FactoryGirl.create(:collection, :name=>"ace")
+      collection  = FactoryGirl.create(:collection, :owner => user)
       licence = FactoryGirl.create(:licence)
       collection.licence = licence
 
       user.add_agreement_to_collection(collection, UserLicenceAgreement::READ_ACCESS_TYPE)
 
-      user.groups.should eq(["ace-read"])
+      user.groups.should eq(["#{collection.name}-read"])
 
       user.remove_agreement_to_collection(collection, UserLicenceAgreement::READ_ACCESS_TYPE)
       user.reload
@@ -305,5 +315,29 @@ describe User do
       user.groups.should be_empty
     end
   end
-  
+
+end
+
+describe User, 'validation' do
+  it {should validate_presence_of(:first_name)}
+  it {should validate_presence_of(:last_name)}
+  it {should validate_presence_of(:role)}
+
+  it {should validate_presence_of(:email)}
+  it {should validate_uniqueness_of(:email)}
+end
+
+describe User, 'association' do
+  it {should have_many(:user_sessions)}
+  it {should have_many(:user_searches)}
+  it {should have_many(:item_lists)}
+  it {should have_many(:user_licence_agreements)}
+  it {should have_many(:user_licence_requests)}
+  it {should have_many(:user_annotations)}
+  it {should have_many(:collection_lists)}
+  it {should have_many(:collections)}
+  it {should have_many(:licences)}
+  it {should have_many(:document_audits)}
+
+  it {should belong_to(:role)}
 end

@@ -47,7 +47,6 @@ RSpec.describe MetadataHelper, :type => :helper do
  "dcterms:language":"english",
  "dcterms:licence":"MIT",
  "dcterms:title":"myCollectionTitle",
- "marcrel:OWN":"karl",
  "olac:history_of_linguistics":
   "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language."
 })
@@ -85,8 +84,7 @@ RSpec.describe MetadataHelper, :type => :helper do
     dcterms:language "english" ;
     dcterms:licence "MIT" ;
     dcterms:title "myCollectionTitle" ;
-    olac:history_of_linguistics "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language." ;
-    marcrel:OWN "karl" .
+    olac:history_of_linguistics "A biography of Ferdinand de Saussure, or an analysis of Plato's discussions on language." .
       )
       @graph = RDF::Graph.new << RDF::Turtle::Reader.new(@graph_str)
 

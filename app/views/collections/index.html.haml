@@ -9,6 +9,11 @@
 
     %p
       This page shows the different collections currently available on Alveo.
+
+    %p.lead
+    %p.lead
+      Accessing data
+    %p
       To access data from a collection, you must first register as an Alveo user
       (
       %a{:href => "http://alveo.edu.au/help/getting-access-to-alveo-and-galaxy/accessing-alveo/"}> help me register
@@ -19,10 +24,24 @@
       %a{:href => "/account/licence_agreements"}> about licence terms
       ).
       In some cases specific permission is required.
+    %p.lead
+    %p.lead
+      Uploading data
     %p
+      To upload your own data, follow the instructions (
+      %a{:href => "http://alveo.edu.au/tutorials/creating-collections-and-uploading-data/"}> help with uploading
+      ).
+
+  .row-fluid
+    %p.lead
+
+  - if user_signed_in? && (current_user.is_data_owner? || current_user.is_superuser?)
+    %h2 My Collections
+    = render 'display_my_collections'
+
+  .row-fluid
 
   %h2 Collections
-
   = render 'display_collections'
 
   %p
@@ -37,6 +56,10 @@
       - if can? :web_create_collection, Collection
         %br
         = link_to "Create New Collection", web_create_collection_path, :id => 'Create New Collection', :class => "btn"
+      - else
+        - if !current_user.nil?
+          %br
+          = link_to "Become Data Owner to create my own collection", new_issue_report_path(:url => collection_index_url, :ty => "1"), :class => "btn"
 
   = render 'shared/nectar_attribution'
   = render 'shared/modal_waiting_panel'

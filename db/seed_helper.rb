@@ -1,12 +1,6 @@
 require 'csv'
 
 def create_roles_and_permissions
-  # Role.delete_all
-  # Role.reset_pk_seq
-  # Role.create!(:name => Role::SUPERUSER_ROLE)
-  # Role.create!(:name => Role::RESEARCHER_ROLE)
-  # Role.create!(:name => Role::DATA_OWNER_ROLE)
-
   logger.info "seeding Roles table..."
   roles = [Role::SUPERUSER_ROLE, Role::RESEARCHER_ROLE, Role::DATA_OWNER_ROLE]
   roles.each do |role|

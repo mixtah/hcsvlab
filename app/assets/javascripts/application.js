@@ -19,7 +19,7 @@
 //= require bootstrap
 //= require eopas
 //= require helpers
-//= require zeroclipboard
+//= require clipboard
 //= require jquery-fileupload
 //= require_tree .
 //= require select2

@@ -1,18 +1,26 @@
 
 
-- if @collections.empty?
+- if @collections.nil? || @collections.empty?
   %li
     %h5 Empty
 
-- unless @collections.empty?
+- else
   %table.table.table-hover
     %thead
       %tr
         %th Collection
         %th Abstract
+        - if !current_user.nil? && current_user.is_superuser?
+          %th Author
+          %th Status
     %tbody
       - @collections.each do |collection|
         %tr
           %td
             %a{:href => "#{collection_path(collection.name)}"} #{collection.name}
           %td #{MetadataHelper::load_metadata_from_collection(collection.name)[MetadataHelper::PFX_ABSTRACT]}
+          - if !current_user.nil? && current_user.is_superuser?
+            %td
+              = collection.owner.email
+            %td
+              = collection.status

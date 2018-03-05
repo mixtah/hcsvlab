@@ -5,7 +5,9 @@
       <div class="pull-left">
         <%= link_back_to_catalog %>
         <% if can? :delete_item_via_web_app, @item.collection %>
-            <%= render "delete_item" %>
+            <% if !@item.collection.is_finalised? %>
+              <%= render "delete_item" %>
+            <% end %>
         <% end %>
       </div>
       <%= link_to_previous_document @previous_document %> |
@@ -21,7 +23,9 @@
   <% else %>
     <%= link_to "Go back", :back, :class => "btn"%>
     <% if can? :delete_item_via_web_app, @item.collection %>
+      <% if !@item.collection.is_finalised? %>
         <%= render "delete_item" %>
+      <% end %>
     <% end %>
   <% end %>
 <% else %>

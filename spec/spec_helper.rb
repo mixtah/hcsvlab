@@ -22,6 +22,7 @@ RSpec.configure do |config|
 
   # For Devise <= 4.1.0
   config.include Devise::TestHelpers, :type => :controller
+  config.include LoginMacros, type: :request
 
   # ## Mock Framework
   #

@@ -4,14 +4,14 @@ module RequestValidator
 
   # Validates JSON-LD metadata
   def validate_jsonld(graph)
-    raise ResponseError.new(400), "Invalid metadata" if graph.blank?
+    raise ResponseError.new(400), "Invalid metadata (blank)" if graph.blank?
     rdf_graph = RDF::Graph.new << JSON::LD::API.toRDF(graph)
     validate_rdf_graph(rdf_graph)
   end
 
   # Validates RDF metadata
   def validate_rdf_graph(graph)
-    raise ResponseError.new(400), "Invalid metadata" if graph.invalid?
+    raise ResponseError.new(400), "Invalid metadata (invalid)" if graph.invalid?
   end
 
   # Validates the collection exists and the user is authorised to modify it

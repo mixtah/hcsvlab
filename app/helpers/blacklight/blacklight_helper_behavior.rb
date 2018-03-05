@@ -42,7 +42,7 @@ module Blacklight::BlacklightHelperBehavior
     html = ""
     document.export_formats.each_pair do |format, spec|
       unless (options[:exclude].include?(format) ||
-          (options[:unique] && seen.include?(spec[:content_type]))
+        (options[:unique] && seen.include?(spec[:content_type]))
       )
         html << tag(:link, {:rel => "alternate", :title => format, :type => spec[:content_type], :href => polymorphic_url(document, :format => format)}) << "\n"
 
@@ -115,7 +115,7 @@ module Blacklight::BlacklightHelperBehavior
 
   def should_render_index_field? document, solr_field
     document.has?(solr_field.field) ||
-        (document.has_highlight_field? solr_field.field if solr_field.highlight)
+      (document.has_highlight_field? solr_field.field if solr_field.highlight)
   end
 
   ##
@@ -130,7 +130,7 @@ module Blacklight::BlacklightHelperBehavior
   # @deprecated
   def index_field_labels document=nil
     # XXX DEPRECATED
-    Hash[*index_fields(document).map { |key, field| [key, field.label] }.flatten]
+    Hash[*index_fields(document).map {|key, field| [key, field.label]}.flatten]
   end
 
   def spell_check_max
@@ -197,7 +197,7 @@ module Blacklight::BlacklightHelperBehavior
                 when (field_config and field_config.helper_method)
                   send(field_config.helper_method, options.merge(:document => document, :field => field))
                 when (field_config and field_config.highlight)
-                  document.highlight_field(field_config.field).map { |x| x.html_safe }
+                  document.highlight_field(field_config.field).map {|x| x.html_safe}
                 else
                   document.get(field, :sep => nil) if field
               end
@@ -254,7 +254,7 @@ module Blacklight::BlacklightHelperBehavior
 
   # Used in the document_list partial (search view) for building a select element
   def sort_fields
-    blacklight_config.sort_fields.map { |key, x| [x.label, x.key] }
+    blacklight_config.sort_fields.map {|key, x| [x.label, x.key]}
   end
 
   # Used in the document list partial (search view) for creating a link to the document show action
@@ -276,7 +276,7 @@ module Blacklight::BlacklightHelperBehavior
   # @deprecated
   def document_show_field_labels document=nil
     # XXX DEPRECATED
-    Hash[*document_show_fields(document).map { |key, field| [key, field.label] }.flatten]
+    Hash[*document_show_fields(document).map {|key, field| [key, field.label]}.flatten]
   end
 
   ##
@@ -341,7 +341,7 @@ module Blacklight::BlacklightHelperBehavior
                 when (field_config and field_config.helper_method)
                   send(field_config.helper_method, options.merge(:document => document, :field => field))
                 when (field_config and field_config.highlight)
-                  document.highlight_field(field_config.field).map { |x| x.html_safe }
+                  document.highlight_field(field_config.field).map {|x| x.html_safe}
                 else
                   document.get(field, :sep => nil) if field
               end
@@ -351,13 +351,13 @@ module Blacklight::BlacklightHelperBehavior
 
   def should_render_show_field? document, solr_field
     document.has?(solr_field.field) ||
-        (document.has_highlight_field? solr_field.field if solr_field.highlight)
+      (document.has_highlight_field? solr_field.field if solr_field.highlight)
   end
 
   def render_field_value value=nil
     value = [value] unless value.is_a? Array
-    value = value.collect { |x| x.respond_to?(:force_encoding) ? x.force_encoding("UTF-8") : x }
-    return value.map { |v| html_escape v }.join(field_value_separator).html_safe
+    value = value.collect {|x| x.respond_to?(:force_encoding) ? x.force_encoding("UTF-8") : x}
+    return value.map {|v| html_escape v}.join(field_value_separator).html_safe
   end
 
   def field_value_separator
@@ -448,14 +448,16 @@ module Blacklight::BlacklightHelperBehavior
 
     label = ' Metadata'
 
-    render_search_to_s_element(label , params[:metadata] )
+    render_search_to_s_element(label, params[:metadata])
 
   end
 
   #
   # shortcut for built-in Rails helper, "number_with_delimiter"
   #
-  def format_num(num); number_with_delimiter(num) end
+  def format_num(num)
+    ; number_with_delimiter(num)
+  end
 
   #
   # link based helpers ->
@@ -487,7 +489,7 @@ module Blacklight::BlacklightHelperBehavior
   def link_to_document(doc, opts={:label => nil, :counter => nil, :results_view => true})
     opts[:label] ||= blacklight_config.index.show_link.to_sym
     label = render_document_index_label doc, opts
-    link_to label, doc, {:'data-counter' => opts[:counter]}.merge(opts.reject { |k, v| [:label, :counter, :results_view].include? k })
+    link_to label, doc, {:'data-counter' => opts[:counter]}.merge(opts.reject {|k, v| [:label, :counter, :results_view].include? k})
   end
 
   # link_literal_to_document(doc, :label=>'VIEW', :counter => 3)
@@ -497,10 +499,13 @@ module Blacklight::BlacklightHelperBehavior
   def link_literal_to_document(doc, label, opts={:counter => nil, :results_view => true})
     collectionName = Array(doc[MetadataHelper.short_form(MetadataHelper::COLLECTION)]).first
     itemIdentifier = doc[:handle].split(':').last
+
+    logger.debug "link_literal_to_document: opts[#{opts}], collectionName[#{collectionName}], itemIdentifier[#{itemIdentifier}]"
+
     if !opts[:itemViewList].nil?
       link_to label, solr_document_path(collectionName, itemIdentifier, :il => opts[:itemViewList])
     else
-      link_to label, catalog_url(collectionName, itemIdentifier), {:'data-counter' => opts[:counter]}.merge(opts.reject { |k, v| [:label, :counter, :results_view].include? k })
+      link_to label, catalog_url(collectionName, itemIdentifier), {:'data-counter' => opts[:counter]}.merge(opts.reject {|k, v| [:label, :counter, :results_view].include? k})
     end
   end
 
@@ -525,11 +530,11 @@ module Blacklight::BlacklightHelperBehavior
     if is_cooee
       field = MetadataHelper::TYPE.to_s + "_tesim"
       if document.has_key?(field)
-        document[field].each { |t| type = t unless t == "Original" or t == "Raw" }
+        document[field].each {|t| type = t unless t == "Original" or t == "Raw"}
       else
         field = "DC_type_facet"
         if document.has_key?(field)
-          document[field].each { |t| type = t unless t == "Original" or t == "Raw" }
+          document[field].each {|t| type = t unless t == "Original" or t == "Raw"}
         end
       end
       if type.nil?
@@ -567,7 +572,7 @@ module Blacklight::BlacklightHelperBehavior
             my_params[key] = my_params[key].dup
 
             values = [values] unless values.respond_to? :each
-            values.each { |v| my_params[key].delete(v) }
+            values.each {|v| my_params[key].delete(v)}
 
             if my_params[key].empty?
               my_params.delete(key)
@@ -583,7 +588,7 @@ module Blacklight::BlacklightHelperBehavior
       my_params[:page] = 1
     end
 
-    my_params.reject! { |k, v| v.nil? }
+    my_params.reject! {|k, v| v.nil?}
 
     # removing action and controller from duplicate params so that we don't get hidden fields for them.
     my_params.delete(:action)
@@ -670,7 +675,7 @@ module Blacklight::BlacklightHelperBehavior
 
   def render_display_text(url)
     begin
-      text = open(url) { |f| f.read }.strip.force_encoding("UTF-8")
+      text = open(url) {|f| f.read}.strip.force_encoding("UTF-8")
       return "<div class='primary-text'>#{text}</div>"
     rescue => e
       Rails.logger.error e.message
@@ -690,11 +695,11 @@ module Blacklight::BlacklightHelperBehavior
       repository = server.repository(item.collection.name)
       raise Exception.new "Repository not found - #{item.collection.name}" if repository.nil?
       document_results = repository.query(:subject => RDF::URI.new(item.uri), :predicate => RDF::URI.new(MetadataHelper::DOCUMENT))
-      document_results.each { |result|
+      document_results.each {|result|
         document = result.to_hash[:object]
         descriptor = {}
 
-        uris.each { |uri|
+        uris.each {|uri|
           field_results = repository.query(:subject => document, :predicate => uri)
           unless field_results.size == 0
             descriptor[uri] = field_results.first_object
@@ -707,18 +712,41 @@ module Blacklight::BlacklightHelperBehavior
       return document_descriptors
     end
 
+    # KL - to show contribution link in item show page
+    # append document id and contribution id (if document has association to contribution, otherwise nil)
+    document_descriptors.each do |d|
+      # ensure doc type & size info is not empty
+      if d[MetadataHelper::TYPE].nil?
+        d[MetadataHelper::TYPE] = ContributionsHelper.extract_doc_type(d[MetadataHelper::IDENTIFIER].to_s)
+      end
+
+      #   find document by item id and file_name
+      doc = Document.where(item_id: item.id, file_name: d[MetadataHelper::IDENTIFIER].to_s)
+      if !doc.nil? && !doc.first.nil?
+        d[:handle] = item.handle
+        d[:document_id] = doc.first.id
+
+        if d[MetadataHelper::EXTENT].nil?
+          d[MetadataHelper::EXTENT] = File.size?(doc.first.file_path)
+        end
+
+        cm = ContributionMapping.find_by_document_id(doc.first.id)
+        if !cm.nil?
+          d[:contribution_id] = cm.contribution_id
+        end
+      end
+    end
+
     return document_descriptors
   end
 
   def collection_show_fields(collection)
     graph = collection.rdf_graph
-    fields = graph.statements.map { |i| {collection_label(MetadataHelper::short_form(i.predicate)) => collection_value(graph, i.predicate)} }.uniq
-    fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
+    fields = graph.statements.map {|i| {collection_label(MetadataHelper::short_form(i.predicate)) => collection_value(graph, i.predicate)}}.uniq
 
-    logger.debug "collection_show_fields fields=#{fields}"
-
+    # fields << {'SPARQL Endpoint' => catalog_sparqlQuery_url(collection.name)}
+    # logger.debug "collection_show_fields fields=#{fields}"
     fields
-
   end
 
   def collection_label(key)
@@ -731,11 +759,11 @@ module Blacklight::BlacklightHelperBehavior
   end
 
   def collection_value(graph, field)
-    matching = graph.find_all { |st| st.predicate == field }
+    matching = graph.find_all {|st| st.predicate == field}
     if matching.count == 1
       return matching.first.object
     else
-      return format_duplicates(matching.map { |i| i.object })
+      return format_duplicates(matching.map {|i| i.object})
     end
   end
 
@@ -799,7 +827,7 @@ module Blacklight::BlacklightHelperBehavior
     return "" if list.nil?
     return list unless list.respond_to?("each")
     hash = {}
-    list.each { |item|
+    list.each {|item|
       if hash.has_key?(item)
         hash[item] += 1
       else
@@ -807,7 +835,7 @@ module Blacklight::BlacklightHelperBehavior
       end
     }
     new_list = []
-    list.each { |k|
+    list.each {|k|
       if hash.has_key?(k)
         count = hash[k]
         if count == 1
@@ -872,7 +900,7 @@ module Blacklight::BlacklightHelperBehavior
   end
 
   def render_language_codes(list)
-    return (list.map { |c| render_language_code(c) }).join(', ')
+    return (list.map {|c| render_language_code(c)}).join(', ')
   end
   #
   # End of Language Code methods

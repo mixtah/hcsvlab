@@ -14,7 +14,8 @@ STOMP_CONFIG = YAML.load_file("#{Rails.root.to_s}/config/broker.yml")[Rails.env]
 # already exist.
 #
 def ingest_one(corpus_dir, rdf_file, user_email=nil)
-  collection_name = extract_manifest_collection(rdf_file)
+  logger.debug "ingest_one: begin - corpus_dir[#{corpus_dir}], rdf_file[#{rdf_file}], user_email[#{user_email}]"
+  collection_name = extract_manifesis_datat_collection(rdf_file)
   collection = check_and_create_collection(user_email, collection_name, corpus_dir, {}, File.basename(rdf_file))
   ingest_rdf_file(corpus_dir, rdf_file, true, collection)
 end
@@ -669,6 +670,8 @@ def populate_triple_store(corpus_dir, collection_name, glob)
   
   # Create a instance of the repository where we are going to store the metadata
   repository = server.repository(collection_name)
+
+  # TODO: add metadata to sesame
 
   # KL - deprecated features
   # Now will store every RDF file

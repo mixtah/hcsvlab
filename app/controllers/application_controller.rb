@@ -78,6 +78,11 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # set default protocol as https (not in dev)
+  # def default_url_options(options={})
+  #   { :protocol => "https" }
+  # end
+
   def api_check
     if request.format == "json"
       # KL: ignore attachment upload

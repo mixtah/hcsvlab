@@ -1,6 +1,9 @@
 = render partial: 'display_breadcrumb', locals: {nav_links: {'collections' => collections_path, "#{@collection.name}" => nil}}
 
 - metadata_fields = collection_show_fields(@collection)
+- collection_status = ""
+- if CollectionsHelper.is_owner(current_user, @collection) || (!current_user.nil? && current_user.is_superuser?)
+  - collection_status = " (#{@collection.status})"
 
 .container-fluid
   .row-fluid
@@ -8,7 +11,7 @@
       .row-fluid
         .span4
           .pull-left
-            %h2=@collection.name
+            %h2=@collection_title + collection_status
         .span8
           .pull-right
             - unless params[:state].nil?
@@ -16,16 +19,32 @@
 
             - if can? :web_add_item, @collection
               %br
-              = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn btn-primary"
+              - if !@collection.is_finalised?
+                = link_to "Add New Item", web_add_item_path, :id => 'add_new_item', :class => "btn btn-primary"
+              - else
+                %button.btn{:disabled => "disabled", :type => "button"} Add New Item
 
-            - if can? :edit_collection, @collection
-              = link_to "Edit Collection", edit_collection_path, id: 'edit_collection', :class => "btn btn-primary"
+
+            - if can? :web_add_item, @collection
+              - if !@collection.is_finalised?
+                = link_to "Import zip", new_collection_import_path(:collection_id => @collection.name), :id => 'upload_zip', :class => "btn btn-primary"
+              - else
+                %button.btn{:disabled => "disabled", :type => "button"} Import Zip
+
+            - if CollectionsHelper.is_owner(current_user, @collection) || (!current_user.nil? && current_user.is_superuser?)
+              - if !@collection.is_finalised? || current_user.is_superuser?
+                = link_to "Edit", edit_collection_path, id: 'edit_collection', :class => "btn btn-primary"
+              - else
+                %button.btn{:disabled => "disabled", :type => "button"} Edit
 
             - if can? :delete_collection, @collection
-              - if @collection.items.size == 0
-                = link_to "Delete Collection", delete_collection_path, method: :delete, id: 'edit_collection', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current collection?"}
+              - if !@collection.is_finalised?
+                - if @collection.items.size == 0
+                  = link_to "Delete Collection", delete_collection_path, method: :delete, id: 'delete_collection', :class => "btn btn-danger", data: {confirm: "Are you sure to delete current collection?"}
+                - else
+                  %button.btn.btn-danger.btn-sm{:disabled => "disabled", :type => "button", :title => "Collection not empty, can't delete!"} Delete Collection?
               - else
-                %button.btn.btn-danger.btn-sm{:disabled => "disabled", :type => "button", :title => "Collection not empty, can't delete!"} Delete Collection?
+                %button.btn{:disabled => "disabled", :type => "button"} Delete Collection
 
 
   .row-fluid
@@ -35,10 +54,13 @@
           %li.nav-header Metadata
           - metadata_fields.each do |field|
             - if field.first[0] != "Abstract" && field.first[0] != "RDF Type" && field.first[0] != "SPARQL Endpoint"
+              - value = field.first[1].to_s
+              - if current_user.nil? && field.first[0] == "Creator"
+                - value = value.gsub(/\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/, '*email hidden*')
               %li
                 %strong
                   #{field.first[0]}:
-                #{field.first[1]}
+                #{value}
 
       = render partial: 'display_attachment_sidebar', locals: {attachment_url: @attachment_url}
 
@@ -47,4 +69,10 @@
       .row-fluid
         = @collection.html_text.html_safe
 
+      .row-fluid
+        - if @collection.items.size == 0
+          There are 0 item within this collection
+        - else
+          = link_to "There are #{@collection.items.size} item(s) within this collection", catalog_index_path("f[collection_name_facet][]" => "#{@collection.name}")
 
+= render 'shared/nectar_attribution'

@@ -44,11 +44,14 @@ HcsvlabWeb::Application.routes.draw do
   delete 'catalog-delete/:id', :to => 'collections#delete_collection', :as => 'delete_collection'
   get 'catalog-create', :to => 'collections#web_create_collection', :as => 'web_create_collection'
   post 'catalog-create', :to => 'collections#web_create_collection'
+  
+  resources :imports
 
   # collection attachment
   resources :collections do
     # without collection_id can't proceed, so must include that
     resources :attachments, only: [:index, :new, :create]
+    resources :imports
   end
   get 'collections/:collection_id/attachments', :to => 'attachments#index', :as => 'attachments'
   get 'collections/:collection_id/attachments/new', :to => 'attachments#new', :as => 'new_attachment'
@@ -56,7 +59,17 @@ HcsvlabWeb::Application.routes.draw do
   # can proceed with own attachment id
   resources :attachments, only: [:show, :edit, :update, :destroy]
 
-
+  # contribution
+  get "contrib/", :to => "contributions#index", :as => "contrib_index"
+  get "contrib/new", :to => "contributions#new", :as => "contrib_new"
+  post "contrib/", :to => "contributions#create", :as => "contrib_create"
+  get "contrib/:id.zip", :to => "contributions#export", :as => "contrib_export", constraints: {id: /\d+/}
+  get "contrib/:id", :to => "contributions#show", :as => "contrib_show", constraints: {id: /\d+/}
+  get "contrib/:id/edit", :to => "contributions#edit", :as => "contrib_edit"
+  put "contrib/:id", :to => "contributions#update", :as => "contrib_update"
+  get "contrib/:id/preview", :to => "contributions#preview", :as => "contrib_preview"
+  post "contrib/:id", :to => "contributions#import", :as => "contrib_import"
+  delete "contrib/:id", :to => "contributions#destroy", :as => "contrib_delete"
 
   # put "catalog/:id", :to => 'collections#edit_collection', :as => 'collection'
   post "catalog", :to => 'collections#create', :as => 'collections'
@@ -83,7 +96,6 @@ HcsvlabWeb::Application.routes.draw do
 
   post 'catalog/download_items', :to => 'catalog#download_items', :as => 'catalog_download_items_api'
   #get 'catalog/download_annotation/:id', :to => 'catalog#download_annotation', :as => 'catalog_download_annotation'
-
 
   get "add-item/:id", :to => 'collections#web_add_item', :as => 'web_add_item'
   post "add-item/:id", :to => 'collections#web_add_item'
@@ -180,6 +192,10 @@ HcsvlabWeb::Application.routes.draw do
           put 'change_collection_privacy'
           put 'revoke_access'
         end
+
+        member do
+          post 'update_permission'
+        end
       end
 
       resources :collection_lists, :only => [:index, :show, :new, :create, :destroy] do
@@ -202,7 +218,6 @@ HcsvlabWeb::Application.routes.draw do
           put :reject_request
         end
       end
-
 
     end
   end
